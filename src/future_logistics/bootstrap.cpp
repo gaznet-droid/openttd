@@ -5,7 +5,17 @@
 /** @file bootstrap.cpp Bounded, deterministic town-to-town bus network bootstrap. */
 #include "../stdafx.h"
 #include "bootstrap.h"
+#include "air_planner.h"
+#include "planner_common.h"
+#include "catalogue.h"
+#include "rail_planner.h"
+#include "road_planner.h"
+#include "water_planner.h"
+#include "scale.h"
+#include "tech_library.h"
 #include "../ai/ai.hpp"
+#include "../ai/ai_config.hpp"
+#include "../company_cmd.h"
 #include "../cargotype.h"
 #include "../command_func.h"
 #include "../company_base.h"
@@ -13,6 +23,7 @@
 #include "../debug.h"
 #include "../engine_base.h"
 #include "../engine_func.h"
+#include "../industry.h"
 #include "../landscape_cmd.h"
 #include "../misc_cmd.h"
 #include "../network/network.h"
@@ -23,6 +34,7 @@
 #include "../roadveh.h"
 #include "../direction_func.h"
 #include "../settings_type.h"
+#include "../signal_func.h"
 #include "../station_cmd.h"
 #include "../station_func.h"
 #include "../station_map.h"
@@ -34,312 +46,49 @@
 
 #include "../safeguards.h"
 
+using namespace FutureLogistics;
+
 extern Company *DoStartupNewCompany(bool is_ai, CompanyID company);
 
 namespace {
-constexpr DoCommandFlags EXEC{DoCommandFlag::Execute}; ///< Execute after command validation.
-constexpr DoCommandFlags CONSTRUCT{DoCommandFlag::Auto, DoCommandFlag::NoWater}; ///< Normal construction trait flags.
-constexpr size_t MAX_SEARCH = 8192; ///< Maximum visited tiles per town pair.
-constexpr size_t MAX_PAIRS = 128; ///< Maximum town pairs considered per company.
-
 /**
- * Exclude houses, shared roads, water, bridges and slopes.
- * @param tile Candidate construction tile.
- * @return Whether the tile is eligible for command preflight.
+ * Build one starter service for the current company with the mechanic its recipe names.
+ * @param recipe Family, mechanic and market.
+ * @param profile The rival, for its preferences.
+ * @param plan All of the rival's recipes; its other freight recipes are the ways a freight route may hand cargo over to.
+ * @param library Loaded transport technology.
+ * @param[in,out] reserved Markets already taken.
+ * @return Outcome; Rejected for a mechanic or market this build does not support.
  */
-bool Buildable(TileIndex tile)
+ConstructionResult BuildService(const Recipe &recipe, const Profile &profile, std::span<const Recipe> plan, const TechLibrary &library, Reservations &reserved)
 {
-	return IsValidTile(tile) && (IsTileType(tile, TileType::Clear) || IsTileType(tile, TileType::Trees)) && IsTileFlat(tile);
+	if (!IsSupported(recipe.mechanic, recipe.market)) return ConstructionResult::Rejected;
+	ServiceSpec spec{recipe.family, recipe.min_tier, recipe.early_adopters, profile.industry_markets, {}};
+	if (recipe.market == Market::Industry) {
+		for (const Recipe &other : plan) {
+			if (other.market != Market::Industry || other.mechanic == recipe.mechanic) continue;
+			if (std::ranges::find(spec.partners, other.mechanic, &Partner::mechanic) != spec.partners.end()) continue;
+			spec.partners.push_back({other.mechanic, other.family, other.min_tier, other.early_adopters});
+		}
+	}
+	return FindMechanic(recipe.mechanic)->build(library, spec, recipe.market, reserved);
 }
 
 /**
- * Get the direction between adjacent route tiles.
- * @param from Origin tile.
- * @param to Adjacent destination tile.
- * @return Direction from origin to destination.
+ * Name a new rival after its profile and tell its CorporateAI which profile it has.
+ * Both are stored in the save game.
+ * @param company New rival.
+ * @param profile Its profile.
  */
-DiagDirection RouteDirection(TileIndex from, TileIndex to)
+void ApplyProfile(Company *company, const Profile &profile)
 {
-	if (TileX(to) > TileX(from)) return DiagDirection::SW;
-	if (TileX(to) < TileX(from)) return DiagDirection::NE;
-	if (TileY(to) > TileY(from)) return DiagDirection::SE;
-	return DiagDirection::NW;
-}
-
-/**
- * Convert a route direction to its road bit.
- * @param direction Diagonal direction.
- * @return Corresponding road bit.
- */
-RoadBits Bit(DiagDirection direction)
-{
-	switch (direction) {
-		case DiagDirection::NE: return RoadBit::NE;
-		case DiagDirection::SE: return RoadBit::SE;
-		case DiagDirection::SW: return RoadBit::SW;
-		case DiagDirection::NW: return RoadBit::NW;
-		default: NOT_REACHED();
+	AutoRestoreBackup owner(_current_company, company->index);
+	if (Command<Commands::RenameCompany>::Do(EXEC, profile.name).Failed()) {
+		Debug(Facility::Misc, Severity::Warning, "FL could not rename company={} to profile name", company->index);
 	}
-}
-
-/**
- * Enumerate adjacent tiles in deterministic order, excluding map borders.
- * @param tile Origin tile.
- * @return Adjacent interior tiles.
- */
-std::vector<TileIndex> Neighbours(TileIndex tile)
-{
-	std::vector<TileIndex> result;
-	const int x = TileX(tile), y = TileY(tile);
-	/* Fixed tie-breaking order; never use InteractiveRandom or wall time. */
-	for (const auto &[dx, dy] : {std::pair{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
-		if (x + dx > 0 && y + dy > 0 && x + dx < (int)Map::SizeX() - 1 && y + dy < (int)Map::SizeY() - 1) {
-			result.push_back(TileXY(x + dx, y + dy));
-		}
-	}
-	return result;
-}
-
-/**
- * Find station candidates that can generate and accept the selected cargo.
- * @param town Town to serve.
- * @param cargo Passenger cargo type.
- * @return Buildable candidate tiles belonging to this town's area.
- */
-std::vector<TileIndex> Stops(const Town *town, CargoType cargo)
-{
-	std::vector<TileIndex> result;
-	const int radius = _settings_game.station.modified_catchment ? CA_BUS : CA_UNMODIFIED;
-	for (int y = std::max(1, (int)TileY(town->xy) - 12); y <= std::min((int)Map::SizeY() - 2, (int)TileY(town->xy) + 12); y++) {
-		for (int x = std::max(1, (int)TileX(town->xy) - 12); x <= std::min((int)Map::SizeX() - 2, (int)TileX(town->xy) + 12); x++) {
-			TileIndex tile = TileXY(x, y);
-			if (!Buildable(tile) || ClosestTownFromTile(tile, UINT_MAX)->index != town->index) continue;
-			if (GetAcceptanceAroundTiles(tile, 1, 1, radius).first[cargo] < 8 || GetProductionAroundTiles(tile, 1, 1, radius)[cargo] == 0) continue;
-			result.push_back(tile);
-		}
-	}
-	return result;
-}
-
-/** Proposed owned road corridor and attached depot. */
-struct Route {
-	std::vector<TileIndex> path; ///< Ordered tiles between the two stops.
-	TileIndex depot = INVALID_TILE; ///< Depot tile, invalid if planning failed.
-	size_t junction = 0; ///< Index of the road tile adjoining the depot.
-};
-
-/**
- * Find a corridor using bounded multi-source breadth-first search.
- * @param starts Candidate stops in the origin town.
- * @param ends Candidate stops in the destination town.
- * @return Proposed route, with an invalid depot if no suitable corridor exists.
- */
-Route FindRoute(const std::vector<TileIndex> &starts, const std::vector<TileIndex> &ends)
-{
-	std::set<TileIndex> targets(ends.begin(), ends.end());
-	std::map<TileIndex, TileIndex> previous;
-	std::queue<TileIndex> queue;
-	for (TileIndex tile : starts) {
-		previous.emplace(tile, INVALID_TILE);
-		queue.push(tile);
-	}
-	while (!queue.empty()) {
-		TileIndex tile = queue.front();
-		queue.pop();
-		if (targets.contains(tile)) {
-			Route route;
-			for (TileIndex t = tile; t != INVALID_TILE; t = previous.at(t)) route.path.push_back(t);
-			std::reverse(route.path.begin(), route.path.end());
-			if (route.path.size() < 8 || route.path.size() > 128) continue;
-			std::set<TileIndex> occupied(route.path.begin(), route.path.end());
-			for (size_t i = 1; i + 1 < route.path.size(); i++) {
-				for (TileIndex neighbour : Neighbours(route.path[i])) {
-					if (!occupied.contains(neighbour) && Buildable(neighbour) && GetTileZ(neighbour) == GetTileZ(tile)) {
-						route.depot = neighbour;
-						route.junction = i;
-						return route;
-					}
-				}
-			}
-		}
-		for (TileIndex next : Neighbours(tile)) {
-			if (previous.size() >= MAX_SEARCH) break;
-			if (previous.contains(next) || !Buildable(next) || GetTileZ(next) != GetTileZ(tile)) continue;
-			previous.emplace(next, tile);
-			queue.push(next);
-		}
-	}
-	return {};
-}
-
-/**
- * Calculate road connections for one corridor tile.
- * @param route Proposed corridor and depot.
- * @param i Tile index within the corridor.
- * @return Road bits connecting neighbours and, if applicable, the depot.
- */
-RoadBits Pieces(const Route &route, size_t i)
-{
-	RoadBits bits;
-	if (i > 0) bits |= Bit(RouteDirection(route.path[i], route.path[i - 1]));
-	if (i + 1 < route.path.size()) bits |= Bit(RouteDirection(route.path[i], route.path[i + 1]));
-	if (i == route.junction) bits |= Bit(RouteDirection(route.path[i], route.depot));
-	/* End stops need both road halves, allowing buses to turn around at the dead end. */
-	if (i == 0 || i + 1 == route.path.size()) {
-		const auto dir = RouteDirection(route.path[i], route.path[i == 0 ? 1 : i - 1]);
-		bits = (dir == DiagDirection::NE || dir == DiagDirection::SW) ? ROAD_X : ROAD_Y;
-	}
-	return bits;
-}
-
-/**
- * Test or build a separate drive-through bus stop.
- * @param tile Station tile.
- * @param direction Road alignment direction.
- * @param roadtype Compatible road type.
- * @param flags Command execution flags.
- * @return Command cost or rejection.
- */
-CommandCost Stop(TileIndex tile, DiagDirection direction, RoadType roadtype, DoCommandFlags flags)
-{
-	return Command<Commands::BuildRoadStop>::Do(flags | CONSTRUCT, tile, 1, 1, RoadStopType::Bus, true, direction,
-		roadtype, ROADSTOP_CLASS_DFLT, 0, NEW_STATION, true);
-}
-
-/** Outcome controlling whether another candidate may safely be tried. */
-enum class ConstructionResult {
-	Rejected, ///< Preflight rejected the layout without construction.
-	Failed, ///< Execution failed and cleanup was attempted; stop this company.
-	Success, ///< An operational route and vehicle were constructed.
-};
-
-/**
- * Preflight the entire layout, then execute through accounting commands.
- * @param route Corridor and depot proposal.
- * @param engine Compatible passenger bus engine.
- * @return Whether preflight rejected, execution failed, or service was built.
- */
-ConstructionResult Build(const Route &route, const Engine *engine)
-{
-	const RoadType rt = engine->VehInfo<RoadVehicleInfo>().roadtype;
-	Money cost = 0;
-	for (size_t i = 0; i < route.path.size(); i++) {
-		auto result = Command<Commands::BuildRoad>::Do(CONSTRUCT, route.path[i], Pieces(route, i), rt, {}, TownID::Invalid());
-		if (result.Failed()) {
-			Debug(Facility::Misc, Severity::Debug1, "FL road preflight rejected tile={} error={}", route.path[i], result.GetErrorMessage());
-			return ConstructionResult::Rejected;
-		}
-		cost += result.GetCost();
-	}
-	const auto first_dir = RouteDirection(route.path[0], route.path[1]);
-	const auto last_dir = RouteDirection(route.path.back(), route.path[route.path.size() - 2]);
-	for (const auto &[tile, direction] : {std::pair{route.path.front(), first_dir}, {route.path.back(), last_dir}}) {
-		auto result = Stop(tile, direction, rt, {});
-		if (result.Failed()) return ConstructionResult::Rejected;
-		cost += result.GetCost();
-	}
-	const auto depot_dir = RouteDirection(route.depot, route.path[route.junction]);
-	auto depot_test = Command<Commands::BuildRoadDepot>::Do(CONSTRUCT, route.depot, rt, depot_dir);
-	if (depot_test.Failed()) return ConstructionResult::Rejected;
-	cost += depot_test.GetCost();
-	/* Reserve extra capital for the vehicle and any command-cost changes after construction. */
-	const Company *company = Company::Get(_current_company);
-	if (cost * 2 + engine->GetCost() * 2 > company->money) return ConstructionResult::Rejected;
-	/* Explicit demolition consumes clearing credits. Keep enough for a complete rollback. */
-	if ((company->clear_limit >> 16) < route.path.size() * 3 + 8) return ConstructionResult::Rejected;
-
-	std::vector<TileIndex> built;
-	VehicleID vehicle = VehicleID::Invalid();
-	auto rollback = [&]() {
-		if (vehicle != VehicleID::Invalid() && Command<Commands::SellVehicle>::Do(EXEC, vehicle, true, false, ClientID::Invalid).Failed()) {
-			Debug(Facility::Misc, Severity::Error, "FL rollback failed selling vehicle={}; infrastructure retained", vehicle);
-			return;
-		}
-		for (auto it = built.rbegin(); it != built.rend(); ++it) {
-			auto result = Command<Commands::LandscapeClear>::Do(EXEC, *it);
-			if (result.Failed()) {
-				Debug(Facility::Misc, Severity::Error, "FL rollback failed tile={} error={}", *it, result.GetErrorMessage());
-			}
-		}
-	};
-	auto fail = [&](std::string_view phase) {
-		Debug(Facility::Misc, Severity::Warning, "FL construction failed company={} phase={}; clearing new infrastructure", _current_company, phase);
-		rollback();
-		return ConstructionResult::Failed;
-	};
-	for (size_t i = 0; i < route.path.size(); i++) {
-		if (Command<Commands::BuildRoad>::Do(EXEC | CONSTRUCT, route.path[i], Pieces(route, i), rt, {}, TownID::Invalid()).Failed()) return fail("road");
-		built.push_back(route.path[i]);
-	}
-	if (Stop(route.path.front(), first_dir, rt, EXEC).Failed() || Stop(route.path.back(), last_dir, rt, EXEC).Failed()) return fail("stops");
-	if (Command<Commands::BuildRoadDepot>::Do(EXEC | CONSTRUCT, route.depot, rt, depot_dir).Failed()) return fail("depot");
-	built.push_back(route.depot);
-	auto result = Command<Commands::BuildVehicle>::Do(EXEC, route.depot, engine->index, false, engine->GetDefaultCargoType(), ClientID::Invalid);
-	if (ExtractCommandCost(result).Failed()) return fail("vehicle");
-	vehicle = std::get<1>(result);
-	for (VehicleOrderID i = 0; i < 2; i++) {
-		Order order;
-		order.MakeGoToStation(GetStationIndex(i == 0 ? route.path.front() : route.path.back()));
-		order.SetStopLocation(OrderStopLocation::FarEnd);
-		if (Command<Commands::InsertOrder>::Do(EXEC, vehicle, i, order).Failed()) return fail("orders");
-	}
-	if (Command<Commands::StartStopVehicle>::Do(EXEC, vehicle, true).Failed()) return fail("start");
-	uint64_t signature = 14695981039346656037ULL;
-	for (TileIndex tile : route.path) signature = (signature ^ tile.base()) * 1099511628211ULL;
-	Debug(Facility::Misc, Severity::Notice, "FL route company={} vehicle={} from={} to={} depot={} tiles={} balance={} signature={}",
-		_current_company, vehicle, route.path.front(), route.path.back(), route.depot, route.path.size(), Company::Get(_current_company)->money, signature);
-	return ConstructionResult::Success;
-}
-
-/**
- * Build one starter network in an unused town market.
- * @param cargo Passenger cargo type.
- * @param[in,out] used_towns Towns reserved by successfully completed rivals.
- * @return Whether an operational network was completed.
- */
-bool Network(CargoType cargo, std::set<TownID> &used_towns)
-{
-	const Engine *bus = nullptr;
-	for (const Engine *engine : Engine::IterateType(VehicleType::Road)) {
-		if (engine->GetDefaultCargoType() == cargo && engine->CanCarryCargo() && engine->VehInfo<RoadVehicleInfo>().roadtype == ROADTYPE_ROAD && IsEngineBuildable(engine->index, VehicleType::Road, _current_company)) {
-			bus = engine;
-			break;
-		}
-	}
-	if (bus == nullptr) return false;
-	struct Pair { uint distance; const Town *a; const Town *b; };
-	std::vector<Pair> pairs;
-	std::vector<const Town *> towns;
-	for (const Town *town : Town::Iterate()) {
-		if (towns.size() == 128) break;
-		towns.push_back(town);
-	}
-	for (const Town *a : towns) {
-		for (const Town *b : towns) {
-			if (a->index >= b->index || used_towns.contains(a->index) || used_towns.contains(b->index)) continue;
-			uint distance = DistanceManhattan(a->xy, b->xy);
-			if (distance >= 16 && distance <= 96) pairs.push_back({distance, a, b});
-		}
-	}
-	std::stable_sort(pairs.begin(), pairs.end(), [](const Pair &a, const Pair &b) { return a.distance < b.distance; });
-	std::map<TownID, std::vector<TileIndex>> candidates;
-	for (size_t i = 0; i < std::min(MAX_PAIRS, pairs.size()); i++) {
-		const auto &pair = pairs[i];
-		for (const Town *town : {pair.a, pair.b}) {
-			if (!candidates.contains(town->index)) candidates.emplace(town->index, Stops(town, cargo));
-		}
-		auto route = FindRoute(candidates.at(pair.a->index), candidates.at(pair.b->index));
-		if (route.depot == INVALID_TILE) continue;
-		auto result = Build(route, bus);
-		if (result == ConstructionResult::Failed) return false;
-		if (result == ConstructionResult::Success) {
-			used_towns.insert(pair.a->index);
-			used_towns.insert(pair.b->index);
-			Debug(Facility::Misc, Severity::Notice, "FL towns company={} a={} b={}", _current_company, pair.a->index, pair.b->index);
-			return true;
-		}
-	}
-	return false;
+	/* Ignored unless the company runs an AI with a "profile" setting, such as CorporateAI. */
+	if (company->ai_config != nullptr) company->ai_config->SetSetting("profile", profile.id);
+	Debug(Facility::Misc, Severity::Notice, "FL profile company={} profile={}", company->index, profile.key);
 }
 } // namespace
 
@@ -351,19 +100,31 @@ void BootstrapFutureLogistics()
 		Debug(Facility::Misc, Severity::Warning, "FL skipped: expected only human company 0");
 		return;
 	}
-	const uint count = std::min<uint>(4, _settings_game.difficulty.max_no_competitors);
+	const TechLibrary library = TechLibrary::Build();
+	const Catalogue catalogue = Catalogue::Build(library);
+	const auto &profiles = catalogue.Profiles();
+	/* One rival per profile: the built-in four, then any declared by NewGRFs, up to the competitor setting. */
+	const uint count = std::min<uint>(static_cast<uint>(profiles.size()), _settings_game.difficulty.max_no_competitors);
 	Debug(Facility::Misc, Severity::Notice, "FL begin seed={} rivals={}", _settings_game.game_creation.generation_seed, count);
-	const CargoType cargo = GetCargoTypeByLabel(CT_PASSENGERS);
+	Debug(Facility::Misc, Severity::Notice, "FL catalogue families={} profiles={} problems={}", catalogue.Families().size(), profiles.size(),
+		catalogue.Problems().size() + library.Problems().size());
 	uint operational = 0;
-	std::set<TownID> used_towns;
+	uint services = 0;
+	Reservations reserved;
+	/* The headstart is in proportion to the world: capital follows the total population, capped by the setting. */
+	uint64_t population = 0;
+	for (const Town *town : Town::Iterate()) population += town->cache.population;
+	const Money grant = RivalGrant(population, count, _settings_game.game_creation.bootstrap_capital_per_head, _settings_game.game_creation.bootstrap_capital);
+	const uint rounds = ServiceRounds(population);
+	Debug(Facility::Misc, Severity::Notice, "FL market population={} towns={} industries={} grant={} rounds={}", population, Town::GetNumItems(), Industry::GetNumItems(), grant, rounds);
 	for (uint i = 1; i <= count; i++) {
 		Company *company = DoStartupNewCompany(true, CompanyID{static_cast<uint8_t>(i)});
 		if (company == nullptr) { Debug(Facility::Misc, Severity::Warning, "FL company allocation failed slot={}", i); break; }
 		/* StartNew initializes a VM; no AI GameLoop runs in this synchronous callback. */
 		AI::Pause(company->index);
-		{
+		if (grant > 0) {
 			AutoRestoreBackup owner(_current_company, OWNER_DEITY);
-			auto result = Command<Commands::ChangeBankBalance>::Do(EXEC, TileIndex{0}, (Money)_settings_game.game_creation.bootstrap_capital, company->index, ExpensesType::Other);
+			auto result = Command<Commands::ChangeBankBalance>::Do(EXEC, TileIndex{0}, grant, company->index, ExpensesType::Other);
 			if (result.Failed()) {
 				Debug(Facility::Misc, Severity::Error, "FL funding failed company={}", company->index);
 				AI::Unpause(company->index);
@@ -371,18 +132,44 @@ void BootstrapFutureLogistics()
 			}
 		}
 		Debug(Facility::Misc, Severity::Notice, "FL funded company={} grant={} balance={} loan={}", company->index,
-			_settings_game.game_creation.bootstrap_capital, company->money, company->current_loan);
+			grant, company->money, company->current_loan);
+		const Profile &profile = profiles[i - 1];
+		ApplyProfile(company, profile);
+		const std::vector<Recipe> plan = catalogue.Plan(profile, library, TimerGameCalendar::date);
+		std::string plan_names;
+		for (const Recipe &recipe : plan) plan_names += (plan_names.empty() ? "" : ",") + recipe.Key();
+		Debug(Facility::Misc, Severity::Notice, "FL plan company={} recipes={}", company->index, plan_names.empty() ? "-" : plan_names);
 		{
 			AutoRestoreBackup owner(_current_company, company->index);
-			if (cargo != INVALID_CARGO && Network(cargo, used_towns)) {
+			uint built = 0;
+			bool stopped = false;
+			auto attempt = [&](const Recipe &recipe, bool fallback) {
+				const ConstructionResult result = BuildService(recipe, profile, plan, library, reserved);
+				/* Commands run here bypass the normal command loop, so flush track signal updates before another company builds. */
+				UpdateSignalsInBuffer();
+				Debug(Facility::Misc, Severity::Notice, "FL service company={} recipe={} fallback={} result={}", company->index, recipe.Key(), fallback,
+					result == ConstructionResult::Success ? "success" : (result == ConstructionResult::Failed ? "failed" : "rejected"));
+				if (result == ConstructionResult::Success) built++;
+				/* After an execution failure the company stops building, as rollback may be incomplete. */
+				if (result == ConstructionResult::Failed) stopped = true;
+			};
+			for (uint round = 0; round < rounds; round++) {
+				for (const Recipe &recipe : plan) {
+					if (!stopped) attempt(recipe, false);
+				}
+			}
+			const Recipe bus{std::string{CONVENTIONAL}, "road_route", Market::TownPair};
+			if (built == 0 && !stopped && std::ranges::find(plan, bus) == plan.end()) attempt(bus, true);
+			services += built;
+			if (built > 0) {
 				operational++;
 			} else {
-				Debug(Facility::Misc, Severity::Warning, "FL no usable bus route company={} (terrain, towns, funds or vehicle availability); funded company retained", company->index);
+				Debug(Facility::Misc, Severity::Warning, "FL no usable starter network company={} (terrain, towns, industries, funds or vehicle availability); funded company retained", company->index);
 			}
 		}
 		AI::Unpause(company->index);
 	}
-	Debug(Facility::Misc, Severity::Notice, "FL complete companies={} operational={}", Company::GetNumItems(), operational);
+	Debug(Facility::Misc, Severity::Notice, "FL complete companies={} operational={} services={}", Company::GetNumItems(), operational, services);
 }
 
 bool InspectFutureLogistics()
@@ -390,47 +177,39 @@ bool InspectFutureLogistics()
 	bool valid = Company::IsValidID(CompanyID{0}) && !Company::Get(CompanyID{0})->is_ai && _local_company == CompanyID{0};
 	uint checked = 0;
 	for (const Company *company : Company::Iterate()) {
-		Debug(Facility::Misc, Severity::Notice, "FL check funds company={} balance={} loan={} road_bits={} station_tiles={} other_expense={} ai={}", company->index, company->money, company->current_loan, company->infrastructure.GetRoadTotal(), company->infrastructure.station, company->yearly_expenses[0][ExpensesType::Other], company->is_ai);
+		Debug(Facility::Misc, Severity::Notice, "FL check funds company={} balance={} loan={} road_bits={} station_tiles={} rail_bits={} other_expense={} ai={}", company->index, company->money, company->current_loan, company->infrastructure.GetRoadTotal(), company->infrastructure.station, company->infrastructure.GetRailTotal(), company->yearly_expenses[0][ExpensesType::Other], company->is_ai);
 	}
 	for (const Vehicle *vehicle : Vehicle::Iterate()) {
-		if (vehicle->type != VehicleType::Road || !vehicle->IsPrimaryVehicle() || vehicle->owner == CompanyID{0}) continue;
+		if (vehicle->type == VehicleType::Effect || vehicle->type == VehicleType::Disaster || !vehicle->IsPrimaryVehicle() || vehicle->owner == CompanyID{0}) continue;
 		bool connected = Company::IsValidAiID(vehicle->owner) && vehicle->GetNumOrders() == 2 && !vehicle->vehstatus.Test(VehState::Stopped);
 		std::set<StationID> destinations;
 		for (const Order &order : vehicle->Orders()) {
 			if (!order.IsType(OT_GOTO_STATION)) { connected = false; continue; }
 			destinations.insert(order.GetDestination().ToStationID());
 		}
-		TileIndex depot = INVALID_TILE;
-		for (uint t = 0; t < Map::Size(); t++) {
-			TileIndex tile{t};
-			if (IsRoadDepotTile(tile) && GetTileOwner(tile) == vehicle->owner) { depot = tile; break; }
-		}
-		std::set<TileIndex> seen;
 		std::set<StationID> reached;
-		std::queue<TileIndex> queue;
-		if (depot != INVALID_TILE) { seen.insert(depot); queue.push(depot); }
-		while (!queue.empty() && seen.size() <= MAX_SEARCH) {
-			TileIndex tile = queue.front(); queue.pop();
-			if (IsStationRoadStopTile(tile) && GetRoadStopType(tile) == RoadStopType::Bus && GetTileOwner(tile) == vehicle->owner) reached.insert(GetStationIndex(tile));
-			for (TileIndex next : Neighbours(tile)) {
-				if (seen.contains(next) || GetAnyRoadBits(next, RoadTramType::Road).None()) continue;
-				if (GetRoadOwner(next, RoadTramType::Road) != vehicle->owner) continue;
-				if (!GetAnyRoadBits(tile, RoadTramType::Road).Any(Bit(RouteDirection(tile, next))) || !GetAnyRoadBits(next, RoadTramType::Road).Any(Bit(RouteDirection(next, tile)))) continue;
-				seen.insert(next); queue.push(next);
-			}
+		switch (vehicle->type) {
+			case VehicleType::Train: reached = RailStationsReachable(vehicle); break;
+			case VehicleType::Aircraft: reached = AirportsReachable(vehicle); break;
+			case VehicleType::Ship: reached = DocksReachable(vehicle); break;
+			default: reached = RoadStationsReachable(vehicle); break;
 		}
 		connected &= destinations.size() == 2 && std::ranges::includes(reached, destinations);
+		if (!connected) {
+			Debug(Facility::Misc, Severity::Notice, "FL check detail vehicle={} orders={} stopped={} destinations={} reached={}", vehicle->index, vehicle->GetNumOrders(),
+				vehicle->vehstatus.Test(VehState::Stopped), destinations.size(), reached.size());
+		}
 		valid &= connected;
 		checked++;
-		uint delivered = 0;
-		CargoType passenger = GetCargoTypeByLabel(CT_PASSENGERS);
-		if (passenger != INVALID_CARGO) {
-			const Company *company = Company::Get(vehicle->owner);
-			delivered = company->cur_economy.delivered_cargo[passenger];
-			for (const auto &quarter : company->old_economy) delivered += quarter.delivered_cargo[passenger];
-		}
-		Debug(Facility::Misc, Severity::Notice, "FL check company={} vehicle={} connected={} served={} tile={} profit={} delivered={}",
-			vehicle->owner, vehicle->index, connected, destinations.contains(vehicle->last_station_visited), vehicle->tile, vehicle->profit_this_year, delivered);
+		/* All cargo, so freight trains count too. */
+		const Company *company = Company::Get(vehicle->owner);
+		uint delivered = company->cur_economy.delivered_cargo.GetSum<uint>();
+		for (const auto &quarter : company->old_economy) delivered += quarter.delivered_cargo.GetSum<uint>();
+		uint carrying = 0;
+		for (const Vehicle *part = vehicle; part != nullptr; part = part->Next()) carrying += part->cargo.StoredCount();
+		Debug(Facility::Misc, Severity::Notice, "FL check company={} vehicle={} type={} connected={} served={} tile={} profit={} delivered={} carrying={}",
+			vehicle->owner, vehicle->index, vehicle->type == VehicleType::Train ? "rail" : (vehicle->type == VehicleType::Aircraft ? "air" : (vehicle->type == VehicleType::Ship ? "water" : "road")), connected, destinations.contains(vehicle->last_station_visited),
+			vehicle->tile, vehicle->profit_this_year, delivered, carrying);
 	}
 	Debug(Facility::Misc, Severity::Notice, "FL check result={} companies={} vehicles={} human={}", valid, Company::GetNumItems(), checked, _local_company);
 	return valid;
