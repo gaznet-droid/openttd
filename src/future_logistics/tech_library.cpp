@@ -270,12 +270,7 @@ bool InfrastructureMeetsNeeds(std::span<const std::string> needs, std::span<cons
 	});
 }
 
-/**
- * Enforce airport badges without building the AI library or applying AI adoption policies.
- * @param engine Aircraft engine whose requirements are checked.
- * @param airport Functional airport specification supplying facilities.
- * @return Whether the airport supplies every declared requirement.
- */
+/* Enforce airport badges without building the AI library or applying AI adoption policies. */
 bool AircraftMeetsAirportRequirements(const Engine *engine, const AirportSpec *airport)
 {
 	const ItemTags vehicle_tags = ReadItemTags(engine->badges);
