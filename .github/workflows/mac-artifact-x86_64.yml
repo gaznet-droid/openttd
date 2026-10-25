@@ -2,6 +2,8 @@ name: Mac Intel x86_64 build artifact
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
@@ -39,6 +41,7 @@ jobs:
         B=pkg/OpenTTD.app/Contents/MacOS/openttd
         file $B
         lipo -info $B
+        test "$(lipo -archs "$B")" = x86_64
         otool -l $B | grep -A4 -E 'LC_BUILD_VERSION|LC_VERSION_MIN_MACOSX'
         cp -R mods pkg/mods
         curl -L https://cdn.openttd.org/opengfx-releases/0.6.0/opengfx-0.6.0-all.zip -o og.zip
