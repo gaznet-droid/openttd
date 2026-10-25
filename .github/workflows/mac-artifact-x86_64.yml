@@ -2,6 +2,9 @@ name: Mac Intel x86_64 build artifact
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - build/intel-monterey-20261025
 
 permissions:
   contents: read
