@@ -244,6 +244,7 @@ struct GUISettings {
 	uint8_t window_soft_limit; ///< soft limit of maximum number of non-stickied non-vital windows (0 = no limit)
 	ZoomLevel zoom_min; ///< minimum zoom out level
 	ZoomLevel zoom_max; ///< maximum zoom out level
+	uint8_t cursor_size; ///< Independent cursor enlargement: normal, large, extra large.
 	ZoomLevel sprite_zoom_min; ///< maximum zoom level at which higher-resolution alternative sprites will be used (if available) instead of scaling a lower resolution sprite
 	uint32_t autosave_interval; ///< how often should we do autosaves?
 	bool threaded_saves; ///< should we do threaded saves?

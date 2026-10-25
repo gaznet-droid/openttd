@@ -407,6 +407,15 @@ static void ZoomMinMaxChanged(int32_t)
 	}
 }
 
+static void CursorSizeChanged(int32_t)
+{
+	if (VideoDriver::GetInstance() == nullptr) return;
+	UndrawMouseCursor();
+	VideoDriver::GetInstance()->ClearSystemSprites();
+	UpdateCursorSize();
+	MarkWholeScreenDirty();
+}
+
 static void SpriteZoomMinChanged(int32_t)
 {
 	GfxClearSpriteCache();
