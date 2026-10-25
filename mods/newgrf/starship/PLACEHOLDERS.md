@@ -14,8 +14,8 @@ all four against every vehicle loaded with the Future Logistics NewGRF.
 |---|---|---|
 | Cost factor | 255, the maximum | Most expensive to buy: 522,949, against the Reusable Rocket's 512,695 |
 | Running cost factor | 255, the maximum | Highest running cost: 7,171 a year, against the Darwin 300's 7,115 |
-| Capacity | 500 passengers + 120 mail | Largest: the next is the Dinger 200 with 400 |
-| Speed / loading speed | 2000 km/h / 80 | Fastest vehicle, and loads its 500 quickly |
+| Capacity | 1,000 passengers + 120 mail | Largest: the next is the Dinger 200 with 400 |
+| Speed / loading speed | 2000 km/h / 80 | Fastest vehicle, and loads its 1,000 quickly |
 | Profit | from the above | In a simulated year, the two highest earners in the world were Starships (25.1 and 17.1 million); the best other vehicle, a Dinger 200, earned 14.3 million |
 
 Purchase and running cost factors are single bytes, so Starship cannot be made more expensive

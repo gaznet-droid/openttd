@@ -257,6 +257,23 @@ double ScoreTech(uint capacity, uint speed, uint16_t reliability_max, Money cost
 	return library;
 }
 
+/** Check every required facility; untagged conventional vehicles have no extra requirements. */
+bool InfrastructureMeetsNeeds(std::span<const std::string> needs, std::span<const std::string> provides)
+{
+	return std::ranges::all_of(needs, [&](const std::string &need) {
+		return std::ranges::find(provides, need) != provides.end();
+	});
+}
+
+/** Enforce airport badges without building the AI library or applying AI adoption policies. */
+bool AircraftMeetsAirportRequirements(const Engine *engine, const AirportSpec *airport)
+{
+	const ItemTags vehicle_tags = ReadItemTags(engine->badges);
+	if (!vehicle_tags.formatted || vehicle_tags.needs.empty()) return true;
+	const ItemTags airport_tags = ReadItemTags(airport->badges);
+	return airport_tags.formatted && InfrastructureMeetsNeeds(vehicle_tags.needs, airport_tags.provides);
+}
+
 /**
  * Check whether a record answers a query right now.
  * @param record Candidate vehicle.
@@ -269,9 +286,7 @@ bool TechLibrary::IsUsable(const TechRecord &record, const TechQuery &query) con
 	if (!query.family.empty() && record.tech != query.family) return false;
 	if (record.early_adopter && !query.early_adopters) return false;
 	/* Special infrastructure: every site the vehicle needs must be provided. */
-	for (const std::string &need : record.needs) {
-		if (std::ranges::find(query.provides, need) == query.provides.end()) return false;
-	}
+	if (!InfrastructureMeetsNeeds(record.needs, query.provides)) return false;
 	switch (query.part) {
 		case TechPart::Vehicle: if (record.wagon) return false; break;
 		case TechPart::Locomotive: if (!record.traction) return false; break;

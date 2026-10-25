@@ -254,3 +254,16 @@ TEST_CASE("FutureLogisticsFormat - mechanics and ids")
 	CHECK(tagged.id == "launchpad_small");
 	CHECK(tagged.problems.size() == 1);
 }
+
+TEST_CASE("FutureLogisticsTech - mandatory infrastructure for players and rivals")
+{
+	const auto rocket = ParseItemTags(std::vector<std::string>{"fl_format/2", "fl_needs/launchpad"});
+	const auto spaceport = ParseItemTags(std::vector<std::string>{"fl_format/2", "fl_provides/launchpad"});
+	const auto drone_port = ParseItemTags(std::vector<std::string>{"fl_format/2", "fl_provides/drone_pad"});
+	CHECK_FALSE(InfrastructureMeetsNeeds(rocket.needs, {}));
+	CHECK_FALSE(InfrastructureMeetsNeeds(rocket.needs, drone_port.provides));
+	CHECK(InfrastructureMeetsNeeds(rocket.needs, spaceport.provides));
+	CHECK(InfrastructureMeetsNeeds({}, {}));
+	CHECK(InfrastructureMeetsNeeds({}, spaceport.provides));
+	CHECK_FALSE(InfrastructureMeetsNeeds(std::vector<std::string>{"launchpad", "drone_pad"}, spaceport.provides));
+}

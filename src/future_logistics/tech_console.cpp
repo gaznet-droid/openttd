@@ -12,6 +12,8 @@
 #include "../debug.h"
 #include "../engine_base.h"
 #include "../engine_func.h"
+#include "../airport.h"
+#include "../newgrf_airport.h"
 #include "../newgrf_badge.h"
 #include "../strings_func.h"
 #include "../tile_map.h"
@@ -88,6 +90,21 @@ CargoType ParseCargo(std::string_view label)
  */
 bool FutureLogisticsTechCommand(std::span<std::string_view> argv)
 {
+	if (argv.size() == 2 && argv[0] == "airports") {
+		const TechLibrary library = TechLibrary::Build();
+		for (const TechRecord &record : library.Vehicles()) {
+			if (record.mode != TechMode::Air || ReadItemTags(Engine::Get(record.engine)->badges).id != argv[1]) continue;
+			for (uint8_t type = 0; type < NUM_AIRPORTS; type++) {
+				const AirportSpec *spec = AirportSpec::GetWithoutOverride(type);
+				if (!spec->enabled) continue;
+				const ItemTags tags = ReadItemTags(spec->badges);
+				const bool launchpad = tags.formatted && std::ranges::find(tags.provides, "launchpad") != tags.provides.end();
+				Report(fmt::format("FL tech airport-access engine={} airport={} launchpad={} permitted={}", record.id, type, launchpad,
+					AircraftMeetsAirportRequirements(Engine::Get(record.engine), spec)));
+			}
+		}
+		return true;
+	}
 	if (argv.size() == 1 && argv[0] == "list") {
 		const TechLibrary library = TechLibrary::Build();
 		for (const TechRecord &record : library.Vehicles()) Report("FL tech vehicle " + FormatVehicle(record));

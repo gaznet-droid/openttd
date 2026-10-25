@@ -5539,6 +5539,7 @@ STR_ERROR_NO_RAIL_STATION                                       :There is no rai
 STR_ERROR_NO_BUS_STATION                                        :There is no bus station
 STR_ERROR_NO_TRUCK_STATION                                      :There is no lorry station
 STR_ERROR_NO_DOCK                                               :There is no dock
+STR_ERROR_AIRPORT_MISSING_REQUIRED_FACILITIES                     :This aircraft requires a compatible specialist airport (rockets require a launchpad)
 STR_ERROR_NO_AIRPORT                                            :There is no airport/heliport
 STR_ERROR_NO_STOP_COMPATIBLE_ROAD_TYPE                          :There are no stops with a compatible road type
 STR_ERROR_NO_STOP_COMPATIBLE_TRAM_TYPE                          :There are no stops with a compatible tram type
@@ -6079,3 +6080,10 @@ STR_BADGE_CONFIG_FILTERS                                        :{WHITE}Badge Fi
 STR_BADGE_CONFIG_PREVIEW                                        :Preview Image
 STR_BADGE_CONFIG_NAME                                           :Name
 STR_BADGE_FILTER_ANY_LABEL                                      :Any {STRING}
+
+STR_CONFIG_SETTING_CURSOR_SIZE                                 :Mouse cursor size: {STRING2}
+STR_CONFIG_SETTING_CURSOR_SIZE_HELPTEXT                         :Enlarge all mouse and tool cursors independently of fonts and toolbars. Large adds one zoom step, Extra large adds two, up to the renderer’s 4x limit. The clicked tile and cursor hotspot remain unchanged.
+###length 3
+STR_CONFIG_SETTING_CURSOR_SIZE_NORMAL                          :Normal
+STR_CONFIG_SETTING_CURSOR_SIZE_LARGE                           :Large
+STR_CONFIG_SETTING_CURSOR_SIZE_EXTRA_LARGE                     :Extra large

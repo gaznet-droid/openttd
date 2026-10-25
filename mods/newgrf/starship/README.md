@@ -8,7 +8,7 @@ community badge conventions, so rival companies find and adopt it with no change
 It works on its own, or alongside the Future Logistics NewGRF
 ([`../future_logistics/`](../future_logistics/README.md)), whose Reusable Rocket and Spaceport
 belong to the same `rocket` family. Starship is balanced as the top of the transport world: the
-most expensive vehicle to buy and to run, the largest capacity (500 passengers and 120 mail) and
+most expensive vehicle to buy and to run, the largest capacity (1,000 passengers and 120 mail) and
 the most profit; the other numbers are placeholders. See [`PLACEHOLDERS.md`](PLACEHOLDERS.md).
 
 The game ships with this NewGRF and the Future Logistics NewGRF and uses both in new games by
@@ -20,7 +20,7 @@ NewGRF settings.
 
 | Item | Kind | What it is |
 |---|---|---|
-| Starship | aircraft (large) | 500 passengers and 120 mail, or express and armoured cargo, between launch sites at 2000 km/h, from 2045 |
+| Starship | aircraft (large) | 1,000 passengers and 120 mail, or express and armoured cargo, between launch sites at 2000 km/h, from 2045 |
 | Starship Launch Site | airport (5×4) | The launch complex from the handoff art: launch tower and mount, hangar and propellant tanks |
 
 ## How it fits the tech format
@@ -87,7 +87,11 @@ the screen is redrawn; and the rocket has no separate shadow sprite.
 The compiled `starship.grf` is committed; the integration suite fails if it no longer matches its
 source.
 
-## Tested
+## Previous-version validation
+
+The results below describe the original airport-pair version, not the requested orbital shuttle.
+The 25 October enhancements and outstanding work are tracked in
+[`ENHANCEMENTS_2026-10-25.md`](../../../docs/future_logistics/ENHANCEMENTS_2026-10-25.md).
 
 With the integration harness (`tests/future_logistics/integration.py`):
 

@@ -15,7 +15,7 @@ grf {
     grfid: "FL\01\02";
     name: string(STR_GRF_NAME);
     desc: string(STR_GRF_DESC);
-    version: 1;
+    version: 2;
     min_compatible_version: 1;
 }
 
@@ -167,7 +167,7 @@ item(FEAT_AIRCRAFT, starship, 64) {
         running_cost_factor:          255;
         speed:                        2000 km/h;
         acceleration:                 50;
-        passenger_capacity:           500;
+        passenger_capacity:           1000;
         mail_capacity:                120;
         refittable_cargo_classes:     bitmask(CC_PASSENGERS, CC_MAIL, CC_EXPRESS, CC_ARMOURED);
         range:                        0;

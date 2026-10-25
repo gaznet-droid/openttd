@@ -8,6 +8,7 @@
 /** @file vehicle_cmd.cpp Commands for vehicles. */
 
 #include "stdafx.h"
+#include "future_logistics/tech_library.h"
 #include "roadveh.h"
 #include "news_func.h"
 #include "airport.h"
@@ -606,6 +607,12 @@ CommandCost CmdStartStopVehicle(DoCommandFlags flags, VehicleID veh_id, bool eva
 
 		case VehicleType::Aircraft: {
 			Aircraft *a = Aircraft::From(v);
+			if (v->vehstatus.Test(VehState::Stopped)) {
+				const Station *st = Station::GetIfValid(a->targetairport);
+				if (st != nullptr && !AircraftMeetsAirportRequirements(v->GetEngine(), st->airport.GetSpec())) {
+					return CommandCost(STR_ERROR_AIRPORT_MISSING_REQUIRED_FACILITIES);
+				}
+			}
 			/* cannot stop airplane when in flight, or when taking off / landing */
 			if (a->state >= STARTTAKEOFF && a->state < TERM7) return CommandCost(STR_ERROR_AIRCRAFT_IS_IN_FLIGHT);
 			if (a->flags.Test(VehicleAirFlag::HelicopterDirectDescent)) return CommandCost(STR_ERROR_AIRCRAFT_IS_IN_FLIGHT);

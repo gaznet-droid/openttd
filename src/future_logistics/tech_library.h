@@ -161,6 +161,10 @@ private:
 	std::vector<std::string> problems; ///< Tag problems, for future_logistics_tech validate.
 };
 
+/** Whether an aircraft's declared site requirements are provided by this functional airport. */
+bool AircraftMeetsAirportRequirements(const Engine *engine, const struct AirportSpec *airport);
+bool InfrastructureMeetsNeeds(std::span<const std::string> needs, std::span<const std::string> provides);
+
 TechRoles InferTechRoles(TechMode mode, CargoClasses classes, bool traction, bool helicopter);
 double ScoreTech(uint capacity, uint speed, uint16_t reliability_max, Money cost, Money running_cost, int life_years);
 std::string_view TechModeName(TechMode mode);

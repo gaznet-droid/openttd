@@ -314,8 +314,14 @@ DayZeroMonopolies =
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         require(rebuilt.read_bytes() == ss_grf.read_bytes(), "starship.grf is out of date: run mods/newgrf/starship/build.sh")
     ships, ship_save = run("starship-world", year=2050, map_bits=9, grfs=[ss_grf],
-                           commands="future_logistics_tech validate\nfuture_logistics_tech find starship\nfuture_logistics_tech find starship_launch_site\n")
+                           commands="future_logistics_tech validate\nfuture_logistics_tech find starship\nfuture_logistics_tech find starship_launch_site\nfuture_logistics_tech airports starship\nfuture_logistics_tech list\n")
     require("FL tech validate problems=0" in ships, "the Starship NewGRF has declaration problems")
+    access = re.findall(r"FL tech airport-access engine=464C0102:air:64 airport=\d+ launchpad=(\w+) permitted=(\w+)", ships)
+    require(access and any(pad == "true" for pad, _ in access) and any(pad == "false" for pad, _ in access),
+            "Starship access test needs both functional launchpads and ordinary airports")
+    require(all(pad == allowed for pad, allowed in access), "Starship can use an ordinary airport or cannot use a launchpad")
+    require(re.search(r"FL tech vehicle id=464C0102:air:64 .*capacity=1000 ", ships), "Starship engine capacity is not 1,000")
+
     require(re.search(r"FL tech found id=starship kind=vehicle", ships) and re.search(r"FL tech found id=starship_launch_site kind=airport", ships),
             "the Starship or its launch site has no fl_id")
     require(re.search(r"FL towns company=2 a=\d+ b=\d+ tier=city population=\d+,\d+ aircraft=464C0102:air:64", ships)

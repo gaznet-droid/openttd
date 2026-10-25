@@ -8,6 +8,7 @@
 /** @file aircraft_cmd.cpp This file deals with aircraft and airport movements functionalities. */
 
 #include "stdafx.h"
+#include "future_logistics/tech_library.h"
 #include "aircraft.h"
 #include "landscape.h"
 #include "news_func.h"
@@ -273,7 +274,10 @@ CommandCost CmdBuildAircraft(DoCommandFlags flags, TileIndex tile, const Engine 
 	const Station *st = Station::GetByTile(tile);
 
 	/* Prevent building aircraft types at places which can't handle them */
-	if (!CanVehicleUseStation(e->index, st)) return CMD_ERROR;
+	if (!CanVehicleUseStation(e->index, st)) {
+		if (!AircraftMeetsAirportRequirements(e, st->airport.GetSpec())) return CommandCost(STR_ERROR_AIRPORT_MISSING_REQUIRED_FACILITIES);
+		return CMD_ERROR;
+	}
 
 	/* Make sure all aircraft end up in the first tile of the hangar. */
 	tile = st->airport.GetHangarTile(st->airport.GetHangarNum(tile));
@@ -2112,6 +2116,17 @@ static bool AircraftEventHandler(Aircraft *v, int loop)
 	}
 
 	if (v->vehstatus.Test(VehState::Stopped)) return true;
+
+	/* Older saves can contain specialist aircraft at unsuitable airports. Keep them
+	 * stationary before loading, automatic servicing or departure rather than letting
+	 * a pre-existing order list bypass the shared purchase/order checks. */
+	const bool grounded = v->state < ENDTAKEOFF || v->state >= TERM7;
+	const Station *site = Station::GetIfValid(v->targetairport);
+	if (grounded && site != nullptr && !AircraftMeetsAirportRequirements(v->GetEngine(), site->airport.GetSpec())) {
+		v->vehstatus.Set(VehState::Stopped);
+		SetWindowWidgetDirty(WindowClass::VehicleView, v->index, WID_VV_START_STOP);
+		return true;
+	}
 
 	v->HandleBreakdown();
 

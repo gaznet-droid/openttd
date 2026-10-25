@@ -702,7 +702,10 @@ CommandCost CmdInsertOrder(DoCommandFlags flags, VehicleID veh, VehicleOrderID s
 					ret = CheckOwnership(st->owner);
 					if (ret.Failed()) return ret;
 
-					if (!CanVehicleUseStation(v, st) || !st->airport.HasHangar()) {
+					if (!CanVehicleUseStation(v, st)) {
+						return CommandCost(STR_ERROR_CAN_T_ADD_ORDER, GetVehicleCannotUseStationReason(v, st));
+					}
+					if (!st->airport.HasHangar()) {
 						return CMD_ERROR;
 					}
 				} else {

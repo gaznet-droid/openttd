@@ -9,6 +9,7 @@
 
 #include "stdafx.h"
 #include "error.h"
+#include "future_logistics/tech_library.h"
 #include "roadveh.h"
 #include "ship.h"
 #include "spritecache.h"
@@ -3132,6 +3133,7 @@ bool CanVehicleUseStation(EngineID engine_type, const Station *st)
 
 		case VehicleType::Aircraft:
 			return st->facilities.Test(StationFacility::Airport) &&
+					AircraftMeetsAirportRequirements(e, st->airport.GetSpec()) &&
 					st->airport.GetFTA()->flags.Test(e->VehInfo<AircraftVehicleInfo>().subtype & AIR_CTOL ? AirportFTAClass::Flag::Airplanes : AirportFTAClass::Flag::Helicopters);
 
 		default:
@@ -3193,6 +3195,7 @@ StringID GetVehicleCannotUseStationReason(const Vehicle *v, const Station *st)
 
 		case VehicleType::Aircraft:
 			if (!st->facilities.Test(StationFacility::Airport)) return STR_ERROR_NO_AIRPORT;
+			if (!AircraftMeetsAirportRequirements(v->GetEngine(), st->airport.GetSpec())) return STR_ERROR_AIRPORT_MISSING_REQUIRED_FACILITIES;
 			if (v->GetEngine()->VehInfo<AircraftVehicleInfo>().subtype & AIR_CTOL) {
 				return STR_ERROR_AIRPORT_NO_PLANES;
 			} else {
