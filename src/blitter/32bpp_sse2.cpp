@@ -11,6 +11,7 @@
 
 #include "../stdafx.h"
 #include "../zoom_func.h"
+#include "../gfx_func.h"
 #include "../settings_type.h"
 #include "32bpp_sse2.hpp"
 #include "32bpp_sse_func.hpp"
@@ -32,6 +33,8 @@ Sprite *Blitter_32bppSSE_Base::Encode(SpriteType sprite_type, const SpriteLoader
 		zoom_min = _settings_client.gui.zoom_min;
 		zoom_max = _settings_client.gui.zoom_max;
 		if (zoom_max == zoom_min) zoom_max = ZoomLevel::Max;
+		/* Cursors can be larger than the permitted viewport zoom. */
+		zoom_min = std::min(zoom_min, GetCursorZoom());
 	}
 
 	/* Calculate sizes and allocate. */

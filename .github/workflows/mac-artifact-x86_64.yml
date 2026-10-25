@@ -33,6 +33,9 @@ jobs:
           -DCMAKE_TOOLCHAIN_FILE=${{ steps.vcpkg.outputs.vcpkg-cmake }}
         cmake --build . -j $(sysctl -n hw.logicalcpu)
 
+    - name: Cursor rendering regression tests
+      run: build/openttd_test "[cursor]"
+
     - name: Package
       run: |
         (cd build && cpack)

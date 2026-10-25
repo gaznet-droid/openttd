@@ -415,7 +415,7 @@ static void CursorSizeChanged([[maybe_unused]] int32_t new_value)
 {
 	if (VideoDriver::GetInstance() == nullptr) return;
 	UndrawMouseCursor();
-	VideoDriver::GetInstance()->ClearSystemSprites();
+	GfxClearSpriteCache();
 	UpdateCursorSize();
 	MarkWholeScreenDirty();
 }

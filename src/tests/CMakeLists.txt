@@ -22,3 +22,8 @@ add_test_files(
     tilearea.cpp
     utf8.cpp
 )
+
+add_test_files(
+    cursor_sprite.cpp
+    CONDITION NOT OPTION_DEDICATED
+)

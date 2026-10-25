@@ -1864,7 +1864,8 @@ bool AdjustGUIZoom(bool automatic)
 
 	/* Update cursors if sprite zoom level has changed. */
 	if (old_gui_zoom != _gui_zoom) {
-		VideoDriver::GetInstance()->ClearSystemSprites();
+		/* The cursor may now need a zoom level omitted from the encoded cache. */
+		GfxClearSpriteCache();
 		UpdateCursorSize();
 	}
 	if (old_font_zoom != _font_zoom) {
