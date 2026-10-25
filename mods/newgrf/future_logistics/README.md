@@ -73,3 +73,13 @@ The handoff art (`Corporate_Infrastructure_NewGRF_Handoff.md`) is concept art at
 sprites at each zoom level, splitting into per-tile pieces, 8-bit company-colour masks, and
 for vehicles a sprite for each direction. Known faults: the spaceport's empty and occupied
 images differ outside the rocket, and the idle and powered rockets differ in size.
+
+## Functional art and placement update (25 October 2026)
+
+The Cargo Drone now uses the supplied transparent multirotor image as its moving vehicle. It maintains a fixed yaw while translating in any direction; its perspective image is not crudely rotated. Its specified cruise speed is 1,609 km/h, and its movement bypasses the conventional-plane distance divisor. Ordinary aircraft retain their previous speed setting.
+
+The functional Drone Port uses the supplied four-pad 4x4 building, split into per-tile sprites at normal and 2x zoom. Three stands operate on the roof at matching movement coordinates; the south-facing fourth stand is unused. Conventional helistation movement and landing height are unchanged.
+
+Data Centres use their own 4x4 supplied tower graphics and industry tiles. Funding no longer requires house tiles or a town of 1,200 people. Generation no longer pre-fills towns with centres, and one-per-town remains enforced even when the general multiple-industries option is enabled. Existing map-generated centres still count toward that limit. The proposed company-wide revenue multiplier is unchanged by this fix.
+
+Regenerate the artwork with `python3 tools/make_functional_sprites.py`, then rebuild with NML 0.9.0. Version 2 requires a new game: changing functional airport and industry footprints is not a safe automatic replacement for version 1 in an existing save. Preserve the earlier app/GRFs when continuing an older game.

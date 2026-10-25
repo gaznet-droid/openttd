@@ -191,6 +191,28 @@ const AirportFTAClass *GetAirport(const uint8_t airport_type)
 	return AirportSpec::Get(airport_type)->fsm;
 }
 
+/** Return the supplied Drone Port's three rooftop stands and shared service bay. */
+const AirportFTAClass *GetDronePortAirport()
+{
+	static const auto movement = [] {
+		auto data = std::to_array(_airport_moving_data_helistation);
+		const std::array<Point, 3> pads{{{18, 18}, {46, 18}, {18, 46}}};
+		for (uint i = 0; i < pads.size(); i++) {
+			for (uint pos : {6 + i, 9 + i, 12 + i, 17 + i, 20 + i}) {
+				data[pos].x = pads[i].x;
+				data[pos].y = pads[i].y;
+			}
+		}
+		return data;
+	}();
+	/* The fourth, south-facing pad remains visible and unused. Ordinary helistations
+	 * retain their own unmodified movement data and ground-level landing altitude. */
+	static const AirportFTAClass airport(movement.data(), nullptr, 3, _airport_entries_helistation,
+		AirportFTAClass::Flag::Helicopters, _airport_fta_helistation, 60);
+	return &airport;
+}
+
+
 /**
  * Get the vehicle position when an aircraft is build at the given tile
  * @param hangar_tile The tile on which the vehicle is build

@@ -65,6 +65,7 @@ int GetAircraftFlightLevel(T *v, bool takeoff = false);
 
 /** Variables that are cached to improve performance and such. */
 struct AircraftCache {
+	bool cargo_drone = false; ///< Multirotors use their stated speed without the conventional-plane distance divisor.
 	uint32_t cached_max_range_sqr = 0; ///< Cached squared maximum range.
 	uint16_t cached_max_range = 0; ///< Cached maximum range.
 };

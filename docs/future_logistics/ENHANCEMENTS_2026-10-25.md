@@ -30,3 +30,13 @@ This branch is an initial implementation, not completion of the full worker brie
 | Cursor contrast and physical Mac QA | Independent sizing is implemented; high-contrast option, before/after Retina captures, tile-hotspot checks and menu-clipping checks remain. |
 
 Do not merge this as the full enhancements release. Do not overwrite the working Mac app or modify existing saves/NewGRF lists during testing. The current integration tests for airport-pair Starship operation are temporary compatibility coverage, not evidence of orbital operation.
+
+## Functional graphics and data-centre checkpoint
+
+- Data Centre is a functional 4x4 industry drawn from the supplied transparent original. The inherited bank house-tile and 1,200-person restrictions are removed. New centres are player-funded instead of pre-populating towns. The strict per-town callback remains active even with the global multiple-industry setting enabled.
+- Cargo Drone uses the supplied multirotor body as an actual moving aircraft, holding a fixed yaw while translating in any direction. Its declared speed is 1,609 km/h, with the conventional-plane distance divisor bypassed only for this tagged drone.
+- Drone Port is a functional 4x4 airport using the supplied art at normal and 2x zoom, with three aligned rooftop stands and a fourth unused visible stand. Ordinary helistations keep their original movement and landing altitude.
+- Modified GRF rebuilt with NML 0.9.0; version 2 requires a new game because the functional layouts changed. Keep prior app/GRFs for existing saves.
+- Local Debug build and all 110 CTest cases passed. The new player-command integration check funded centres on flat open land in two different towns, including a town below 1,200 people, and rejected a same-town duplicate with the global multiple-industry setting enabled.
+- Live moving-drone speed measurement, rooftop alignment screenshots and physical Mac validation remain required before this checkpoint is called a finished release. Orbital and underground engineering are subsequent work.
+- All corporate originals except Hyperloop were recovered in the repository and the Mac export folder. No Hyperloop terminal/pod images were recovered from the earlier-chat or file searches; those remain an asset gap.

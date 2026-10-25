@@ -30,13 +30,14 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT / "work/integration")
     parser.add_argument("--update-snapshots", action="store_true",
                         help="rewrite the Tech Library snapshots instead of comparing against them")
+    parser.add_argument("--only", choices=["data-centre"], help="run a focused gameplay regression")
     args = parser.parse_args()
     binary, baseset, output = args.binary.resolve(), args.baseset.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
 
     def run(name, *, seed=12345, load=None, enabled=True, limit=4, capital=25000000,
             towns=48, year=1950, service=False, dedicated=False, vehicle_limit=500, clear_limit=4096, default_world=False,
-            climate="temperate", commands="", industries=4, map_bits=8, grfs=(), coastal=False, months=3, mountains=False, rivers=False, game_script=None):
+            climate="temperate", commands="", industries=4, map_bits=8, grfs=(), coastal=False, months=3, mountains=False, rivers=False, game_script=None, multiple_industries=False):
         folder = output / name
         folder.mkdir(exist_ok=True)
         if grfs:
@@ -96,6 +97,8 @@ DayZeroMonopolies =
         if game_script:
             shutil.copytree(game_script, folder / "game" / game_script.name, dirs_exist_ok=True)
             cfg.write_text(cfg.read_text().replace("DayZeroMonopolies =", f"{game_script.name} ="))
+        if multiple_industries:
+            cfg.write_text(cfg.read_text().replace("[economy]\n", "[economy]\nmultiple_industry_per_town = true\n"))
         if coastal:
             text = cfg.read_text().replace("land_generator = 0", "land_generator = 1").replace("quantity_sea_lakes = 4", "quantity_sea_lakes = 3")
             cfg.write_text(text.replace("terrain_type = 0", "terrain_type = 1").replace("tree_placer = 0", "tree_placer = 2"))
@@ -138,6 +141,20 @@ DayZeroMonopolies =
         require("FL rollback failed" not in text, f"{name}: cleanup failed")
         require("Your script made an error" not in text and "is not a valid index" not in text, f"{name}: Squirrel runtime error")
         return text, folder / "snapshot.sav"
+
+    def check_data_centres():
+        # Data centres must be fundable on open land, once per town, without bank/house restrictions.
+        centres, _ = run("data-centre-world", year=2026, map_bits=9, grfs=[ROOT / "mods/newgrf/future_logistics/future_logistics.grf"], enabled=False, service=True, months=2, multiple_industries=True,
+                         game_script=ROOT / "tests/future_logistics/gs/DataCentreCheck", commands="future_logistics_tech validate\nfuture_logistics_tech find data_centre\n")
+        require("FL tech validate problems=0" in centres, "the data centre declaration has problems")
+        require(any(int(n) < 1200 for n in re.findall(r"DC funded town=\d+ population=(\d+)", centres)), "no data centre was funded in a small town")
+        require("DC placement built=2 different_towns=true duplicate_rejected=true open_land=true" in centres,
+                "data-centre funding on open land or the one-per-town restriction failed")
+
+    if args.only == "data-centre":
+        check_data_centres()
+        print("PASS: player-funded data centres on open land, two towns and duplicate rejection")
+        return
 
     first, snapshot = run("new-game", commands="future_logistics_tech best road passenger_feeder PASS\n")
     # Trains are one vehicle each; road and air services log their fleet size.
@@ -361,11 +378,7 @@ DayZeroMonopolies =
     require("CI objects built=6" in objects and "FL tech validate problems=0" in objects,
             "the Corporate Infrastructure objects could not all be built alongside Future Logistics")
 
-    # Data centres: an industry in the "tech" market, one per town, that receives what banks hold.
-    centres, _ = run("data-centre-world", year=2026, map_bits=9, grfs=[fl_grf],
-                     commands="future_logistics_tech validate\nfuture_logistics_tech find data_centre\n")
-    require("FL tech validate problems=0" in centres, "the data centre declaration has problems")
-    require(re.search(r"FL tech found id=data_centre kind=industry index=\d+ built=[1-9]", centres), "no data centre was generated")
+    check_data_centres()
 
     # A NewGRF that adds a tech family, a rival, a cargo meaning, a rule for a built-in rival, and mistakes.
     grf_text, _ = run("newgrf-tech-tree", limit=5, grfs=[ROOT / "tests/future_logistics/grf/fl_test.grf"],
@@ -459,7 +472,7 @@ DayZeroMonopolies =
                     f"{climate}: Tech Library differs from {snapshot_file.relative_to(ROOT)}; "
                     "rerun with --update-snapshots if the change is intended")
 
-    summary = "PASS: mail trains and trucks; Starship on its own and with Future Logistics; Corporate Infrastructure objects; railways over hills, through them and over rivers; ferries in a coastal world; freight routes in two legs with a transfer (ship then train through a port); NewGRF tech family, rival, cargo meaning and validation; drones, hyperloop and rockets from the Future Logistics NewGRF adopted by the rivals; data centres generated; headstart scaled to world population and town size; rivals that grow after day zero through AIFutureLogistics; four distinct company profiles with an airline, passenger and freight rail, feeder buses into railway stations, trucks continuing rail cargo chains, and tier-sized fleets; Tech Library bus choice, console query and per-climate snapshots; company ownership/count; funding/loan accounting; four connected starter networks with controlled, default-world and 2026 settings; reserved cleanup capacity; fixed-seed reproducibility; station visits after simulation; network save/reload; no bootstrap on ordinary save load; disabled setting; competitor limit/custom capital; one-town/no-bus fallback and construction rollback; late-start milestone catch-up and persistence; dedicated multiplayer exclusion.\n"
+    summary = "PASS: mail trains and trucks; Starship on its own and with Future Logistics; Corporate Infrastructure objects; railways over hills, through them and over rivers; ferries in a coastal world; freight routes in two legs with a transfer (ship then train through a port); NewGRF tech family, rival, cargo meaning and validation; drones, hyperloop and rockets from the Future Logistics NewGRF adopted by the rivals; data centres fundable on open land, one per town; headstart scaled to world population and town size; rivals that grow after day zero through AIFutureLogistics; four distinct company profiles with an airline, passenger and freight rail, feeder buses into railway stations, trucks continuing rail cargo chains, and tier-sized fleets; Tech Library bus choice, console query and per-climate snapshots; company ownership/count; funding/loan accounting; four connected starter networks with controlled, default-world and 2026 settings; reserved cleanup capacity; fixed-seed reproducibility; station visits after simulation; network save/reload; no bootstrap on ordinary save load; disabled setting; competitor limit/custom capital; one-town/no-bus fallback and construction rollback; late-start milestone catch-up and persistence; dedicated multiplayer exclusion.\n"
     (output / "results.txt").write_text(summary)
     print(summary)
 

@@ -300,7 +300,7 @@ CommandCost CmdBuildAircraft(DoCommandFlags flags, TileIndex tile, const Engine 
 		v->y_pos = u->y_pos = y;
 
 		u->z_pos = GetSlopePixelZ(x, y);
-		v->z_pos = u->z_pos + 1;
+		v->z_pos = u->z_pos + 1 + st->airport.GetFTA()->delta_z;
 
 		v->vehstatus = {VehState::Hidden, VehState::Stopped, VehState::DefaultPalette};
 		u->vehstatus = {VehState::Hidden, VehState::Unclickable, VehState::Shadow};
@@ -605,6 +605,7 @@ static void PlayAircraftSound(const Vehicle *v)
  */
 void UpdateAircraftCache(Aircraft *v, bool update_range)
 {
+	v->acache.cargo_drone = ReadItemTags(v->GetEngine()->badges).id == "cargo_drone";
 	uint max_speed = GetVehicleProperty(v, PROP_AIRCRAFT_SPEED, 0);
 	if (max_speed != 0) {
 		/* Convert from original units to km-ish/h */
@@ -639,6 +640,12 @@ static constexpr uint16_t SPEED_LIMIT_BROKEN = 320; ///< Maximum speed of an air
 static constexpr uint16_t SPEED_LIMIT_HOLD = 425; ///< Maximum speed of an aircraft that flies the holding pattern
 static constexpr uint16_t SPEED_LIMIT_NONE = UINT16_MAX; ///< No environmental speed limit. Speed limit is type dependent
 
+/** Keep multirotor movement independent of the conventional aircraft speed divisor. */
+static uint GetAircraftSpeedFactor(const Aircraft *v)
+{
+	return v->acache.cargo_drone ? 1 : _settings_game.vehicle.plane_speed;
+}
+
 /**
  * Sets the new speed for an aircraft
  * @param v The vehicle for which the speed should be obtained
@@ -660,7 +667,7 @@ static int UpdateAircraftSpeed(Aircraft *v, uint speed_limit = SPEED_LIMIT_NONE,
 
 	/* Adjust speed limits by plane speed factor to prevent taxiing
 	 * and take-off speeds being too low. */
-	speed_limit *= _settings_game.vehicle.plane_speed;
+	speed_limit *= GetAircraftSpeedFactor(v);
 
 	/* adjust speed for broken vehicles */
 	if (v->vehstatus.Test(VehState::AircraftBroken)) {
@@ -694,7 +701,7 @@ static int UpdateAircraftSpeed(Aircraft *v, uint speed_limit = SPEED_LIMIT_NONE,
 	}
 
 	/* Adjust distance moved by plane speed setting */
-	if (_settings_game.vehicle.plane_speed > 1) spd /= _settings_game.vehicle.plane_speed;
+	if (GetAircraftSpeedFactor(v) > 1) spd /= GetAircraftSpeedFactor(v);
 
 	/* Convert direction-independent speed into direction-dependent speed. (old movement method) */
 	spd = v->GetOldAdvanceSpeed(spd);
@@ -1018,7 +1025,7 @@ static bool AircraftController(Aircraft *v)
 		return false;
 	}
 
-	if (amd.flags.Test(AirportMovingDataFlag::Brake) && v->cur_speed > SPEED_LIMIT_TAXI * _settings_game.vehicle.plane_speed) {
+	if (amd.flags.Test(AirportMovingDataFlag::Brake) && v->cur_speed > SPEED_LIMIT_TAXI * GetAircraftSpeedFactor(v)) {
 		MaybeCrashAirplane(v);
 		if (v->vehstatus.Test(VehState::Crashed)) return false;
 	}
@@ -1082,7 +1089,7 @@ static bool AircraftController(Aircraft *v)
 						} else {
 							v->number_consecutive_turns++;
 						}
-						v->turn_counter = 2 * _settings_game.vehicle.plane_speed;
+						v->turn_counter = 2 * GetAircraftSpeedFactor(v);
 						v->last_direction = v->direction;
 						v->direction = newdir;
 					}
