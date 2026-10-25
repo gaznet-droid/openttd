@@ -161,7 +161,14 @@ private:
 	std::vector<std::string> problems; ///< Tag problems, for future_logistics_tech validate.
 };
 
-bool AircraftMeetsAirportRequirements(const Engine *engine, const struct AirportSpec *airport);
+struct AirportSpec;
+/**
+ * Check the specialist facilities supplied by a functional airport.
+ * @param engine Aircraft engine whose requirements are checked.
+ * @param airport Functional airport specification supplying facilities.
+ * @return Whether the airport supplies every declared requirement.
+ */
+bool AircraftMeetsAirportRequirements(const Engine *engine, const AirportSpec *airport);
 bool InfrastructureMeetsNeeds(std::span<const std::string> needs, std::span<const std::string> provides);
 
 TechRoles InferTechRoles(TechMode mode, CargoClasses classes, bool traction, bool helicopter);
