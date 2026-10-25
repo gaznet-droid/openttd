@@ -1615,14 +1615,21 @@ bool FillDrawPixelInfo(DrawPixelInfo *n, int left, int top, int width, int heigh
 	return true;
 }
 
-/** Effective mouse sprite zoom, independent of viewport limits and font size. */
+/**
+ * Effective mouse sprite zoom, independent of viewport limits and font size.
+ * @return Cursor zoom limited to the sprite renderer's supported range.
+ */
 ZoomLevel GetCursorZoom()
 {
 	/* Sprite blitters support up to 4x. This is independent of the viewport zoom limits. */
 	return std::clamp(_gui_zoom - _settings_client.gui.cursor_size, ZoomLevel::Min, ZoomLevel::Normal);
 }
 
-/** Scale composite tool-cursor offsets around the unchanged mouse hotspot. */
+/**
+ * Scale composite tool-cursor offsets around the unchanged mouse hotspot.
+ * @param pos Offset at GUI sprite scale.
+ * @return Offset at the selected cursor scale.
+ */
 Point ScaleCursorOffset(Point pos)
 {
 	const int shift = _gui_zoom - GetCursorZoom();

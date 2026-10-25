@@ -407,7 +407,11 @@ static void ZoomMinMaxChanged(int32_t)
 	}
 }
 
-static void CursorSizeChanged(int32_t)
+/**
+ * Refresh cursor sprites and bounds after an independent size change.
+ * @param new_value New enlargement preset; the renderer reads the client setting.
+ */
+static void CursorSizeChanged([[maybe_unused]] int32_t new_value)
 {
 	if (VideoDriver::GetInstance() == nullptr) return;
 	UndrawMouseCursor();

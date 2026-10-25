@@ -257,7 +257,12 @@ double ScoreTech(uint capacity, uint speed, uint16_t reliability_max, Money cost
 	return library;
 }
 
-/** Check every required facility; untagged conventional vehicles have no extra requirements. */
+/**
+ * Check every required facility; untagged conventional vehicles have no extra requirements.
+ * @param needs Required infrastructure tags.
+ * @param provides Tags supplied by the infrastructure.
+ * @return Whether every requirement is supplied.
+ */
 bool InfrastructureMeetsNeeds(std::span<const std::string> needs, std::span<const std::string> provides)
 {
 	return std::ranges::all_of(needs, [&](const std::string &need) {
@@ -265,7 +270,12 @@ bool InfrastructureMeetsNeeds(std::span<const std::string> needs, std::span<cons
 	});
 }
 
-/** Enforce airport badges without building the AI library or applying AI adoption policies. */
+/**
+ * Enforce airport badges without building the AI library or applying AI adoption policies.
+ * @param engine Aircraft engine whose requirements are checked.
+ * @param airport Functional airport specification supplying facilities.
+ * @return Whether the airport supplies every declared requirement.
+ */
 bool AircraftMeetsAirportRequirements(const Engine *engine, const AirportSpec *airport)
 {
 	const ItemTags vehicle_tags = ReadItemTags(engine->badges);
