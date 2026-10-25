@@ -9,6 +9,7 @@
 
 #include "stdafx.h"
 #include "future_logistics/tech_library.h"
+#include "station_base.h"
 #include "roadveh.h"
 #include "news_func.h"
 #include "airport.h"
