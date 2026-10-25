@@ -1,4 +1,28 @@
 add_files(
+    air_planner.cpp
+    air_planner.h
     bootstrap.cpp
     bootstrap.h
+    catalogue.cpp
+    catalogue.h
+    freight_planner.cpp
+    freight_planner.h
+    growth.cpp
+    growth.h
+    mechanics.cpp
+    mechanics.h
+    planner_common.h
+    rail_planner.cpp
+    rail_planner.h
+    road_planner.cpp
+    road_planner.h
+    scale.cpp
+    scale.h
+    tag_index.cpp
+    tag_index.h
+    tech_console.cpp
+    tech_library.cpp
+    tech_library.h
+    water_planner.cpp
+    water_planner.h
 )
