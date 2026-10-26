@@ -26,6 +26,9 @@
 #include "table/strings.h"
 
 #include "../industry.h"
+#include "../fileio_func.h"
+#include "../saveload/saveload_func.h"
+#include "../company_base.h"
 
 #include "../safeguards.h"
 
@@ -90,6 +93,21 @@ CargoType ParseCargo(std::string_view label)
  */
 bool FutureLogisticsTechCommand(std::span<std::string_view> argv)
 {
+	if ((argv.size() == 1 || argv.size() == 2) && argv[0] == "orbital") {
+		bool offworld = false;
+		for (const Aircraft *v : Aircraft::Iterate()) {
+			if (!v->IsNormalAircraft() || !v->acache.orbital_shuttle) continue;
+			offworld |= v->orbital.phase == OrbitalPhase::Space;
+			Report(fmt::format("FL orbital audit vehicle={} origin={} phase={} passengers={} capacity={} trips={} month={} due={} date={} money={}",
+				v->index, v->orbital.origin, to_underlying(v->orbital.phase), v->cargo.StoredCount(), v->cargo_cap, v->orbital.completed_trips,
+				v->orbital.last_launch_month, v->orbital.due_date, TimerGameCalendar::date.base(), Company::Get(v->owner)->money));
+		}
+		if (offworld && argv.size() == 2 && !FioCheckFileExists(argv[1], Subdirectory::Save)) {
+			Report(fmt::format("FL orbital snapshot result={}", SaveOrLoad(std::string(argv[1]), SaveLoadOperation::Save, DetailedFileType::GameFile, Subdirectory::Save) == SaveLoadResult::Ok));
+		}
+		return true;
+	}
+
 	if (argv.size() == 2 && argv[0] == "airports") {
 		const TechLibrary library = TechLibrary::Build();
 		for (const TechRecord &record : library.Vehicles()) {

@@ -4,6 +4,7 @@
  */
 /** @file catalogue.cpp Read tech families, recipes and rival profiles from fl_ badge declarations. */
 #include "../stdafx.h"
+#include "../3rdparty/fmt/format.h"
 #include "catalogue.h"
 #include "../industry.h"
 #include "../industrytype.h"

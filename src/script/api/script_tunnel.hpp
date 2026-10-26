@@ -64,6 +64,20 @@ public:
 	static TileIndex GetOtherTunnelEnd(TileIndex tile);
 
 	/**
+	 * Construct a straight underground Hyperloop tube with flat access shafts.
+	 * Only the two access tiles are cleared; surface land between them remains usable.
+	 * @param start First shaft tile.
+	 * @param end Second shaft tile, on the same row or column and height.
+	 * @pre ScriptMap::IsValidTile(start).
+	 * @pre ScriptMap::IsValidTile(end).
+	 * @pre ScriptRail::IsRailTypeAvailable(ScriptRail::GetCurrentRailType()).
+	 * @game @pre ScriptCompanyMode::IsValid().
+	 * @return Whether the tube was built (or could be built in test mode).
+	 * @note The selected rail type must have label HYPL. Tube junctions are at terminals.
+	 */
+	static bool BuildHyperloopTube(TileIndex start, TileIndex end);
+
+	/**
 	 * Internal function to help BuildTunnel in case of road.
 	 * @api -all
 	 */

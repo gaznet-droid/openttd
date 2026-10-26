@@ -627,6 +627,9 @@ CommandCost CmdInsertOrder(DoCommandFlags flags, VehicleID veh, VehicleOrderID s
 	CommandCost ret = CheckOwnership(v->owner);
 	if (ret.Failed()) return ret;
 
+	if (v->type == VehicleType::Aircraft && Aircraft::From(v)->acache.orbital_shuttle && Aircraft::From(v)->orbital.phase != OrbitalPhase::None &&
+		new_order.IsType(OT_GOTO_STATION) && new_order.GetDestination().ToStationID() != Aircraft::From(v)->orbital.origin) return CommandCost(STR_ORBITAL_HOME_ONLY);
+
 	/* Validate properties we don't want to have different from default as they are set by other commands. */
 	if (new_order.GetRefitCargo() != CARGO_NO_REFIT || new_order.GetWaitTime() != 0 || new_order.GetTravelTime() != 0 || new_order.GetMaxSpeed() != UINT16_MAX) return CMD_ERROR;
 

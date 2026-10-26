@@ -965,6 +965,14 @@ public:
 class SlVehicleAircraft : public DefaultSaveLoadHandler<SlVehicleAircraft, Vehicle> {
 public:
 	static inline const SaveLoad description[] = {
+		SaveLoad::Variable<VarFileType::U8>("orbital.phase", SLE_OBJECT_ADDRESS(Aircraft, orbital.phase), SaveLoadVersion::FutureLogisticsOrbital),
+		SaveLoad::Variable<VarFileType::U16>("orbital.origin", SLE_OBJECT_ADDRESS(Aircraft, orbital.origin), SaveLoadVersion::FutureLogisticsOrbital),
+		SaveLoad::Variable<VarFileType::U32>("orbital.origin_tile", SLE_OBJECT_ADDRESS(Aircraft, orbital.origin_tile), SaveLoadVersion::FutureLogisticsOrbital),
+		SaveLoad::Variable<VarFileType::I32>("orbital.due_date", SLE_OBJECT_ADDRESS(Aircraft, orbital.due_date), SaveLoadVersion::FutureLogisticsOrbital),
+		SaveLoad::Variable<VarFileType::I32>("orbital.last_launch_month", SLE_OBJECT_ADDRESS(Aircraft, orbital.last_launch_month), SaveLoadVersion::FutureLogisticsOrbital),
+		SaveLoad::Variable<VarFileType::I32>("orbital.ground_z", SLE_OBJECT_ADDRESS(Aircraft, orbital.ground_z), SaveLoadVersion::FutureLogisticsOrbital),
+		SaveLoad::Variable<VarFileType::U32>("orbital.completed_trips", SLE_OBJECT_ADDRESS(Aircraft, orbital.completed_trips), SaveLoadVersion::FutureLogisticsOrbital),
+		SaveLoad::Variable<VarFileType::Bool>("orbital.manual_dispatch", SLE_OBJECT_ADDRESS(Aircraft, orbital.manual_dispatch), SaveLoadVersion::FutureLogisticsOrbital),
 		SaveLoad::Struct<SlVehicleCommon>("common"),
 		SaveLoad::Variable<VarFileType::U16>("crashed_counter", SLE_OBJECT_ADDRESS(Aircraft, crashed_counter)),
 		SaveLoad::Variable<VarFileType::U8>("pos", SLE_OBJECT_ADDRESS(Aircraft, pos)),

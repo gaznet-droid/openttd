@@ -553,6 +553,7 @@ public:
 	uint8_t time_since_load = 0;
 	uint8_t time_since_unload = 0;
 
+	int32_t last_orbital_launch_month = -1; ///< Shared orbital launch slot, in calendar months.
 	VehicleType last_vehicle_type = VehicleType::Invalid;
 	std::list<Vehicle *> loading_vehicles{};
 	std::array<GoodsEntry, NUM_CARGO> goods; ///< Goods at this station

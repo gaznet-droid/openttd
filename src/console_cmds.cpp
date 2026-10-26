@@ -78,6 +78,14 @@ static const IntervalTimer<TimerGameCalendar> _scheduled_monthly_timer = {{Timer
 	IConsoleCmdExec(fmt::format("exec {}", filename));
 }};
 
+static std::string _scheduled_daily_script; ///< Independent daily script slot for simulation diagnostics.
+/** Run a script at the next calendar-day boundary. */
+static const IntervalTimer<TimerGameCalendar> _scheduled_daily_timer = {{TimerGameCalendar::Trigger::Day, TimerGameCalendar::Priority::None}, [](auto) {
+	if (_scheduled_daily_script.empty()) return;
+	const std::string filename = std::exchange(_scheduled_daily_script, {});
+	IConsoleCmdExec(fmt::format("exec {}", filename));
+}};
+
 /**
  * Parse an integer using #ParseInteger and convert it to the requested type.
  * @param arg The string to be converted.
@@ -1274,14 +1282,19 @@ static bool ConExec(std::span<std::string_view> argv)
 /** Schedule the execution of a script. @copydoc IConsoleCmdProc */
 static bool ConSchedule(std::span<std::string_view> argv)
 {
-	if (argv.size() < 3 || std::string_view(argv[1]) != "on-next-calendar-month") {
-		IConsolePrint(CC_HELP, "Schedule a local script to execute later. Usage: 'schedule on-next-calendar-month <script>'.");
+	if (argv.size() < 3 || (argv[1] != "on-next-calendar-month" && argv[1] != "on-next-calendar-day")) {
+		IConsolePrint(CC_HELP, "Schedule a local script to execute later. Usage: 'schedule on-next-calendar-month|on-next-calendar-day <script>'.");
 		return true;
 	}
 
 	/* Check if the file exists. It might still go away later, but helpful to show an error now. */
 	if (!FioCheckFileExists(argv[2], Subdirectory::Base)) {
 		IConsolePrint(CC_ERROR, "Script file '{}' not found.", argv[2]);
+		return true;
+	}
+
+	if (argv[1] == "on-next-calendar-day") {
+		_scheduled_daily_script = argv[2];
 		return true;
 	}
 

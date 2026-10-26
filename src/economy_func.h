@@ -34,6 +34,8 @@ void StartupIndustryDailyChanges(bool init_counter);
 Money GetTransportedGoodsIncome(uint num_pieces, uint dist, uint16_t transit_periods, CargoType cargo_type);
 uint MoveGoodsToStation(CargoType cargo, uint amount, Source source, const StationList &all_stations, Owner exclusivity = INVALID_OWNER);
 
+Money DeliverOrbitalCargo(uint count, CargoType cargo, StationID station, CompanyID company);
+
 void PrepareUnload(Vehicle *front_v);
 void LoadUnloadStation(Station *st);
 

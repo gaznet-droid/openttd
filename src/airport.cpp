@@ -191,12 +191,15 @@ const AirportFTAClass *GetAirport(const uint8_t airport_type)
 	return AirportSpec::Get(airport_type)->fsm;
 }
 
-/** Return the supplied Drone Port's three rooftop stands and shared service bay. */
+/**
+ * Return the supplied Drone Port's rooftop movement controller.
+ * @return The dedicated Drone Port movement data.
+ */
 const AirportFTAClass *GetDronePortAirport()
 {
 	static const auto movement = [] {
 		auto data = std::to_array(_airport_moving_data_helistation);
-		const std::array<Point, 3> pads{{{18, 18}, {46, 18}, {18, 46}}};
+		const std::array<Point, 3> pads{{{20, 20}, {44, 20}, {20, 44}}};
 		for (uint i = 0; i < pads.size(); i++) {
 			for (uint pos : {6 + i, 9 + i, 12 + i, 17 + i, 20 + i}) {
 				data[pos].x = pads[i].x;
@@ -208,7 +211,7 @@ const AirportFTAClass *GetDronePortAirport()
 	/* The fourth, south-facing pad remains visible and unused. Ordinary helistations
 	 * retain their own unmodified movement data and ground-level landing altitude. */
 	static const AirportFTAClass airport(movement.data(), nullptr, 3, _airport_entries_helistation,
-		AirportFTAClass::Flag::Helicopters, _airport_fta_helistation, 60);
+		AirportFTAClass::Flag::Helicopters, _airport_fta_helistation, 94);
 	return &airport;
 }
 
@@ -233,4 +236,15 @@ uint8_t GetVehiclePosOnBuild(TileIndex hangar_tile)
 		}
 	}
 	NOT_REACHED();
+}
+
+/**
+ * Provide a service hangar without exposing a conventional runway to orbital vehicles.
+ * @return The orbital airport layout metadata.
+ */
+const AirportFTAClass *GetOrbitalAirport()
+{
+	static const AirportFTAClass airport(_airport_moving_data_country, _airport_terminal_country, 0, _airport_entries_country,
+		AirportFTAClass::Flag::Helicopters, _airport_fta_country, 0);
+	return &airport;
 }

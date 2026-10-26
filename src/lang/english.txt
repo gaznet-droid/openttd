@@ -6087,3 +6087,21 @@ STR_CONFIG_SETTING_CURSOR_SIZE_HELPTEXT                         :Enlarge all mou
 STR_CONFIG_SETTING_CURSOR_SIZE_NORMAL                          :Normal
 STR_CONFIG_SETTING_CURSOR_SIZE_LARGE                           :Large
 STR_CONFIG_SETTING_CURSOR_SIZE_EXTRA_LARGE                     :Extra large
+
+STR_ORBITAL_NOT_BOARDING                                         :Shuttle must be boarding at an open spaceport
+STR_ORBITAL_PASSENGERS_ONLY                                      :Orbital shuttles carry passengers
+STR_ORBITAL_NO_ACCEPTANCE                                        :The originating spaceport must accept passengers
+STR_ORBITAL_MINIMUM_LOAD                                         :At least 500 passengers are required for early dispatch
+STR_ORBITAL_MONTHLY_LIMIT                                        :This spaceport has already launched this calendar month
+STR_ORBITAL_PAD_BUSY                                             :The spaceport pad is reserved for an active mission
+STR_ORBITAL_READY                                                :Ready for orbital service
+STR_ORBITAL_BOARDING                                             :Boarding for orbit: {COMMA}/{COMMA}
+STR_ORBITAL_WAIT_MONTH                                           :Boarding; next launch slot opens next calendar month
+STR_ORBITAL_LAUNCHING                                            :Launching vertically
+STR_ORBITAL_SPACE                                                :In orbit; return due {DATE_LONG}
+STR_ORBITAL_RETURNING                                            :Returning to home spaceport with {COMMA} passengers
+STR_ORBITAL_SERVICING                                            :Servicing on the launch pad
+STR_ORBITAL_DISPATCH_TOOLTIP                                     :{BLACK}Launch early with at least 500 passengers, subject to the spaceport's monthly launch limit
+STR_ORBITAL_HOME_ONLY                                           :Orbital missions return to their originating spaceport
+STR_HYPERLOOP_FLAT_ENDPOINTS                                    :Hyperloop access shafts must be on flat land at the same height
+STR_HYPERLOOP_NO_CONVERSION                                     :Remove the underground Hyperloop tube before changing its rail type

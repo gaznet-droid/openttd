@@ -30,14 +30,14 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT / "work/integration")
     parser.add_argument("--update-snapshots", action="store_true",
                         help="rewrite the Tech Library snapshots instead of comparing against them")
-    parser.add_argument("--only", choices=["data-centre"], help="run a focused gameplay regression")
+    parser.add_argument("--only", choices=["data-centre", "orbital"], help="run a focused gameplay regression")
     args = parser.parse_args()
     binary, baseset, output = args.binary.resolve(), args.baseset.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
 
     def run(name, *, seed=12345, load=None, enabled=True, limit=4, capital=25000000,
             towns=48, year=1950, service=False, dedicated=False, vehicle_limit=500, clear_limit=4096, default_world=False,
-            climate="temperate", commands="", industries=4, map_bits=8, grfs=(), coastal=False, months=3, mountains=False, rivers=False, game_script=None, multiple_industries=False):
+            climate="temperate", commands="", industries=4, map_bits=8, grfs=(), coastal=False, months=3, mountains=False, rivers=False, game_script=None, multiple_industries=False, daily_commands=""):
         folder = output / name
         folder.mkdir(exist_ok=True)
         if grfs:
@@ -117,6 +117,9 @@ DayZeroMonopolies =
         scripts = folder / "scripts"
         scripts.mkdir(exist_ok=True)
         startup = commands + "future_logistics_check\n"
+        if daily_commands:
+            startup += "schedule on-next-calendar-day scripts/daily.scr\n"
+            (scripts / "daily.scr").write_text(daily_commands + "schedule on-next-calendar-day scripts/daily.scr\n")
         if service:
             startup += "schedule on-next-calendar-month scripts/month1.scr\n"
             for month in range(1, months):
@@ -150,6 +153,39 @@ DayZeroMonopolies =
         require(any(int(n) < 1200 for n in re.findall(r"DC funded town=\d+ population=(\d+)", centres)), "no data centre was funded in a small town")
         require("DC placement built=2 different_towns=true duplicate_rejected=true open_land=true" in centres,
                 "data-centre funding on open land or the one-per-town restriction failed")
+
+    def check_orbital():
+        grf = ROOT / "mods/newgrf/starship/starship.grf"
+        offworld = output / "orbital-offworld.sav"
+        if offworld.exists():
+            offworld.unlink()
+        text, snapshot = run("orbital", enabled=False, limit=1, year=2050, towns=32, map_bits=9,
+                             grfs=[grf], service=True, months=12,
+                             game_script=ROOT / "tests/future_logistics/gs/OrbitalCheck",
+                             daily_commands=f"future_logistics_tech orbital {offworld}\n")
+        require("ORBIT fixture ready" in text, "orbital test fixture was not built")
+        launches = re.findall(r"FL orbital launch vehicle=(\d+) origin=(\d+) month=(\d+) passengers=(\d+) manual=(\w+)", text)
+        require(len(launches) >= 2, "orbital ships did not launch repeatedly")
+        require(len({v for v, *_ in launches}) >= 2, "waiting fleet did not share the launch slot")
+        require(all(int(p) == 1000 and m == "false" for _, _, _, p, m in launches), "automatic launch must have 1000 real passengers")
+        slots = [(origin, month) for _, origin, month, _, _ in launches]
+        require(len(slots) == len(set(slots)), "more than one launch per spaceport per calendar month")
+        landed = re.findall(r"FL orbital landed vehicle=(\d+) origin=(\d+) inbound=(\d+) trips=(\d+)", text)
+        require(landed and all(int(n) == 1000 for _, _, n, _ in landed), "orbital return manifest was not delivered")
+        homes = {v: home for v, home, *_ in launches}
+        require(all(homes[v] == home for v, home, *_ in landed), "orbital ship returned to a different spaceport")
+        require(offworld.exists(), "no off-world save was captured")
+        resumed, _ = run("orbital-reloaded", load=offworld, enabled=False, limit=1, year=2050,
+                         grfs=[grf], service=True, months=2,
+                         game_script=ROOT / "tests/future_logistics/gs/OrbitalCheck",
+                         daily_commands="future_logistics_tech orbital\n")
+        require("ORBIT fixture ready" not in resumed, "reload recreated the test fleet")
+        require("FL orbital landed" in resumed, "off-world mission did not return after reload")
+        print("Orbital launch, return, shared slots and off-world reload passed", flush=True)
+
+    if args.only == "orbital":
+        check_orbital()
+        return
 
     if args.only == "data-centre":
         check_data_centres()

@@ -22,6 +22,9 @@ CommandCost CmdBuildTunnel(DoCommandFlags flags, TileIndex start_tile, Transport
 DEF_CMD_TRAIT(Commands::BuildBridge, CmdBuildBridge, CommandFlags({CommandFlag::Deity, CommandFlag::Auto, CommandFlag::NoWater}), CommandType::LandscapeConstruction)
 DEF_CMD_TRAIT(Commands::BuildTunnel, CmdBuildTunnel, CommandFlags({CommandFlag::Deity, CommandFlag::Auto}),                       CommandType::LandscapeConstruction)
 
+CommandCost CmdBuildHyperloopTube(DoCommandFlags flags, TileIndex start, TileIndex end, RailType railtype);
+DEF_CMD_TRAIT(Commands::BuildHyperloopTube, CmdBuildHyperloopTube, CommandFlag::Auto, CommandType::LandscapeConstruction)
+
 void CcBuildBridge(Commands, const CommandCost &result, TileIndex end_tile, TileIndex tile_start, TransportType transport_type, BridgeType, RailType, RoadType);
 
 #endif /* TUNNELBRIDGE_CMD_H */

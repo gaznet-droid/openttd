@@ -417,6 +417,7 @@ ClosestDepot Aircraft::FindClosestDepot()
 
 static void CheckIfAircraftNeedsService(Aircraft *v)
 {
+	if (v->acache.orbital_shuttle) return;
 	if (Company::Get(v->owner)->settings.vehicle.servint_aircraft == 0 || !v->NeedsAutomaticServicing()) return;
 	if (v->IsChainInDepot()) {
 		VehicleServiceInDepot(v);
@@ -606,6 +607,8 @@ static void PlayAircraftSound(const Vehicle *v)
 void UpdateAircraftCache(Aircraft *v, bool update_range)
 {
 	v->acache.cargo_drone = ReadItemTags(v->GetEngine()->badges).id == "cargo_drone";
+	const auto id = ReadItemTags(v->GetEngine()->badges).id;
+	v->acache.orbital_shuttle = id == "starship" || id == "rocket";
 	uint max_speed = GetVehicleProperty(v, PROP_AIRCRAFT_SPEED, 0);
 	if (max_speed != 0) {
 		/* Convert from original units to km-ish/h */
@@ -640,7 +643,11 @@ static constexpr uint16_t SPEED_LIMIT_BROKEN = 320; ///< Maximum speed of an air
 static constexpr uint16_t SPEED_LIMIT_HOLD = 425; ///< Maximum speed of an aircraft that flies the holding pattern
 static constexpr uint16_t SPEED_LIMIT_NONE = UINT16_MAX; ///< No environmental speed limit. Speed limit is type dependent
 
-/** Keep multirotor movement independent of the conventional aircraft speed divisor. */
+/**
+ * Keep multirotor movement independent of the conventional aircraft speed divisor.
+ * @param v Aircraft whose speed is being computed.
+ * @return Movement divisor.
+ */
 static uint GetAircraftSpeedFactor(const Aircraft *v)
 {
 	return v->acache.cargo_drone ? 1 : _settings_game.vehicle.plane_speed;
@@ -2177,6 +2184,8 @@ bool Aircraft::Tick()
 
 	this->current_order_time++;
 
+	if (TickOrbitalAircraft(this)) return true;
+
 	for (uint i = 0; i != 2; i++) {
 		/* stop if the aircraft was deleted */
 		if (!AircraftEventHandler(this, i)) return false;
@@ -2230,4 +2239,22 @@ void UpdateAirplanesOnNewStation(const Station *st)
 
 	/* Heliports don't have a hangar. Invalidate all go to hangar orders from all aircraft. */
 	if (!st->airport.HasHangar()) RemoveOrderFromAllVehicles(OT_GOTO_DEPOT, st->index, true);
+}
+
+/**
+ * Request early departure from the current spaceport.
+ * @param flags Command execution flags.
+ * @param vehicle_id Shuttle to dispatch.
+ * @return Command result.
+ */
+CommandCost CmdStarshipDispatch(DoCommandFlags flags, VehicleID vehicle_id)
+{
+	Aircraft *v = Aircraft::GetIfValid(vehicle_id);
+	if (v == nullptr || !v->IsNormalAircraft()) return CMD_ERROR;
+	CommandCost ownership = CheckOwnership(v->owner);
+	if (ownership.Failed()) return ownership;
+	StringID error = OrbitalDispatchError(v);
+	if (error != STR_NULL) return CommandCost(error);
+	if (flags.Test(DoCommandFlag::Execute)) v->orbital.manual_dispatch = true;
+	return CommandCost();
 }

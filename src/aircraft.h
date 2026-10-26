@@ -11,6 +11,7 @@
 #define AIRCRAFT_H
 
 #include "station_map.h"
+#include "future_logistics/orbital.h"
 #include "vehicle_base.h"
 
 /**
@@ -65,6 +66,7 @@ int GetAircraftFlightLevel(T *v, bool takeoff = false);
 
 /** Variables that are cached to improve performance and such. */
 struct AircraftCache {
+	bool orbital_shuttle = false; ///< Uses the saved orbital controller instead of surface flight.
 	bool cargo_drone = false; ///< Multirotors use their stated speed without the conventional-plane distance divisor.
 	uint32_t cached_max_range_sqr = 0; ///< Cached squared maximum range.
 	uint16_t cached_max_range = 0; ///< Cached maximum range.
@@ -85,6 +87,7 @@ struct Aircraft final : public SpecializedVehicle<Aircraft, VehicleType::Aircraf
 	VehicleAirFlags flags{}; ///< Aircraft flags. @see VehicleAirFlags
 
 	AircraftCache acache{};
+	OrbitalState orbital{}; ///< Persistent orbital mission.
 
 	Aircraft(VehicleID index) : SpecializedVehicleBase(index) {}
 	/** We want to 'destruct' the right class. */
@@ -104,7 +107,7 @@ struct Aircraft final : public SpecializedVehicle<Aircraft, VehicleType::Aircraf
 	bool IsInDepot() const override
 	{
 		assert(this->IsPrimaryVehicle());
-		return this->vehstatus.Test(VehState::Hidden) && IsHangarTile(this->tile);
+		return this->orbital.phase <= OrbitalPhase::Boarding && this->vehstatus.Test(VehState::Hidden) && IsHangarTile(this->tile);
 	}
 
 	bool Tick() override;

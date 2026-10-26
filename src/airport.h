@@ -205,5 +205,6 @@ public:
 const AirportFTAClass *GetAirport(const uint8_t airport_type);
 uint8_t GetVehiclePosOnBuild(TileIndex hangar_tile);
 const AirportFTAClass *GetDronePortAirport();
+const AirportFTAClass *GetOrbitalAirport();
 
 #endif /* AIRPORT_H */

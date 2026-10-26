@@ -8,6 +8,7 @@
 /** @file rail_cmd.cpp Handling of rail tiles. */
 
 #include "stdafx.h"
+#include "future_logistics/hyperloop.h"
 #include "bridge.h"
 #include "tilearea_type.h"
 #include "viewport_func.h"
@@ -1593,6 +1594,11 @@ CommandCost CmdConvertRail(DoCommandFlags flags, TileIndex tile, TileIndex area_
 				if (GetTunnelBridgeTransportType(cur_tile) != TransportType::Rail) continue;
 				break;
 			default: continue;
+		}
+
+		if (IsHyperloopTube(cur_tile) && !IsHyperloopRailType(totype)) {
+			error.MakeError(STR_HYPERLOOP_NO_CONVERSION);
+			continue;
 		}
 
 		/* Original railtype we are converting from */

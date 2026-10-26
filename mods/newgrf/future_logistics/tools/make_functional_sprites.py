@@ -79,7 +79,7 @@ def drone():
         size = (40 * zoom, round(image.height * 40 * zoom / image.width))
         sprite = image.resize(size, Image.Resampling.LANCZOS)
         sprite.save(GFX / f'cargo_drone_{zoom}x.png')
-        args = f'0, 0, {size[0]}, {size[1]}, {-size[0] // 2}, {-size[1] + 3 * zoom}'
+        args = f'0, 0, {size[0]}, {size[1]}, {-size[0] // 2}, {-size[1]}'
         prefix = 'spriteset' if zoom == 1 else 'alternative_sprites'
         level = 'ZOOM_LEVEL_NORMAL' if zoom == 1 else 'ZOOM_LEVEL_IN_2X'
         lines.append(f'{prefix}(cargo_drone_body, {level}, BIT_DEPTH_32BPP, "gfx/cargo_drone_{zoom}x.png") {{')
@@ -90,16 +90,35 @@ def drone():
     (GFX / 'cargo_drone.nml').write_text('\n'.join(lines) + '\n')
 
 
+def orbital_assets():
+    """Use exactly the same supplied launch scenery and vehicle in both GRFs."""
+    import re
+    import shutil
+    source = ROOT.parent / 'starship'
+    nml = (source / 'starship.nml').read_text()
+    body = nml[nml.index('spriteset(starship_'):nml.index('item(FEAT_AIRCRAFT, starship,')]
+    body = body.replace('starship_', 'orbital_rocket_')
+    pad = nml[nml.index('spriteset(pad_sprite_0_0,'):nml.index('/* The first NewGRF airport')]
+    pad = pad.replace('pad_', 'orbital_pad_').replace('starship_orbital_pad_layout', 'orbital_spaceport_layout')
+    pad = re.sub(r'(item\(FEAT_AIRPORTTILES, [^,]+, )(\d+)', lambda m: m[1] + str(int(m[2]) + 16), pad)
+    for name in re.findall(r'"gfx/([^"]+)"', body):
+        shutil.copy(source / 'gfx' / name, GFX / name)
+    for original in (source / 'gfx').glob('pad_[0-3]_[0-3]_[12]x.png'):
+        shutil.copy(original, GFX / original.name.replace('pad_', 'orbital_pad_'))
+    (GFX / 'orbital_rocket.nml').write_text(body + pad)
+
+
 if __name__ == '__main__':
     GFX.mkdir(exist_ok=True)
     info = tiles('data_centre', 'openttd_data_centre_transparent.png', 'FEAT_INDUSTRYTILES')
     info.update(tiles('drone_port', 'openttd_drone_port_transparent.png', 'FEAT_AIRPORTTILES'))
     drone()
+    orbital_assets()
     (GFX / 'functional_sprites.json').write_text(json.dumps(info, indent=2, sort_keys=True) + '\n')
 
     nml = ROOT / 'future_logistics.nml'
     text = nml.read_text()
     begin = text.index('/* BEGIN GENERATED FUNCTIONAL SPRITES */')
     end = text.index('/* END GENERATED FUNCTIONAL SPRITES */', begin) + len('/* END GENERATED FUNCTIONAL SPRITES */')
-    block = '/* BEGIN GENERATED FUNCTIONAL SPRITES */\n' + '\n'.join((GFX / name).read_text() for name in ['cargo_drone.nml', 'drone_port_tiles.nml', 'data_centre_tiles.nml']) + '/* END GENERATED FUNCTIONAL SPRITES */'
+    block = '/* BEGIN GENERATED FUNCTIONAL SPRITES */\n' + '\n'.join((GFX / name).read_text() for name in ['cargo_drone.nml', 'drone_port_tiles.nml', 'data_centre_tiles.nml', 'orbital_rocket.nml']) + '/* END GENERATED FUNCTIONAL SPRITES */'
     nml.write_text(text[:begin] + block + text[end:])

@@ -156,8 +156,11 @@ std::vector<TileIndex> FindAirportSites(const Place &end, const AirportSpec *spe
 ConstructionResult BuildAirline(uint8_t type, TileIndex a, TileIndex b, const Engine *aircraft, CargoType cargo, uint fleet, bool full_load,
 	StationID join_a = NEW_STATION, StationID join_b = NEW_STATION, bool transfer = false, bool execute = true, BuiltLeg *result_built = nullptr)
 {
+	const auto aircraft_id = ReadItemTags(aircraft->badges).id;
+	const bool orbital = aircraft_id == "starship" || aircraft_id == "rocket";
 	Money cost = 0;
 	for (const auto &[corner, join] : {std::pair{a, join_a}, {b, join_b}}) {
+		if (orbital && corner == b) continue;
 		auto result = Command<Commands::BuildAirport>::Do(CONSTRUCT, corner, type, 0, join, true);
 		if (result.Failed()) {
 			Debug(Facility::Misc, Severity::Debug1, "FL airport preflight rejected tile={} error={}", corner, result.GetErrorMessage());
@@ -192,6 +195,7 @@ ConstructionResult BuildAirline(uint8_t type, TileIndex a, TileIndex b, const En
 		return ConstructionResult::Failed;
 	};
 	for (const auto &[corner, join] : {std::pair{a, join_a}, {b, join_b}}) {
+		if (orbital && corner == b) continue;
 		if (Command<Commands::BuildAirport>::Do(EXEC | CONSTRUCT, corner, type, 0, join, true).Failed()) return fail("airport");
 		built.push_back(corner);
 	}
@@ -202,7 +206,7 @@ ConstructionResult BuildAirline(uint8_t type, TileIndex a, TileIndex b, const En
 		if (ExtractCommandCost(result).Failed()) return fail("vehicle");
 		const VehicleID vehicle = std::get<1>(result);
 		vehicles.push_back(vehicle);
-		for (VehicleOrderID i = 0; i < 2; i++) {
+		for (VehicleOrderID i = 0; i < (orbital ? 1 : 2); i++) {
 			Order order;
 			order.MakeGoToStation(GetStationIndex(i == 0 ? a : b));
 			/* Non-train orders must use the far end; the default near end is rejected. */
@@ -218,6 +222,7 @@ ConstructionResult BuildAirline(uint8_t type, TileIndex a, TileIndex b, const En
 		}
 		if (Command<Commands::StartStopVehicle>::Do(EXEC, vehicle, true).Failed()) return fail("start");
 	}
+	if (orbital) b = a;
 	Debug(Facility::Misc, Severity::Notice, "FL air company={} airport={} vehicles={} vehicle={} from={} to={} distance={} balance={}",
 		_current_company, type, fleet, vehicles.front(), a, b, DistanceManhattan(a, b), Company::Get(_current_company)->money);
 	if (result_built != nullptr) {

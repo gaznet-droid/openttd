@@ -8,6 +8,7 @@
 /** @file rail_gui.cpp %File for dealing with rail construction user interface. */
 
 #include "stdafx.h"
+#include "future_logistics/hyperloop.h"
 #include "gui.h"
 #include "station_base.h"
 #include "station_func.h"
@@ -732,6 +733,10 @@ struct BuildRailToolbarWindow : Window {
 				break;
 
 			case WID_RAT_BUILD_TUNNEL:
+				if (IsHyperloopRailType(_cur_railtype)) {
+					VpStartPlaceSizing(tile, VPM_X_OR_Y, DDSP_BUILD_BRIDGE);
+					break;
+				}
 				Command<Commands::BuildTunnel>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, CcBuildRailTunnel, tile, TransportType::Rail, _cur_railtype, INVALID_ROADTYPE);
 				break;
 
@@ -762,6 +767,11 @@ struct BuildRailToolbarWindow : Window {
 			switch (select_proc) {
 				default: NOT_REACHED();
 				case DDSP_BUILD_BRIDGE:
+					if (IsHyperloopRailType(_cur_railtype) && this->IsWidgetLowered(WID_RAT_BUILD_TUNNEL)) {
+						Command<Commands::BuildHyperloopTube>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, start_tile, end_tile, _cur_railtype);
+						if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+						break;
+					}
 					if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
 					ShowBuildBridgeWindow(start_tile, end_tile, TransportType::Rail, _cur_railtype, INVALID_ROADTYPE);
 					break;
@@ -2152,4 +2162,13 @@ DropDownList GetRailTypeDropDownList(bool for_replacement, bool all_option)
 	}
 
 	return list;
+}
+
+/**
+ * Check whether the local player is inspecting/building the underground network.
+ * @return Whether the dedicated Hyperloop construction toolbar is open.
+ */
+bool IsHyperloopConstructionActive()
+{
+	return FindWindowById(WindowClass::BuildToolbar, TransportType::Rail) != nullptr && IsHyperloopRailType(_cur_railtype);
 }

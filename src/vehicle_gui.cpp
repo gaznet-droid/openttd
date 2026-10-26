@@ -21,6 +21,7 @@
 #include "roadveh.h"
 #include "train.h"
 #include "aircraft.h"
+#include "aircraft_cmd.h"
 #include "depot_map.h"
 #include "group_gui.h"
 #include "strings_func.h"
@@ -3072,8 +3073,16 @@ public:
 				this->GetWidget<NWidgetStacked>(WID_VV_FORCE_PROCEED_SEL)->SetDisplayedPlane(SZSP_NONE);
 				break;
 
-			case VehicleType::Ship:
 			case VehicleType::Aircraft:
+				if (Aircraft::From(v)->acache.orbital_shuttle && v->cargo_cap >= 500) {
+					this->GetWidget<NWidgetStacked>(WID_VV_FORCE_PROCEED_SEL)->SetDisplayedPlane(0);
+					this->GetWidget<NWidgetCore>(WID_VV_FORCE_PROCEED)->SetSprite(SPR_FLAG_VEH_RUNNING);
+					this->GetWidget<NWidgetCore>(WID_VV_FORCE_PROCEED)->SetToolTip(STR_ORBITAL_DISPATCH_TOOLTIP);
+					this->SelectPlane(SEL_RT_REFIT);
+					break;
+				}
+				[[fallthrough]];
+			case VehicleType::Ship:
 				this->GetWidget<NWidgetStacked>(WID_VV_FORCE_PROCEED_SEL)->SetDisplayedPlane(SZSP_NONE);
 				this->SelectPlane(SEL_RT_REFIT);
 				break;
@@ -3115,7 +3124,7 @@ public:
 				break;
 
 			case WID_VV_FORCE_PROCEED:
-				if (v->type != VehicleType::Train) {
+				if (v->type != VehicleType::Train && !(v->type == VehicleType::Aircraft && Aircraft::From(v)->acache.orbital_shuttle && v->cargo_cap >= 500)) {
 					size.height = 0;
 					size.width = 0;
 				}
@@ -3147,6 +3156,11 @@ public:
 		if (v->type == VehicleType::Train) {
 			this->SetWidgetLoweredState(WID_VV_FORCE_PROCEED, Train::From(v)->force_proceed == TFP_SIGNAL);
 			this->SetWidgetDisabledState(WID_VV_FORCE_PROCEED, !is_localcompany);
+		}
+
+		if (v->type == VehicleType::Aircraft && Aircraft::From(v)->acache.orbital_shuttle) {
+			this->SetWidgetDisabledState(WID_VV_FORCE_PROCEED, !is_localcompany || OrbitalDispatchError(Aircraft::From(v)) != STR_NULL);
+			this->SetWidgetDisabledState(WID_VV_GOTO_DEPOT, true);
 		}
 
 		if (v->type == VehicleType::Train || v->type == VehicleType::Road) {
@@ -3202,6 +3216,8 @@ public:
 		if (v->type == VehicleType::Train && Train::From(v)->flags.Test(VehicleRailFlag::Stuck) && !v->current_order.IsType(OT_LOADING)) return GetString(STR_VEHICLE_STATUS_TRAIN_STUCK);
 
 		if (v->type == VehicleType::Aircraft && Aircraft::From(v)->flags.Test(VehicleAirFlag::DestinationTooFar) && !v->current_order.IsType(OT_LOADING)) return GetString(STR_VEHICLE_STATUS_AIRCRAFT_TOO_FAR);
+
+		if (v->type == VehicleType::Aircraft && Aircraft::From(v)->acache.orbital_shuttle) return OrbitalStatus(Aircraft::From(v));
 
 		/* Vehicle is in a "normal" state, show current order. */
 		if (mouse_over_start_stop) {
@@ -3363,6 +3379,10 @@ public:
 				}
 				break;
 			case WID_VV_FORCE_PROCEED: // force proceed
+				if (v->type == VehicleType::Aircraft) {
+					Command<Commands::StarshipDispatch>::Post(STR_ORBITAL_NOT_BOARDING, v->tile, v->index);
+					break;
+				}
 				assert(v->type == VehicleType::Train);
 				Command<Commands::ForceTrainProceed>::Post(STR_ERROR_CAN_T_MAKE_TRAIN_PASS_SIGNAL, v->tile, v->index);
 				break;

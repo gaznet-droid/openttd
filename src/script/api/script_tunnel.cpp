@@ -132,3 +132,11 @@ static void _DoCommandReturnBuildTunnel1(class ScriptInstance &instance)
 
 	return ScriptObject::Command<Commands::LandscapeClear>::Do(tile);
 }
+
+/* static */ bool ScriptTunnel::BuildHyperloopTube(TileIndex start, TileIndex end)
+{
+	EnforceCompanyModeValid(false);
+	EnforcePrecondition(false, ::IsValidTile(start) && ::IsValidTile(end));
+	EnforcePrecondition(false, ScriptRail::IsRailTypeAvailable(ScriptRail::GetCurrentRailType()));
+	return ScriptObject::Command<Commands::BuildHyperloopTube>::Do(start, end, static_cast<::RailType>(ScriptRail::GetCurrentRailType()));
+}
