@@ -6106,3 +6106,6 @@ STR_ORBITAL_HOME_ONLY                                           :Orbital mission
 STR_HYPERLOOP_FLAT_ENDPOINTS                                    :Hyperloop access shafts must be on flat land at the same height
 STR_HYPERLOOP_NO_CONVERSION                                     :Remove the underground Hyperloop tube before changing its rail type
 STR_ORBITAL_SERVICE_HOME                                        :Orbital shuttles are serviced automatically on their home launch pad
+STR_DISTRIBUTION_REQUIRES_CITY                                  :A Distribution Centre requires a town of at least 5,000 people
+STR_DISTRIBUTION_ONE_PER_TOWN                                   :This town already has a Distribution Centre
+STR_DISTRIBUTION_CLEAR_SITE                                     :A Distribution Centre needs a clear, flat 4x4 site

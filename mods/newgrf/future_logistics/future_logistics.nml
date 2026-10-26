@@ -75,6 +75,8 @@ badgetable {
     "fl_industry/data_centre",
     "fl_market/tech",
     "fl_id/data_centre",
+    "fl_id/distribution_centre",
+    "fl_id/distribution_warehouse",
     "fl_profile/integrated_logistics/industries/tech",
     /* Shared badge classes from the NewGRF specification, for other NewGRFs, AIs and the purchase list. */
     "role/mail",
@@ -458,6 +460,14 @@ tilelayout orbital_spaceport_layout { rotation: DIRECTION_NORTH;
     3, 3: orbital_pad_tile_3_3;
 }
 
+
+spriteset(distribution_hub_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/distribution_hub_1x.png") { [0, 0, 256, 186, -128, -58] }
+alternative_sprites(distribution_hub_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/distribution_hub_2x.png") { [0, 0, 512, 373, -256, -117] }
+spritelayout distribution_hub_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_sprite(0); xextent: 48; yextent: 64; zextent: 56; } }
+spritelayout distribution_hub_ground { ground { sprite: GROUNDSPRITE_CONCRETE; } }
+switch(FEAT_OBJECTS, SELF, distribution_hub_object_graphics, relative_pos) { 0: distribution_hub_layout; distribution_hub_ground; }
+item(FEAT_OBJECTS, distribution_warehouse, 0) { property { class: "FLHB"; name: string(STR_DISTRIBUTION_WAREHOUSE); climates_available: ALL_CLIMATES; size: [3, 4]; build_cost_multiplier: 4; remove_cost_multiplier: 3; introduction_date: date(2022, 1, 1); end_of_life_date: 0xFFFFFFFF; object_flags: bitmask(OBJ_FLAG_NO_FOUNDATIONS); height: 56; num_views: 1; badges: ["fl_format/2", "fl_id/distribution_warehouse"]; } graphics { default: distribution_hub_object_graphics; purchase: distribution_hub_layout; tile_check: ((extra_callback_info1 & bitmask(0,1,2,3,4)) == 0) ? CB_RESULT_LOCATION_ALLOW : CB_RESULT_LOCATION_DISALLOW; } }
+item(FEAT_ROADSTOPS, distribution_centre, 0) { property { class: "FLHB"; classname: string(STR_DISTRIBUTION_CENTRE); name: string(STR_DISTRIBUTION_CENTRE); availability_type: 1; draw_mode: 0; general_flags: bitmask(2,4,5); badges: ["fl_format/2", "fl_id/distribution_centre"]; } graphics { default: distribution_hub_ground; purchase: distribution_hub_layout; } }
 /* END GENERATED FUNCTIONAL SPRITES */
 
 /* Cargo drone uses the supplied multirotor art, with fixed yaw during translation. */

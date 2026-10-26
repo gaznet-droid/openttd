@@ -30,7 +30,7 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT / "work/integration")
     parser.add_argument("--update-snapshots", action="store_true",
                         help="rewrite the Tech Library snapshots instead of comparing against them")
-    parser.add_argument("--only", choices=["data-centre", "orbital", "hyperloop"], help="run a focused gameplay regression")
+    parser.add_argument("--only", choices=["data-centre", "orbital", "hyperloop", "hub"], help="run a focused gameplay regression")
     args = parser.parse_args()
     binary, baseset, output = args.binary.resolve(), args.baseset.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -201,6 +201,31 @@ DayZeroMonopolies =
         require("HYPL fixture ready" not in resumed, "Hyperloop reload recreated its fixture")
         require("HYPL movement reached_far=true" in resumed, "underground tube did not survive reload")
         print("Underground Hyperloop traversal, surface use, overlap rejection and reload passed", flush=True)
+
+    def check_hub():
+        grf = ROOT / "mods/newgrf/future_logistics/future_logistics.grf"
+        script = ROOT / "tests/future_logistics/gs/HubCheck"
+        first, seed = run("hub-seed", enabled=False, year=2050, towns=16, map_bits=9, grfs=[grf], game_script=script)
+        prepared, save = run("hub-prepared", load=seed, enabled=False, year=2050, grfs=[grf], game_script=script, service=True, months=6)
+        sites = re.search(r"HUB fixture ready tile=(\d+) second=(\d+) small=(\d+)", first + prepared)
+        require(sites, "distribution hub fixture did not find its sites")
+        tile, second, small = sites.groups()
+        built, ready = run("hub-built", load=save, enabled=False, year=2050, grfs=[grf], game_script=script, service=True, months=2,
+                           commands=f"future_logistics_tech build-hub {tile}\n", daily_commands="future_logistics_tech hub-audit\n")
+        require(re.search(rf"FL distribution request tile={tile} accepted=true", built), "hub construction rejected")
+        require(re.search(r"FL distribution audit .*bays=4 reserved_secondary=4", built), "hub does not have four joined single-vehicle bays")
+        require("HUB truck entered loading bay" in built, "truck did not use the warehouse's loading bays")
+        rejected, _ = run("hub-reloaded", load=ready, enabled=False, year=2050, grfs=[grf], game_script=script, service=True, months=1,
+                          commands=f"future_logistics_tech build-hub {second}\nfuture_logistics_tech build-hub {small}\n",
+                          daily_commands="future_logistics_tech hub-audit\n")
+        require(re.search(rf"FL distribution request tile={second} accepted=false .*already has a Distribution Centre", rejected), "second hub in one town was allowed")
+        require(re.search(rf"FL distribution request tile={small} accepted=false .*5,000", rejected), "small town restriction did not apply")
+        require(re.search(r"FL distribution audit .*bays=4 reserved_secondary=4", rejected), "hub bays did not survive reload")
+        print("Distribution hub build, four live bays, town restrictions and reload passed", flush=True)
+
+    if args.only == "hub":
+        check_hub()
+        return
 
     if args.only == "hyperloop":
         adopted, _ = run("hyperloop-adoption", year=2041, grfs=[ROOT / "mods/newgrf/future_logistics/future_logistics.grf"])
@@ -442,6 +467,7 @@ DayZeroMonopolies =
     check_data_centres()
     check_orbital()
     check_hyperloop()
+    check_hub()
 
     # A NewGRF that adds a tech family, a rival, a cargo meaning, a rule for a built-in rival, and mistakes.
     grf_text, _ = run("newgrf-tech-tree", limit=5, grfs=[ROOT / "tests/future_logistics/grf/fl_test.grf"],

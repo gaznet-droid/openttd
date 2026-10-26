@@ -8,6 +8,8 @@
 /** @file object_cmd.cpp Handling of object tiles. */
 
 #include "stdafx.h"
+#include "future_logistics/tech_library.h"
+#include "station_map.h"
 #include "bridge.h"
 #include "landscape.h"
 #include "command_func.h"
@@ -736,6 +738,14 @@ static void TileLoop_Object(TileIndex tile)
 /** @copydoc ClickTileProc */
 static bool ClickTile_Object(TileIndex tile)
 {
+	const Object *object = Object::GetByTile(tile);
+	if (ReadItemTags(ObjectSpec::Get(object->type)->badges).id == "distribution_warehouse") {
+		for (uint i = 0; i < 4; i++) {
+			const TileIndex bay = TileAddXY(object->location.tile, 3, i);
+			if (IsBayRoadStopTile(bay)) { ShowStationViewWindow(GetStationIndex(bay)); return true; }
+		}
+	}
+
 	if (!IsObjectType(tile, OBJECT_HQ)) return false;
 
 	ShowCompany(GetTileOwner(tile));
