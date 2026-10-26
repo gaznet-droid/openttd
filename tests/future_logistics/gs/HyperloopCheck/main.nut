@@ -38,6 +38,15 @@ class HyperloopCheck extends GSController {
         local far_station = GSMap.GetTileIndex(x0 + 208, y0);
         if (!GSTunnel.BuildHyperloopTube(a, b)) { GSLog.Error("HYPL tube: " + GSError.GetLastErrorString()); return false; }
         if (GSTunnel.GetOtherTunnelEnd(a) != b || GSTunnel.GetOtherTunnelEnd(b) != a) { GSLog.Error("HYPL endpoints disagree"); return false; }
+        local surface_test = -1;
+        for (local dy = 8; dy <= 20 && surface_test == -1; dy++) for (local dx = 40; dx <= 120; dx++) {
+            local tile = GSMap.GetTileIndex(x0 + dx, y0 + dy);
+            if (GSTile.IsBuildable(tile) && GSTile.GetSlope(tile) == GSTile.SLOPE_FLAT) { surface_test = tile; break; }
+        }
+        if (surface_test == -1 || GSRail.BuildRail(surface_test - 1, surface_test, surface_test + 1)) {
+            GSLog.Error("HYPL surface route allowed"); return false;
+        }
+        GSLog.Info("HYPL surface_routes_rejected=true");
         local middle = GSMap.GetTileIndex(x0 + 105, y0);
         if (GSRail.IsRailTile(middle)) { GSLog.Error("HYPL occupies surface"); return false; }
         GSRoad.SetCurrentRoadType(GSRoad.ROADTYPE_ROAD);

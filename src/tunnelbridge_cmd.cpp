@@ -311,6 +311,7 @@ static CommandCost CheckBuildAbove(TileIndex tile, DoCommandFlags flags, Axis ax
  */
 CommandCost CmdBuildBridge(DoCommandFlags flags, TileIndex tile_end, TileIndex tile_start, TransportType transport_type, BridgeType bridge_type, RailType railtype, RoadType roadtype)
 {
+	if (transport_type == TransportType::Rail && IsHyperloopRailType(railtype)) return CommandCost(STR_HYPERLOOP_USE_TUBE_TOOL);
 	CompanyID company = _current_company;
 
 	for (TileIndex t : {tile_start, tile_end}) {

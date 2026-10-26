@@ -649,8 +649,11 @@ item(FEAT_AIRPORTS, city_airport_unchanged, 2) {
     }
 }
 
-/* Preserve the stock country airport before adding the functional launch site. */
-item(FEAT_AIRPORTS, country_airport_unchanged, 4) { property { override: 0; } }
+/* Starship already preserves the country airport when both packs are enabled.
+ * Check current and future activation so either NewGRF loading order works. */
+if (!(grf_current_status("FL\01\02") || grf_future_status("FL\01\02"))) {
+    item(FEAT_AIRPORTS, country_airport_unchanged, 4) { property { override: 0; } }
+}
 item(FEAT_AIRPORTS, spaceport, 5) {
     property {
         override: 0;

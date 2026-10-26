@@ -415,6 +415,22 @@ static inline bool ValParamTrackOrientation(Track track)
 }
 
 /**
+ * Allow short surface connections at Hyperloop terminals, depots and access shafts.
+ * @param tile Candidate surface track tile.
+ * @return Whether an owned Hyperloop terminal is within three tiles.
+ */
+static bool IsHyperloopApproach(TileIndex tile)
+{
+	TileArea area(tile, 1, 1);
+	area.Expand(3);
+	for (TileIndex part : area) {
+		if ((IsRailStationTile(part) || IsRailDepotTile(part) || IsHyperloopTube(part)) &&
+			GetTileOwner(part) == _current_company && IsHyperloopRailType(GetRailType(part))) return true;
+	}
+	return false;
+}
+
+/**
  * Build a single piece of rail
  * @param flags operation to perform
  * @param tile tile  to build on
@@ -428,6 +444,7 @@ CommandCost CmdBuildSingleRail(DoCommandFlags flags, TileIndex tile, RailType ra
 	CommandCost cost(ExpensesType::Construction);
 
 	if (!ValParamRailType(railtype) || !ValParamTrackOrientation(track)) return CMD_ERROR;
+	if (IsHyperloopRailType(railtype) && !IsHyperloopApproach(tile)) return CommandCost(STR_HYPERLOOP_USE_TUBE_TOOL);
 
 	Slope tileh = GetTileSlope(tile);
 	TrackBits trackbit = track;
@@ -1598,6 +1615,11 @@ CommandCost CmdConvertRail(DoCommandFlags flags, TileIndex tile, TileIndex area_
 
 		if (IsHyperloopTube(cur_tile) && !IsHyperloopRailType(totype)) {
 			error.MakeError(STR_HYPERLOOP_NO_CONVERSION);
+			continue;
+		}
+
+		if (IsHyperloopRailType(totype) && IsPlainRailTile(cur_tile) && !IsHyperloopApproach(cur_tile)) {
+			error.MakeError(STR_HYPERLOOP_USE_TUBE_TOOL);
 			continue;
 		}
 

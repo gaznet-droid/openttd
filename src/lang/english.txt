@@ -6109,3 +6109,5 @@ STR_ORBITAL_SERVICE_HOME                                        :Orbital shuttle
 STR_DISTRIBUTION_REQUIRES_CITY                                  :A Distribution Centre requires a town of at least 5,000 people
 STR_DISTRIBUTION_ONE_PER_TOWN                                   :This town already has a Distribution Centre
 STR_DISTRIBUTION_CLEAR_SITE                                     :A Distribution Centre needs a clear, flat 4x4 site
+STR_HYPERLOOP_USE_TUBE_TOOL                                     :Build Hyperloop routes with the underground tube tool; surface track is limited to terminal approaches
+STR_HYPERLOOP_BUILD_TUBE_TOOLTIP                                :{BLACK}Drag between two aligned, flat access shafts at the same height to build an underground Hyperloop tube

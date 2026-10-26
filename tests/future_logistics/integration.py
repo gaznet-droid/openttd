@@ -30,7 +30,7 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT / "work/integration")
     parser.add_argument("--update-snapshots", action="store_true",
                         help="rewrite the Tech Library snapshots instead of comparing against them")
-    parser.add_argument("--only", choices=["data-centre", "orbital", "hyperloop", "hub"], help="run a focused gameplay regression")
+    parser.add_argument("--only", choices=["data-centre", "orbital", "hyperloop", "hub", "airports"], help="run a focused gameplay regression")
     args = parser.parse_args()
     binary, baseset, output = args.binary.resolve(), args.baseset.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -222,6 +222,22 @@ DayZeroMonopolies =
         require(re.search(rf"FL distribution request tile={small} accepted=false .*5,000", rejected), "small town restriction did not apply")
         require(re.search(r"FL distribution audit .*bays=4 reserved_secondary=4", rejected), "hub bays did not survive reload")
         print("Distribution hub build, four live bays, town restrictions and reload passed", flush=True)
+
+    def check_airports():
+        fl = ROOT / "mods/newgrf/future_logistics/future_logistics.grf"
+        ss = ROOT / "mods/newgrf/starship/starship.grf"
+        for name, grfs in (("future-only", [fl]), ("starship-only", [ss]),
+                           ("future-first", [fl, ss]), ("starship-first", [ss, fl])):
+            text, _ = run("airport-" + name, enabled=False, year=2056, grfs=grfs,
+                          commands="future_logistics_tech validate\nfuture_logistics_tech list\n")
+            require("FL tech validate problems=0" in text, name + " has declaration problems")
+            require(len(re.findall(r"FL tech infra kind=airport id=airport:\d+ speed=0 size=4x3", text)) == 1,
+                    name + " replaces or duplicates the country airport")
+        print("Country airport preservation with either graphics-pack loading order passed", flush=True)
+
+    if args.only == "airports":
+        check_airports()
+        return
 
     if args.only == "hub":
         check_hub()
@@ -442,7 +458,8 @@ DayZeroMonopolies =
     both, _ = run("starship-with-future-logistics", year=2056, map_bits=9, grfs=[fl_grf, ss_grf],
                   commands="future_logistics_tech validate\nfuture_logistics_tech list\n")
     require("FL tech validate problems=0" in both, "Starship and Future Logistics together report declaration problems")
-    # The launch site copies the country airport (4x3); the country airport itself must still be there, once.
+    # Each pack must preserve exactly one country airport, including either loading order.
+    check_airports()
     require(len(re.findall(r"FL tech infra kind=airport id=airport:\d+ speed=0 size=4x3", both)) == 1,
             "loading Starship replaces or duplicates the country airport")
     # Balance: Starship is the most expensive vehicle to buy and to run, and carries the most.
