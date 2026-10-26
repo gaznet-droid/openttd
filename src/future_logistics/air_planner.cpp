@@ -70,9 +70,11 @@ std::vector<AirportChoice> UsableAirports(const TechLibrary &library, const Serv
 		const auto flags = GetAirport(record.index)->flags;
 		if (!flags.Any({AirportFTAClass::Flag::Airplanes, AirportFTAClass::Flag::Helicopters})) continue;
 		const bool helicopters_only = !flags.Test(AirportFTAClass::Flag::Airplanes);
+		const bool orbital = std::ranges::find(record.provides, "launchpad") != record.provides.end();
+		const bool short_range = helicopters_only && !orbital;
 		airports.push_back({&record, static_cast<uint8_t>(record.index), helicopters_only,
 			static_cast<uint8_t>(helicopters_only ? 0 : airport_spec->class_index.base()),
-			helicopters_only ? MIN_HELI_DISTANCE : MIN_AIR_DISTANCE, helicopters_only ? MAX_HELI_DISTANCE : MAX_AIR_DISTANCE});
+			short_range ? MIN_HELI_DISTANCE : MIN_AIR_DISTANCE, short_range ? MAX_HELI_DISTANCE : MAX_AIR_DISTANCE});
 	}
 	std::ranges::stable_sort(airports, std::greater{}, [](const AirportChoice &a) { return a.record->size_x * a.record->size_y; });
 	return airports;
