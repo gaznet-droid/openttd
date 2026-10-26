@@ -5,6 +5,7 @@
 /** @file air_planner.cpp Day-zero airlines: an airport in each of two towns and a passenger aircraft between them. */
 #include "../stdafx.h"
 #include "air_planner.h"
+#include <map>
 #include "freight_planner.h"
 #include "catalogue.h"
 #include "scale.h"
@@ -134,7 +135,11 @@ std::vector<TileIndex> FindAirportSites(const Place &end, const AirportSpec *spe
 			result.push_back(corner);
 		}
 	}
-	std::ranges::stable_sort(result, {}, [&](TileIndex t) { return DistanceManhattan(t, centre); });
+	const ItemTags airport_tags = ReadItemTags(spec->badges);
+	const bool orbital = std::ranges::find(airport_tags.provides, "launchpad") != airport_tags.provides.end();
+	std::map<TileIndex, uint> production;
+	if (orbital) for (TileIndex tile : result) production[tile] = GetProductionAroundTiles(tile, spec->size_x, spec->size_y, radius)[cargo];
+	std::ranges::stable_sort(result, {}, [&](TileIndex t) { return std::tuple{orbital ? -static_cast<int>(production.at(t)) : 0, DistanceManhattan(t, centre)}; });
 	KeepUsable(result, end, [](TileIndex tile) { return tile; }, MAX_AIRPORT_SITES);
 	return result;
 }
@@ -160,6 +165,8 @@ ConstructionResult BuildAirline(uint8_t type, TileIndex a, TileIndex b, const En
 {
 	const auto aircraft_id = ReadItemTags(aircraft->badges).id;
 	const bool orbital = aircraft_id == "starship" || aircraft_id == "rocket";
+	/* A single shuttle can use every monthly launch slot on its home pad. */
+	if (orbital) fleet = 1;
 	Money cost = 0;
 	for (const auto &[corner, join] : {std::pair{a, join_a}, {b, join_b}}) {
 		if (orbital && corner == b) continue;
@@ -288,7 +295,9 @@ ConstructionResult TryAirPairs(const TechLibrary &library, const ServiceSpec &sp
 			const TechRecord *record = library.FindBest(query);
 			if (record == nullptr) continue;
 			const auto origins = FindAirportSites(pair.a, airport_spec, cargo, false);
-			const auto destinations = FindAirportSites(pair.b, airport_spec, cargo, true);
+			const auto vehicle_id = ReadItemTags(Engine::Get(record->engine)->badges).id;
+			const bool orbital = vehicle_id == "starship" || vehicle_id == "rocket";
+			const auto destinations = orbital ? std::vector<TileIndex>{pair.b.Centre()} : FindAirportSites(pair.b, airport_spec, cargo, true);
 			for (TileIndex a : origins) {
 				for (TileIndex b : destinations) {
 					const auto result = BuildAirline(type, a, b, Engine::Get(record->engine), cargo, limits.fleet, false);
@@ -332,7 +341,8 @@ ConstructionResult BuildTownAirline(const TechLibrary &library, const ServiceSpe
 	std::ranges::stable_sort(pairs, {}, &AirPair::distance);
 	return TryAirPairs(library, spec, cargo, TownRole(library, cargo, TechRole::PassengerIntercity), pairs, [&](const AirPair &pair, const TechRecord &record) {
 		used_towns.insert(pair.a.town->index);
-		used_towns.insert(pair.b.town->index);
+		const auto vehicle_id = ReadItemTags(Engine::Get(record.engine)->badges).id;
+		if (vehicle_id != "starship" && vehicle_id != "rocket") used_towns.insert(pair.b.town->index);
 		Debug(Facility::Misc, Severity::Notice, "FL towns company={} a={} b={} tier={} population={},{} aircraft={}", _current_company,
 			pair.a.town->index, pair.b.town->index, TierName(pair.tier), pair.a.town->cache.population, pair.b.town->cache.population, record.id);
 	});

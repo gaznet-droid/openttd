@@ -24,12 +24,18 @@
 #include "../safeguards.h"
 
 namespace {
+/** Return the current calendar month index. @return Calendar month index. */
 int32_t Month()
 {
 	const auto ymd = TimerGameCalendar::ConvertDateToYMD(TimerGameCalendar::date);
 	return ymd.year.base() * 12 + ymd.month;
 }
 
+/**
+ * Find the original spaceport.
+ * @param v Shuttle to inspect.
+ * @return Home station, or nullptr.
+ */
 Station *Origin(const Aircraft *v)
 {
 	Station *st = Station::GetIfValid(v->orbital.origin);
@@ -37,6 +43,11 @@ Station *Origin(const Aircraft *v)
 		AircraftMeetsAirportRequirements(v->GetEngine(), AirportSpec::Get(st->airport.type)) ? st : nullptr;
 }
 
+/**
+ * Set shuttle, shadow and rotor visibility.
+ * @param v Primary aircraft.
+ * @param visible Whether to show it.
+ */
 void Visible(Aircraft *v, bool visible)
 {
 	for (Aircraft *part = v; part != nullptr; part = part->Next()) {
@@ -46,6 +57,11 @@ void Visible(Aircraft *v, bool visible)
 	}
 }
 
+/**
+ * Check the shared launch pad.
+ * @param v Requesting shuttle.
+ * @return Whether another mission reserves the pad.
+ */
 bool PadBusy(const Aircraft *v)
 {
 	for (const Aircraft *other : Aircraft::Iterate()) {
@@ -55,12 +71,22 @@ bool PadBusy(const Aircraft *v)
 	return false;
 }
 
+/**
+ * Book orbital revenue.
+ * @param v Operating vehicle.
+ * @param profit Revenue after feeder shares.
+ */
 void Pay(Aircraft *v, Money profit)
 {
 	SubtractMoneyFromCompany(v->owner, CommandCost(v->GetExpenseType(true), -profit));
 	v->profit_this_year += profit * 256;
 }
 
+/**
+ * Begin loading in the home service bay.
+ * @param v Shuttle to load.
+ * @param st Home spaceport.
+ */
 void Board(Aircraft *v, Station *st)
 {
 	v->tile = st->airport.GetHangarTile(0);

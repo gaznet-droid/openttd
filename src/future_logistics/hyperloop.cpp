@@ -8,14 +8,16 @@
 #include "../safeguards.h"
 
 namespace {
+/** Geometry derived from native flat access shafts. */
 struct Tube {
-	TileIndex start;
-	TileIndex end;
-	int z;
+	TileIndex start; ///< First shaft.
+	TileIndex end; ///< Paired exit.
+	int z; ///< Native tunnel layer height.
 };
-std::vector<Tube> _tubes;
-bool _valid = false;
+std::vector<Tube> _tubes; ///< Derived tube segments.
+bool _valid = false; ///< Whether geometry matches the map.
 
+/** Rebuild derived geometry when needed. @return Current tube segments. */
 const std::vector<Tube> &Tubes()
 {
 	if (_valid) return _tubes;
@@ -31,6 +33,12 @@ const std::vector<Tube> &Tubes()
 	return _tubes;
 }
 
+/**
+ * Check a surface coordinate.
+ * @param tube Segment to inspect.
+ * @param tile Surface coordinate.
+ * @return Whether the coordinate lies on the segment.
+ */
 bool Contains(const Tube &tube, TileIndex tile)
 {
 	const uint x = TileX(tile), y = TileY(tile);
