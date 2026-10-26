@@ -2603,6 +2603,7 @@ bool Vehicle::IsWaitingForUnbunching() const
  */
 CommandCost Vehicle::SendToDepot(DoCommandFlags flags, DepotCommandFlags command)
 {
+	if (this->type == VehicleType::Aircraft && Aircraft::From(this)->acache.orbital_shuttle) return CommandCost(STR_ORBITAL_SERVICE_HOME);
 	CommandCost ret = CheckOwnership(this->owner);
 	if (ret.Failed()) return ret;
 

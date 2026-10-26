@@ -274,8 +274,11 @@ bool InfrastructureMeetsNeeds(std::span<const std::string> needs, std::span<cons
 bool AircraftMeetsAirportRequirements(const Engine *engine, const AirportSpec *airport)
 {
 	const ItemTags vehicle_tags = ReadItemTags(engine->badges);
-	if (!vehicle_tags.formatted || vehicle_tags.needs.empty()) return true;
 	const ItemTags airport_tags = ReadItemTags(airport->badges);
+	/* A functional orbital pad cannot also run a conventional airport circuit. */
+	if ((airport_tags.id == "spaceport" || airport_tags.id == "starship_launch_site") &&
+		std::ranges::find(vehicle_tags.needs, "launchpad") == vehicle_tags.needs.end()) return false;
+	if (!vehicle_tags.formatted || vehicle_tags.needs.empty()) return true;
 	return airport_tags.formatted && InfrastructureMeetsNeeds(vehicle_tags.needs, airport_tags.provides);
 }
 

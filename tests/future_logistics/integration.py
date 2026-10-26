@@ -30,14 +30,14 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT / "work/integration")
     parser.add_argument("--update-snapshots", action="store_true",
                         help="rewrite the Tech Library snapshots instead of comparing against them")
-    parser.add_argument("--only", choices=["data-centre", "orbital"], help="run a focused gameplay regression")
+    parser.add_argument("--only", choices=["data-centre", "orbital", "hyperloop"], help="run a focused gameplay regression")
     args = parser.parse_args()
     binary, baseset, output = args.binary.resolve(), args.baseset.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
 
     def run(name, *, seed=12345, load=None, enabled=True, limit=4, capital=25000000,
             towns=48, year=1950, service=False, dedicated=False, vehicle_limit=500, clear_limit=4096, default_world=False,
-            climate="temperate", commands="", industries=4, map_bits=8, grfs=(), coastal=False, months=3, mountains=False, rivers=False, game_script=None, multiple_industries=False, daily_commands=""):
+            climate="temperate", commands="", industries=4, map_bits=8, grfs=(), coastal=False, months=3, mountains=False, rivers=False, game_script=None, multiple_industries=False, daily_commands="", town_cargo_scale=100):
         folder = output / name
         folder.mkdir(exist_ok=True)
         if grfs:
@@ -75,6 +75,7 @@ max_trains = {vehicle_limit}
 max_aircraft = {vehicle_limit}
 [economy]
 town_layout = 1
+town_cargo_scale = {town_cargo_scale}
 [gui]
 pause_on_newgame = false
 threaded_saves = false
@@ -159,8 +160,12 @@ DayZeroMonopolies =
         offworld = output / "orbital-offworld.sav"
         if offworld.exists():
             offworld.unlink()
-        text, snapshot = run("orbital", enabled=False, limit=1, year=2050, towns=32, map_bits=9,
-                             grfs=[grf], service=True, months=12,
+        # Seed with the normal GUI new-game callback so the test company is a human.
+        # The busy test town uses the ordinary 300% cargo-generation setting.
+        _, seed = run("orbital-seed", enabled=False, limit=1, year=2050, towns=32, map_bits=9,
+                      grfs=[grf], town_cargo_scale=300, game_script=ROOT / "tests/future_logistics/gs/OrbitalCheck")
+        text, snapshot = run("orbital", load=seed, enabled=False, limit=1, year=2050, towns=32, map_bits=9,
+                             grfs=[grf], service=True, months=12, town_cargo_scale=300,
                              game_script=ROOT / "tests/future_logistics/gs/OrbitalCheck",
                              daily_commands=f"future_logistics_tech orbital {offworld}\n")
         require("ORBIT fixture ready" in text, "orbital test fixture was not built")
@@ -182,6 +187,26 @@ DayZeroMonopolies =
         require("ORBIT fixture ready" not in resumed, "reload recreated the test fleet")
         require("FL orbital landed" in resumed, "off-world mission did not return after reload")
         print("Orbital launch, return, shared slots and off-world reload passed", flush=True)
+
+    def check_hyperloop():
+        grf = ROOT / "mods/newgrf/future_logistics/future_logistics.grf"
+        text, save = run("hyperloop-underground", enabled=False, limit=1, year=2050, towns=8, map_bits=9,
+                         grfs=[grf], service=True, months=3,
+                         game_script=ROOT / "tests/future_logistics/gs/HyperloopCheck")
+        require("HYPL fixture ready" in text, "underground Hyperloop fixture failed")
+        require("HYPL movement reached_far=true" in text, "pod did not traverse its underground tube at the expected speed")
+        resumed, _ = run("hyperloop-underground-reloaded", enabled=False, limit=1, year=2050, load=save,
+                         grfs=[grf], service=True, months=1,
+                         game_script=ROOT / "tests/future_logistics/gs/HyperloopCheck")
+        require("HYPL fixture ready" not in resumed, "Hyperloop reload recreated its fixture")
+        require("HYPL movement reached_far=true" in resumed, "underground tube did not survive reload")
+        print("Underground Hyperloop traversal, surface use, overlap rejection and reload passed", flush=True)
+
+    if args.only == "hyperloop":
+        adopted, _ = run("hyperloop-adoption", year=2041, grfs=[ROOT / "mods/newgrf/future_logistics/future_logistics.grf"])
+        require(re.search(r"FL rail company=1 .*track=HYPL .*tunnels=1", adopted), "National Rail did not build an underground Hyperloop route")
+        check_hyperloop()
+        return
 
     if args.only == "orbital":
         check_orbital()
@@ -380,11 +405,11 @@ DayZeroMonopolies =
     require(re.search(r"FL towns company=2 a=\d+ b=\d+ tier=city population=\d+,\d+ aircraft=464C0102:air:64", ships)
             and re.search(r"FL service company=2 recipe=rocket/airport_pair/town_pair fallback=false result=success", ships),
             "AeroLink did not open a Starship route on its own")
-    ship_run, _ = run("starship-service", load=ship_save, service=True, map_bits=9, grfs=[ss_grf])
+    ship_run, _ = run("starship-service", load=ship_save, service=True, months=12, map_bits=9, grfs=[ss_grf])
     # Only the last check counts: the first, as the save loads, comes before any flying.
     final_check = ship_run.split("FL check result")[-2]
     starships = re.findall(r"FL check company=2 vehicle=\d+ type=air connected=(\w+) served=(\w+) .*engine=464C0102:air:64 ", final_check)
-    require(starships and all(c == "true" and v == "true" for c, v in starships), "not every Starship served its launch sites")
+    require(starships and all(c == "true" and v == "true" for c, v in starships), "not every Starship completed its orbital route")
     # Balance: Starship earns the most of any vehicle.
     profits = re.findall(r"FL check company=\d+ vehicle=\d+ type=\w+ .*profit=(-?\d+) .*engine=(\S+) ", final_check)
     require(max(profits, key=lambda p: int(p[0]))[1] == "464C0102:air:64", "a vehicle out-earned every Starship")
@@ -415,6 +440,8 @@ DayZeroMonopolies =
             "the Corporate Infrastructure objects could not all be built alongside Future Logistics")
 
     check_data_centres()
+    check_orbital()
+    check_hyperloop()
 
     # A NewGRF that adds a tech family, a rival, a cargo meaning, a rule for a built-in rival, and mistakes.
     grf_text, _ = run("newgrf-tech-tree", limit=5, grfs=[ROOT / "tests/future_logistics/grf/fl_test.grf"],

@@ -3161,6 +3161,7 @@ public:
 		if (v->type == VehicleType::Aircraft && Aircraft::From(v)->acache.orbital_shuttle) {
 			this->SetWidgetDisabledState(WID_VV_FORCE_PROCEED, !is_localcompany || OrbitalDispatchError(Aircraft::From(v)) != STR_NULL);
 			this->SetWidgetDisabledState(WID_VV_GOTO_DEPOT, true);
+			this->SetWidgetDisabledState(WID_VV_SHOW_ORDERS, true);
 		}
 
 		if (v->type == VehicleType::Train || v->type == VehicleType::Road) {

@@ -6,3 +6,6 @@ docs/gamedocs/*
 docs/source/*
 /out
 /vcpkg_installed
+
+/work/
+/tests/future_logistics/__pycache__/

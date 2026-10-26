@@ -12,6 +12,7 @@
 #include "../company_func.h"
 #include "../debug.h"
 #include "../economy_func.h"
+#include "../economy_base.h"
 #include "../engine_base.h"
 #include "../landscape.h"
 #include "../newgrf_airport.h"
@@ -39,7 +40,8 @@ Station *Origin(const Aircraft *v)
 void Visible(Aircraft *v, bool visible)
 {
 	for (Aircraft *part = v; part != nullptr; part = part->Next()) {
-		part->MarkDirty();
+		/* Aircraft::MarkDirty expects a primary with mail/shadow children. */
+		part->UpdateViewport(true, false);
 		if (visible) part->vehstatus.Reset(VehState::Hidden); else part->vehstatus.Set(VehState::Hidden);
 	}
 }
@@ -120,7 +122,18 @@ bool TickOrbitalAircraft(Aircraft *v)
 	const int32_t today = TimerGameCalendar::date.base();
 	switch (mission.phase) {
 		case OrbitalPhase::Boarding: {
-			if (v->cargo.StoredCount() < (mission.manual_dispatch ? std::min<uint>(500, v->cargo_cap) : v->cargo_cap) || OrbitalDispatchError(v) != STR_NULL) break;
+			/* External order edits must not strand the shuttle or leave duplicate loading entries. */
+			if (!v->current_order.IsType(OT_LOADING)) {
+				v->CancelReservation(StationID::Invalid(), st);
+				st->loading_vehicles.remove(v);
+				delete v->cargo_payment;
+				Board(v, st);
+			}
+			v->current_order.SetLoadType(OrderLoadType::FullLoadAny);
+			v->current_order.SetUnloadType(OrderUnloadType::NoUnload);
+			const bool load_ready = v->cargo_cap == 1000 ? OrbitalLoadReady(v->cargo.StoredCount(), mission.manual_dispatch) :
+				v->cargo.StoredCount() >= (mission.manual_dispatch ? std::min<uint>(500, v->cargo_cap) : v->cargo_cap);
+			if (!load_ready || OrbitalDispatchError(v) != STR_NULL) break;
 			/* A ready ship that has waited longer gets first use of the shared monthly slot. */
 			for (const Aircraft *other : Aircraft::Iterate()) {
 				if (other != v && other->IsNormalAircraft() && other->acache.orbital_shuttle && other->orbital.origin == st->index &&

@@ -847,7 +847,7 @@ CommandCost CmdBuildHyperloopTube(DoCommandFlags flags, TileIndex start, TileInd
 		if (IsWaterTile(tile)) return CommandCost(STR_ERROR_SITE_UNSUITABLE_FOR_TUNNEL);
 		CommandCost clear = Command<Commands::LandscapeClear>::Do(flags, tile);
 		if (clear.Failed()) return clear;
-		cost.AddCost(clear);
+		cost.AddCost(std::move(clear));
 	}
 	const uint length = DistanceManhattan(start, end) + 1;
 	cost.AddCost(length * (_price[Price::BuildTunnel] + RailBuildCost(railtype)));

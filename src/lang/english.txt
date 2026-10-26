@@ -6105,3 +6105,4 @@ STR_ORBITAL_DISPATCH_TOOLTIP                                     :{BLACK}Launch 
 STR_ORBITAL_HOME_ONLY                                           :Orbital missions return to their originating spaceport
 STR_HYPERLOOP_FLAT_ENDPOINTS                                    :Hyperloop access shafts must be on flat land at the same height
 STR_HYPERLOOP_NO_CONVERSION                                     :Remove the underground Hyperloop tube before changing its rail type
+STR_ORBITAL_SERVICE_HOME                                        :Orbital shuttles are serviced automatically on their home launch pad

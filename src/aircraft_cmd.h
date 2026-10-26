@@ -17,6 +17,6 @@
 CommandCost CmdBuildAircraft(DoCommandFlags flags, TileIndex tile, const Engine *e, Vehicle **v);
 
 CommandCost CmdStarshipDispatch(DoCommandFlags flags, VehicleID vehicle_id);
-DEF_CMD_TRAIT(Commands::StarshipDispatch, CmdStarshipDispatch, CommandFlags{}, CommandType::VehicleManagement)
+DEF_CMD_TRAIT(Commands::StarshipDispatch, CmdStarshipDispatch, CommandFlag::Location, CommandType::VehicleManagement)
 
 #endif /* AIRCRAFT_CMD_H */

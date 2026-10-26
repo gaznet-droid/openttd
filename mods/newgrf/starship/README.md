@@ -1,3 +1,15 @@
+# Orbital service update — 26 October 2026
+
+Use a **new game** with Starship 3 and Future Logistics 3. Earlier launch-site layouts are incompatible.
+
+Starship now operates from one home spaceport. It boards 1,000 actual passengers, launches vertically, spends seven calendar days off-world, returns to that same spaceport with 1,000 inbound passengers, and services on its pad for two days. The green dispatch button permits early departure with 500–999 passengers. Each spaceport has one launch per calendar month, shared by its fleet. All mission state and the shared launch slot survive saving and loading. Ordinary airports cannot serve Starship; ordinary helicopters cannot occupy the dedicated launch complex.
+
+Both functional spaceports use the supplied launch artwork on a 4×4 footprint. The rocket is drawn separately from the empty-pad scenery, including during servicing. Waiting ships use the service bay. Orbital revenue uses a documented notional distance of 256 tiles for each leg; outbound payments deduct feeder shares, and returning passengers enter normal town/company delivery accounting.
+
+The engine integration test exercises real passenger loading, a two-ship fleet sharing monthly slots, inbound delivery, and a save/reload while off-world. The older description below records the original aircraft prototype; its horizontal flight, refit and footprint descriptions are superseded by this update.
+
+---
+
 # Future Logistics: Starship
 
 A NewGRF with a fully reusable rocket, **Starship**, and its **Starship Launch Site**, for the
