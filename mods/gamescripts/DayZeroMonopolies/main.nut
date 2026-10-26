@@ -13,11 +13,9 @@ class DayZeroMonopolies extends GSController {
         local companies = 0;
         for (local i = 0; i < 15; i++) if (GSCompany.ResolveCompanyID(i) != GSCompany.COMPANY_INVALID) companies++;
         GSLog.Info("Companies visible after startup: " + companies);
-        local milestones = [
-            [2022, "Future Logistics roadmap: parcel drones. Vehicle content is planned."],
-            [2035, "Future Logistics roadmap: hyperloop freight. Vehicle content is planned."],
-            [2050, "Future Logistics roadmap: rocket freight. Vehicle content is planned."]
-        ];
+        // Actual vehicle announcements belong to the engine/NewGRFs. Do not show
+        // obsolete prototype roadmaps as modal news in a running game.
+        local milestones = [];
         while (true) {
             local year = GSDate.GetYear(GSDate.GetCurrentDate());
             foreach (milestone in milestones) {

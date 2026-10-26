@@ -31,7 +31,7 @@ PAD_TILES = 4  # The art's footprint, in tiles each way.
 # the art's launch mount (measured in game: 0.6 and 11.9 sixteenths of a tile off the footprint's middle) at
 # (44, 38.5) sixteenths, between the country airport's helicopter take-off (44, 37) and landing (44, 40) spots.
 # The art's back edge then reaches a quarter of a tile past the layout's north-east side.
-LAYOUT_TILES = (5, 4)
+LAYOUT_TILES = (4, 4)
 ART_OFFSET = (0.71, -0.24)
 ROTOR_Z_OFFSET = 5  # A helicopter's rotor is drawn this many pixels above its body (aircraft.h).
 # Where the lit rocket stands, relative to its position at the launch site's take-off spot, in pixels at normal
@@ -221,11 +221,38 @@ def pad_tiles(info):
             info[name] = {"width": piece.width, "height": piece.height, "xrel": box[0] - tile_x, "yrel": box[1] - tile_y}
 
 
+def update_pad_nml(info):
+    """Keep the NML footprint and sprite bounds in sync with generated pixels."""
+    lines = []
+    for y in range(LAYOUT_TILES[1]):
+        for x in range(LAYOUT_TILES[0]):
+            name = f'pad_{x}_{y}'
+            for zoom in (1, 2):
+                m = info[f'{name}_{zoom}x']
+                args = f"0, 0, {m['width']}, {m['height']}, {m['xrel']}, {m['yrel']}"
+                prefix = 'spriteset' if zoom == 1 else 'alternative_sprites'
+                level = 'ZOOM_LEVEL_NORMAL' if zoom == 1 else 'ZOOM_LEVEL_IN_2X'
+                lines.append(f'{prefix}(pad_sprite_{x}_{y}, {level}, BIT_DEPTH_32BPP, "gfx/{name}_{zoom}x.png") {{ [{args}] }}')
+            lines.append(f'spritelayout pad_layout_{x}_{y} {{ ground {{ sprite: pad_sprite_{x}_{y}(0); }} }}')
+            lines.append(f'item(FEAT_AIRPORTTILES, pad_tile_{x}_{y}, {y * LAYOUT_TILES[0] + x}) {{ property {{ substitute: 0; }} graphics {{ default: pad_layout_{x}_{y}; }} }}')
+    lines.append('tilelayout starship_pad_layout { rotation: DIRECTION_NORTH;')
+    for y in range(LAYOUT_TILES[1]):
+        for x in range(LAYOUT_TILES[0]):
+            lines.append(f'    {x}, {y}: pad_tile_{x}_{y};')
+    lines.append('}')
+    p = HERE / 'starship.nml'
+    s = p.read_text()
+    start = s.index('spriteset(pad_sprite_0_0,')
+    end = s.index('/* The first NewGRF airport', start)
+    p.write_text(s[:start] + '\n'.join(lines) + '\n\n' + s[end:])
+
+
 def main():
     GFX.mkdir(exist_ok=True)
     info = {}
     rocket_sprites(info)
     pad_tiles(info)
+    update_pad_nml(info)
     (GFX / "sprites.json").write_text(json.dumps(info, indent=1, sort_keys=True) + "\n")
     print(f"Wrote {len(info)} sprites to {GFX}")
 

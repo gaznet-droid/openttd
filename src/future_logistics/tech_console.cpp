@@ -12,6 +12,8 @@
 #include "../debug.h"
 #include "../engine_base.h"
 #include "../engine_func.h"
+#include "../airport.h"
+#include "../newgrf_airport.h"
 #include "../newgrf_badge.h"
 #include "../strings_func.h"
 #include "../tile_map.h"
@@ -24,6 +26,17 @@
 #include "table/strings.h"
 
 #include "../industry.h"
+#include "../core/string_consumer.hpp"
+#include "../core/backup_type.hpp"
+#include "../command_func.h"
+#include "../station_cmd.h"
+#include "../object_base.h"
+#include "../newgrf_object.h"
+#include "../roadstop_base.h"
+#include "../station_base.h"
+#include "../fileio_func.h"
+#include "../saveload/saveload_func.h"
+#include "../company_base.h"
 
 #include "../safeguards.h"
 
@@ -88,6 +101,66 @@ CargoType ParseCargo(std::string_view label)
  */
 bool FutureLogisticsTechCommand(std::span<std::string_view> argv)
 {
+	if (argv.size() == 2 && argv[0] == "build-hub") {
+		const auto coordinate = ParseInteger<uint32_t>(argv[1]);
+		const RoadStopSpec *spec = FutureLogistics::FindRoadStopSpecById("distribution_centre");
+		if (!coordinate.has_value() || *coordinate >= Map::Size() || spec == nullptr || !Company::IsValidID(_local_company)) return false;
+		const TileIndex tile{*coordinate};
+		AutoRestoreBackup company(_current_company, _local_company);
+		CommandCost test = Command<Commands::BuildRoadStop>::Do({DoCommandFlag::Auto, DoCommandFlag::NoWater}, tile, 4, 4, RoadStopType::Truck, false,
+			DiagDirection::SW, ROADTYPE_ROAD, spec->class_index, spec->index, NEW_STATION, true);
+		Report(fmt::format("FL distribution request tile={} accepted={} error={}", tile, test.Succeeded(), test.Failed() ? GetString(test.GetErrorMessage()) : "-"));
+		if (test.Succeeded()) Command<Commands::BuildRoadStop>::Post(STR_ERROR_CAN_T_BUILD_TRUCK_STATION, tile, 4, 4, RoadStopType::Truck, false,
+			DiagDirection::SW, ROADTYPE_ROAD, spec->class_index, spec->index, NEW_STATION, true);
+		return true;
+	}
+	if (argv.size() == 1 && argv[0] == "hub-audit") {
+		for (const Object *object : Object::Iterate()) {
+			if (ReadItemTags(ObjectSpec::Get(object->type)->badges).id != "distribution_warehouse") continue;
+			StationID station = StationID::Invalid();
+			uint bays = 0, reserved = 0;
+			for (uint i = 0; i < 4; i++) {
+				const TileIndex tile = TileAddXY(object->location.tile, 3, i);
+				if (!IsBayRoadStopTile(tile) || GetRoadStopType(tile) != RoadStopType::Truck) continue;
+				if (i == 0) station = GetStationIndex(tile);
+				if (GetStationIndex(tile) == station) bays++;
+				if (!RoadStop::GetByTile(tile, RoadStopType::Truck)->IsFreeBay(1)) reserved++;
+			}
+			Report(fmt::format("FL distribution audit tile={} owner={} station={} bays={} reserved_secondary={}", object->location.tile, GetTileOwner(object->location.tile), station, bays, reserved));
+		}
+		return true;
+	}
+
+	if ((argv.size() == 1 || argv.size() == 2) && argv[0] == "orbital") {
+		bool offworld = false;
+		for (const Aircraft *v : Aircraft::Iterate()) {
+			if (!v->IsNormalAircraft() || !v->acache.orbital_shuttle) continue;
+			offworld |= v->orbital.phase == OrbitalPhase::Space;
+			Report(fmt::format("FL orbital audit vehicle={} origin={} phase={} passengers={} capacity={} trips={} month={} due={} date={} money={}",
+				v->index, v->orbital.origin, to_underlying(v->orbital.phase), v->cargo.StoredCount(), v->cargo_cap, v->orbital.completed_trips,
+				v->orbital.last_launch_month, v->orbital.due_date, TimerGameCalendar::date.base(), Company::Get(v->owner)->money));
+		}
+		if (offworld && argv.size() == 2 && !FioCheckFileExists(argv[1], Subdirectory::Save)) {
+			Report(fmt::format("FL orbital snapshot result={}", SaveOrLoad(std::string(argv[1]), SaveLoadOperation::Save, DetailedFileType::GameFile, Subdirectory::Save) == SaveLoadResult::Ok));
+		}
+		return true;
+	}
+
+	if (argv.size() == 2 && argv[0] == "airports") {
+		const TechLibrary library = TechLibrary::Build();
+		for (const TechRecord &record : library.Vehicles()) {
+			if (record.mode != TechMode::Air || ReadItemTags(Engine::Get(record.engine)->badges).id != argv[1]) continue;
+			for (uint8_t type = 0; type < NUM_AIRPORTS; type++) {
+				const AirportSpec *spec = AirportSpec::GetWithoutOverride(type);
+				if (!spec->enabled) continue;
+				const ItemTags tags = ReadItemTags(spec->badges);
+				const bool launchpad = tags.formatted && std::ranges::find(tags.provides, "launchpad") != tags.provides.end();
+				Report(fmt::format("FL tech airport-access engine={} airport={} launchpad={} permitted={}", record.id, type, launchpad,
+					AircraftMeetsAirportRequirements(Engine::Get(record.engine), spec)));
+			}
+		}
+		return true;
+	}
 	if (argv.size() == 1 && argv[0] == "list") {
 		const TechLibrary library = TechLibrary::Build();
 		for (const TechRecord &record : library.Vehicles()) Report("FL tech vehicle " + FormatVehicle(record));

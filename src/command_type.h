@@ -380,6 +380,9 @@ enum class Commands : uint8_t {
 	UpdateLeagueTableElementScore, ///< update the score of a league table element
 	RemoveLeagueTableElement, ///< remove a league table element
 
+	BuildHyperloopTube, ///< Construct a straight underground Hyperloop tube between flat access shafts.
+	StarshipDispatch, ///< Dispatch an orbital shuttle with at least 500 passengers.
+
 	End, ///< @important Must ALWAYS be on the end of this list!! (period)
 };
 

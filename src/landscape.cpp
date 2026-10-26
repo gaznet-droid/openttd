@@ -9,6 +9,7 @@
 
 /** @defgroup SnowLineGroup Snowline functions and data structures */
 
+#include "future_logistics/hyperloop.h"
 #include "stdafx.h"
 #include "bridge_map.h"
 #include "heightmap.h"
@@ -844,6 +845,7 @@ void RunTileLoop()
 
 void InitializeLandscape()
 {
+	InvalidateHyperloopTubes();
 	for (uint y = _settings_game.construction.freeform_edges ? 1 : 0; y < Map::MaxY(); y++) {
 		for (uint x = _settings_game.construction.freeform_edges ? 1 : 0; x < Map::MaxX(); x++) {
 			MakeClear(TileXY(x, y), ClearGround::Grass, 3);

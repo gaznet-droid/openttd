@@ -1134,6 +1134,19 @@ static Money DeliverGoods(int num_pieces, CargoType cargo_type, StationID dest, 
 }
 
 /**
+ * Deliver a returning orbital manifest through normal town/company accounting.
+ * @param count Returning passengers.
+ * @param cargo Passenger cargo type.
+ * @param station Originating spaceport.
+ * @param company Operating company.
+ * @return Revenue for the orbital return leg.
+ */
+Money DeliverOrbitalCargo(uint count, CargoType cargo, StationID station, CompanyID company)
+{
+	return DeliverGoods(count, cargo, station, 256, 14, Company::Get(company), Source{Source::Invalid, SourceType::Industry});
+}
+
+/**
  * Inform the industry about just delivered cargo
  * DeliverGoodsToIndustry() silently incremented incoming_cargo_waiting, now it is time to do something with the new cargo.
  * @param i The industry to process

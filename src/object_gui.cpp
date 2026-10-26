@@ -8,6 +8,7 @@
 /** @file object_gui.cpp The GUI for objects. */
 
 #include "stdafx.h"
+#include "future_logistics/tech_library.h"
 #include "command_func.h"
 #include "company_func.h"
 #include "hotkeys.h"
@@ -55,7 +56,7 @@ public:
 	{
 		for (const auto &cls : ObjectClass::Classes()) {
 			for (const auto *spec : cls.Specs()) {
-				if (spec != nullptr && spec->IsEverAvailable()) return true;
+				if (spec != nullptr && spec->IsEverAvailable() && ReadItemTags(spec->badges).id != "distribution_warehouse") return true;
 			}
 		}
 		return false;
@@ -67,7 +68,7 @@ public:
 	StringID GetClassName(int id) const override
 	{
 		const auto *objclass = this->GetClass(id);
-		if (objclass->GetUISpecCount() == 0) return INVALID_STRING_ID;
+		if (objclass->GetUISpecCount() == 0 || std::ranges::none_of(objclass->Specs(), [](const ObjectSpec *spec) { return spec != nullptr && ReadItemTags(spec->badges).id != "distribution_warehouse"; })) return INVALID_STRING_ID;
 		return objclass->name;
 	}
 
@@ -77,7 +78,7 @@ public:
 	StringID GetTypeName(int cls_id, int id) const override
 	{
 		const auto *spec = this->GetSpec(cls_id, id);
-		return (spec == nullptr || !spec->IsEverAvailable()) ? INVALID_STRING_ID : spec->name;
+		return (spec == nullptr || !spec->IsEverAvailable() || ReadItemTags(spec->badges).id == "distribution_warehouse") ? INVALID_STRING_ID : spec->name;
 	}
 
 	std::span<const BadgeID> GetTypeBadges(int cls_id, int id) const override
@@ -90,7 +91,7 @@ public:
 	bool IsTypeAvailable(int cls_id, int id) const override
 	{
 		const auto *spec = this->GetSpec(cls_id, id);
-		return spec->IsAvailable();
+		return spec->IsAvailable() && ReadItemTags(spec->badges).id != "distribution_warehouse";
 	}
 
 	void DrawType(int x, int y, int cls_id, int id) const override
@@ -110,7 +111,7 @@ public:
 		for (const Object *o : Object::Iterate()) {
 			if (GetTileOwner(o->location.tile) != _current_company) continue;
 			const ObjectSpec *spec = ObjectSpec::Get(o->type);
-			if (spec == nullptr || spec->class_index == ObjectClassID::Invalid() || !spec->IsEverAvailable()) continue;
+			if (spec == nullptr || spec->class_index == ObjectClassID::Invalid() || !spec->IsEverAvailable() || ReadItemTags(spec->badges).id == "distribution_warehouse") continue;
 			items.insert(GetPickerItem(spec));
 		}
 	}

@@ -14,8 +14,8 @@ all four against every vehicle loaded with the Future Logistics NewGRF.
 |---|---|---|
 | Cost factor | 255, the maximum | Most expensive to buy: 522,949, against the Reusable Rocket's 512,695 |
 | Running cost factor | 255, the maximum | Highest running cost: 7,171 a year, against the Darwin 300's 7,115 |
-| Capacity | 500 passengers + 120 mail | Largest: the next is the Dinger 200 with 400 |
-| Speed / loading speed | 2000 km/h / 80 | Fastest vehicle, and loads its 500 quickly |
+| Capacity | 1,000 passengers + 120 mail | Largest: the next is the Dinger 200 with 400 |
+| Speed / loading speed | 2000 km/h / 80 | Orbital loading rate; horizontal speed is not used by the orbital controller |
 | Profit | from the above | In a simulated year, the two highest earners in the world were Starships (25.1 and 17.1 million); the best other vehicle, a Dinger 200, earned 14.3 million |
 
 Purchase and running cost factors are single bytes, so Starship cannot be made more expensive
@@ -28,7 +28,7 @@ match it.
 |---|---|---|---|
 | Starship | introduction date | 1 Jan 2045 | Before the Future Logistics rocket (2050), as the first of the reusable rockets |
 | Starship | range | unlimited | |
-| Starship | refits | passengers, mail, express and armoured cargo | Like the Future Logistics rocket |
+| Starship | refits | passengers only | Secondary outbound mail capacity is retained |
 | Starship | vehicle life / model life | 30 / 50 years | |
 | Starship | tier | `fl_tier/4` | One above nothing else yet; only ordering within the family |
 | Starship | flame | by flight phase: plume while launching and landing, flame in flight, none on the ground | Checked in game: see the README |

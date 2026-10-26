@@ -8,6 +8,7 @@
 /** @file aircraft_cmd.cpp This file deals with aircraft and airport movements functionalities. */
 
 #include "stdafx.h"
+#include "future_logistics/tech_library.h"
 #include "aircraft.h"
 #include "landscape.h"
 #include "news_func.h"
@@ -273,7 +274,10 @@ CommandCost CmdBuildAircraft(DoCommandFlags flags, TileIndex tile, const Engine 
 	const Station *st = Station::GetByTile(tile);
 
 	/* Prevent building aircraft types at places which can't handle them */
-	if (!CanVehicleUseStation(e->index, st)) return CMD_ERROR;
+	if (!CanVehicleUseStation(e->index, st)) {
+		if (!AircraftMeetsAirportRequirements(e, st->airport.GetSpec())) return CommandCost(STR_ERROR_AIRPORT_MISSING_REQUIRED_FACILITIES);
+		return CMD_ERROR;
+	}
 
 	/* Make sure all aircraft end up in the first tile of the hangar. */
 	tile = st->airport.GetHangarTile(st->airport.GetHangarNum(tile));
@@ -296,7 +300,7 @@ CommandCost CmdBuildAircraft(DoCommandFlags flags, TileIndex tile, const Engine 
 		v->y_pos = u->y_pos = y;
 
 		u->z_pos = GetSlopePixelZ(x, y);
-		v->z_pos = u->z_pos + 1;
+		v->z_pos = u->z_pos + 1 + st->airport.GetFTA()->delta_z;
 
 		v->vehstatus = {VehState::Hidden, VehState::Stopped, VehState::DefaultPalette};
 		u->vehstatus = {VehState::Hidden, VehState::Unclickable, VehState::Shadow};
@@ -413,6 +417,7 @@ ClosestDepot Aircraft::FindClosestDepot()
 
 static void CheckIfAircraftNeedsService(Aircraft *v)
 {
+	if (v->acache.orbital_shuttle) return;
 	if (Company::Get(v->owner)->settings.vehicle.servint_aircraft == 0 || !v->NeedsAutomaticServicing()) return;
 	if (v->IsChainInDepot()) {
 		VehicleServiceInDepot(v);
@@ -601,6 +606,9 @@ static void PlayAircraftSound(const Vehicle *v)
  */
 void UpdateAircraftCache(Aircraft *v, bool update_range)
 {
+	v->acache.cargo_drone = ReadItemTags(v->GetEngine()->badges).id == "cargo_drone";
+	const auto id = ReadItemTags(v->GetEngine()->badges).id;
+	v->acache.orbital_shuttle = id == "starship" || id == "rocket";
 	uint max_speed = GetVehicleProperty(v, PROP_AIRCRAFT_SPEED, 0);
 	if (max_speed != 0) {
 		/* Convert from original units to km-ish/h */
@@ -636,6 +644,16 @@ static constexpr uint16_t SPEED_LIMIT_HOLD = 425; ///< Maximum speed of an aircr
 static constexpr uint16_t SPEED_LIMIT_NONE = UINT16_MAX; ///< No environmental speed limit. Speed limit is type dependent
 
 /**
+ * Keep multirotor movement independent of the conventional aircraft speed divisor.
+ * @param v Aircraft whose speed is being computed.
+ * @return Movement divisor.
+ */
+static uint GetAircraftSpeedFactor(const Aircraft *v)
+{
+	return v->acache.cargo_drone ? 1 : _settings_game.vehicle.plane_speed;
+}
+
+/**
  * Sets the new speed for an aircraft
  * @param v The vehicle for which the speed should be obtained
  * @param speed_limit The maximum speed the vehicle may have.
@@ -656,7 +674,7 @@ static int UpdateAircraftSpeed(Aircraft *v, uint speed_limit = SPEED_LIMIT_NONE,
 
 	/* Adjust speed limits by plane speed factor to prevent taxiing
 	 * and take-off speeds being too low. */
-	speed_limit *= _settings_game.vehicle.plane_speed;
+	speed_limit *= GetAircraftSpeedFactor(v);
 
 	/* adjust speed for broken vehicles */
 	if (v->vehstatus.Test(VehState::AircraftBroken)) {
@@ -690,7 +708,7 @@ static int UpdateAircraftSpeed(Aircraft *v, uint speed_limit = SPEED_LIMIT_NONE,
 	}
 
 	/* Adjust distance moved by plane speed setting */
-	if (_settings_game.vehicle.plane_speed > 1) spd /= _settings_game.vehicle.plane_speed;
+	if (GetAircraftSpeedFactor(v) > 1) spd /= GetAircraftSpeedFactor(v);
 
 	/* Convert direction-independent speed into direction-dependent speed. (old movement method) */
 	spd = v->GetOldAdvanceSpeed(spd);
@@ -1014,7 +1032,7 @@ static bool AircraftController(Aircraft *v)
 		return false;
 	}
 
-	if (amd.flags.Test(AirportMovingDataFlag::Brake) && v->cur_speed > SPEED_LIMIT_TAXI * _settings_game.vehicle.plane_speed) {
+	if (amd.flags.Test(AirportMovingDataFlag::Brake) && v->cur_speed > SPEED_LIMIT_TAXI * GetAircraftSpeedFactor(v)) {
 		MaybeCrashAirplane(v);
 		if (v->vehstatus.Test(VehState::Crashed)) return false;
 	}
@@ -1078,7 +1096,7 @@ static bool AircraftController(Aircraft *v)
 						} else {
 							v->number_consecutive_turns++;
 						}
-						v->turn_counter = 2 * _settings_game.vehicle.plane_speed;
+						v->turn_counter = 2 * GetAircraftSpeedFactor(v);
 						v->last_direction = v->direction;
 						v->direction = newdir;
 					}
@@ -2113,6 +2131,17 @@ static bool AircraftEventHandler(Aircraft *v, int loop)
 
 	if (v->vehstatus.Test(VehState::Stopped)) return true;
 
+	/* Older saves can contain specialist aircraft at unsuitable airports. Keep them
+	 * stationary before loading, automatic servicing or departure rather than letting
+	 * a pre-existing order list bypass the shared purchase/order checks. */
+	const bool grounded = v->state < ENDTAKEOFF || v->state >= TERM7;
+	const Station *site = Station::GetIfValid(v->targetairport);
+	if (grounded && site != nullptr && !AircraftMeetsAirportRequirements(v->GetEngine(), site->airport.GetSpec())) {
+		v->vehstatus.Set(VehState::Stopped);
+		SetWindowWidgetDirty(WindowClass::VehicleView, v->index, WID_VV_START_STOP);
+		return true;
+	}
+
 	v->HandleBreakdown();
 
 	HandleAircraftSmoke(v, loop != 0);
@@ -2154,6 +2183,8 @@ bool Aircraft::Tick()
 	if (this->subtype == AIR_HELICOPTER) HelicopterTickHandler(this);
 
 	this->current_order_time++;
+
+	if (TickOrbitalAircraft(this)) return true;
 
 	for (uint i = 0; i != 2; i++) {
 		/* stop if the aircraft was deleted */
@@ -2208,4 +2239,22 @@ void UpdateAirplanesOnNewStation(const Station *st)
 
 	/* Heliports don't have a hangar. Invalidate all go to hangar orders from all aircraft. */
 	if (!st->airport.HasHangar()) RemoveOrderFromAllVehicles(OT_GOTO_DEPOT, st->index, true);
+}
+
+/**
+ * Request early departure from the current spaceport.
+ * @param flags Command execution flags.
+ * @param vehicle_id Shuttle to dispatch.
+ * @return Command result.
+ */
+CommandCost CmdStarshipDispatch(DoCommandFlags flags, VehicleID vehicle_id)
+{
+	Aircraft *v = Aircraft::GetIfValid(vehicle_id);
+	if (v == nullptr || !v->IsNormalAircraft()) return CMD_ERROR;
+	CommandCost ownership = CheckOwnership(v->owner);
+	if (ownership.Failed()) return ownership;
+	StringID error = OrbitalDispatchError(v);
+	if (error != STR_NULL) return CommandCost(error);
+	if (flags.Test(DoCommandFlag::Execute)) v->orbital.manual_dispatch = true;
+	return CommandCost();
 }

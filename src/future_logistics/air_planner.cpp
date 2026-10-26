@@ -5,6 +5,7 @@
 /** @file air_planner.cpp Day-zero airlines: an airport in each of two towns and a passenger aircraft between them. */
 #include "../stdafx.h"
 #include "air_planner.h"
+#include <map>
 #include "freight_planner.h"
 #include "catalogue.h"
 #include "scale.h"
@@ -70,9 +71,11 @@ std::vector<AirportChoice> UsableAirports(const TechLibrary &library, const Serv
 		const auto flags = GetAirport(record.index)->flags;
 		if (!flags.Any({AirportFTAClass::Flag::Airplanes, AirportFTAClass::Flag::Helicopters})) continue;
 		const bool helicopters_only = !flags.Test(AirportFTAClass::Flag::Airplanes);
+		const bool orbital = std::ranges::find(record.provides, "launchpad") != record.provides.end();
+		const bool short_range = helicopters_only && !orbital;
 		airports.push_back({&record, static_cast<uint8_t>(record.index), helicopters_only,
 			static_cast<uint8_t>(helicopters_only ? 0 : airport_spec->class_index.base()),
-			helicopters_only ? MIN_HELI_DISTANCE : MIN_AIR_DISTANCE, helicopters_only ? MAX_HELI_DISTANCE : MAX_AIR_DISTANCE});
+			short_range ? MIN_HELI_DISTANCE : MIN_AIR_DISTANCE, short_range ? MAX_HELI_DISTANCE : MAX_AIR_DISTANCE});
 	}
 	std::ranges::stable_sort(airports, std::greater{}, [](const AirportChoice &a) { return a.record->size_x * a.record->size_y; });
 	return airports;
@@ -132,7 +135,11 @@ std::vector<TileIndex> FindAirportSites(const Place &end, const AirportSpec *spe
 			result.push_back(corner);
 		}
 	}
-	std::ranges::stable_sort(result, {}, [&](TileIndex t) { return DistanceManhattan(t, centre); });
+	const ItemTags airport_tags = ReadItemTags(spec->badges);
+	const bool orbital = std::ranges::find(airport_tags.provides, "launchpad") != airport_tags.provides.end();
+	std::map<TileIndex, uint> production;
+	if (orbital) for (TileIndex tile : result) production[tile] = GetProductionAroundTiles(tile, spec->size_x, spec->size_y, radius)[cargo];
+	std::ranges::stable_sort(result, {}, [&](TileIndex t) { return std::tuple{orbital ? -static_cast<int>(production.at(t)) : 0, DistanceManhattan(t, centre)}; });
 	KeepUsable(result, end, [](TileIndex tile) { return tile; }, MAX_AIRPORT_SITES);
 	return result;
 }
@@ -156,8 +163,13 @@ std::vector<TileIndex> FindAirportSites(const Place &end, const AirportSpec *spe
 ConstructionResult BuildAirline(uint8_t type, TileIndex a, TileIndex b, const Engine *aircraft, CargoType cargo, uint fleet, bool full_load,
 	StationID join_a = NEW_STATION, StationID join_b = NEW_STATION, bool transfer = false, bool execute = true, BuiltLeg *result_built = nullptr)
 {
+	const auto aircraft_id = ReadItemTags(aircraft->badges).id;
+	const bool orbital = aircraft_id == "starship" || aircraft_id == "rocket";
+	/* A single shuttle can use every monthly launch slot on its home pad. */
+	if (orbital) fleet = 1;
 	Money cost = 0;
 	for (const auto &[corner, join] : {std::pair{a, join_a}, {b, join_b}}) {
+		if (orbital && corner == b) continue;
 		auto result = Command<Commands::BuildAirport>::Do(CONSTRUCT, corner, type, 0, join, true);
 		if (result.Failed()) {
 			Debug(Facility::Misc, Severity::Debug1, "FL airport preflight rejected tile={} error={}", corner, result.GetErrorMessage());
@@ -192,6 +204,7 @@ ConstructionResult BuildAirline(uint8_t type, TileIndex a, TileIndex b, const En
 		return ConstructionResult::Failed;
 	};
 	for (const auto &[corner, join] : {std::pair{a, join_a}, {b, join_b}}) {
+		if (orbital && corner == b) continue;
 		if (Command<Commands::BuildAirport>::Do(EXEC | CONSTRUCT, corner, type, 0, join, true).Failed()) return fail("airport");
 		built.push_back(corner);
 	}
@@ -202,7 +215,7 @@ ConstructionResult BuildAirline(uint8_t type, TileIndex a, TileIndex b, const En
 		if (ExtractCommandCost(result).Failed()) return fail("vehicle");
 		const VehicleID vehicle = std::get<1>(result);
 		vehicles.push_back(vehicle);
-		for (VehicleOrderID i = 0; i < 2; i++) {
+		for (VehicleOrderID i = 0; i < (orbital ? 1 : 2); i++) {
 			Order order;
 			order.MakeGoToStation(GetStationIndex(i == 0 ? a : b));
 			/* Non-train orders must use the far end; the default near end is rejected. */
@@ -218,6 +231,7 @@ ConstructionResult BuildAirline(uint8_t type, TileIndex a, TileIndex b, const En
 		}
 		if (Command<Commands::StartStopVehicle>::Do(EXEC, vehicle, true).Failed()) return fail("start");
 	}
+	if (orbital) b = a;
 	Debug(Facility::Misc, Severity::Notice, "FL air company={} airport={} vehicles={} vehicle={} from={} to={} distance={} balance={}",
 		_current_company, type, fleet, vehicles.front(), a, b, DistanceManhattan(a, b), Company::Get(_current_company)->money);
 	if (result_built != nullptr) {
@@ -281,7 +295,9 @@ ConstructionResult TryAirPairs(const TechLibrary &library, const ServiceSpec &sp
 			const TechRecord *record = library.FindBest(query);
 			if (record == nullptr) continue;
 			const auto origins = FindAirportSites(pair.a, airport_spec, cargo, false);
-			const auto destinations = FindAirportSites(pair.b, airport_spec, cargo, true);
+			const auto vehicle_id = ReadItemTags(Engine::Get(record->engine)->badges).id;
+			const bool orbital = vehicle_id == "starship" || vehicle_id == "rocket";
+			const auto destinations = orbital ? std::vector<TileIndex>{pair.b.Centre()} : FindAirportSites(pair.b, airport_spec, cargo, true);
 			for (TileIndex a : origins) {
 				for (TileIndex b : destinations) {
 					const auto result = BuildAirline(type, a, b, Engine::Get(record->engine), cargo, limits.fleet, false);
@@ -325,7 +341,8 @@ ConstructionResult BuildTownAirline(const TechLibrary &library, const ServiceSpe
 	std::ranges::stable_sort(pairs, {}, &AirPair::distance);
 	return TryAirPairs(library, spec, cargo, TownRole(library, cargo, TechRole::PassengerIntercity), pairs, [&](const AirPair &pair, const TechRecord &record) {
 		used_towns.insert(pair.a.town->index);
-		used_towns.insert(pair.b.town->index);
+		const auto vehicle_id = ReadItemTags(Engine::Get(record.engine)->badges).id;
+		if (vehicle_id != "starship" && vehicle_id != "rocket") used_towns.insert(pair.b.town->index);
 		Debug(Facility::Misc, Severity::Notice, "FL towns company={} a={} b={} tier={} population={},{} aircraft={}", _current_company,
 			pair.a.town->index, pair.b.town->index, TierName(pair.tier), pair.a.town->cache.population, pair.b.town->cache.population, record.id);
 	});

@@ -221,6 +221,8 @@ void SetMouseCursor(CursorID cursor, PaletteID pal);
 void SetAnimatedMouseCursor(std::span<const AnimCursor> table);
 void SetCursor(CursorID cursor, PaletteID pal);
 void CursorTick();
+ZoomLevel GetCursorZoom();
+Point ScaleCursorOffset(Point pos);
 void UpdateCursorSize();
 bool ChangeResInGame(int w, int h);
 void SortResolutions();

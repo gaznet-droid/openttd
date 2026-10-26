@@ -1,3 +1,15 @@
+# Orbital service update — 26 October 2026
+
+Use a **new game** with Starship 3 and Future Logistics 3. Earlier launch-site layouts are incompatible.
+
+Starship now operates from one home spaceport. It boards 1,000 actual passengers, launches vertically, spends seven calendar days off-world, returns to that same spaceport with 1,000 inbound passengers, and services on its pad for two days. The green dispatch button permits early departure with 500–999 passengers. Each spaceport has one launch per calendar month, shared by its fleet. All mission state and the shared launch slot survive saving and loading. Ordinary airports cannot serve Starship; ordinary helicopters cannot occupy the dedicated launch complex.
+
+Both functional spaceports use the supplied launch artwork on a 4×4 footprint. The rocket is drawn separately from the empty-pad scenery, including during servicing. Waiting ships use the service bay. Orbital revenue uses a documented notional distance of 256 tiles for each leg; outbound payments deduct feeder shares, and returning passengers enter normal town/company delivery accounting.
+
+The engine integration test exercises real passenger loading, a two-ship fleet sharing monthly slots, inbound delivery, and a save/reload while off-world. The older description below records the original aircraft prototype; its horizontal flight, refit and footprint descriptions are superseded by this update.
+
+---
+
 # Future Logistics: Starship
 
 A NewGRF with a fully reusable rocket, **Starship**, and its **Starship Launch Site**, for the
@@ -8,7 +20,7 @@ community badge conventions, so rival companies find and adopt it with no change
 It works on its own, or alongside the Future Logistics NewGRF
 ([`../future_logistics/`](../future_logistics/README.md)), whose Reusable Rocket and Spaceport
 belong to the same `rocket` family. Starship is balanced as the top of the transport world: the
-most expensive vehicle to buy and to run, the largest capacity (500 passengers and 120 mail) and
+most expensive vehicle to buy and to run, the largest capacity (1,000 passengers and 120 mail) and
 the most profit; the other numbers are placeholders. See [`PLACEHOLDERS.md`](PLACEHOLDERS.md).
 
 The game ships with this NewGRF and the Future Logistics NewGRF and uses both in new games by
@@ -20,7 +32,7 @@ NewGRF settings.
 
 | Item | Kind | What it is |
 |---|---|---|
-| Starship | aircraft (large) | 500 passengers and 120 mail, or express and armoured cargo, between launch sites at 2000 km/h, from 2045 |
+| Starship | aircraft (large) | 1,000 passengers and 120 mail, or express and armoured cargo, between launch sites at 2000 km/h, from 2045 |
 | Starship Launch Site | airport (5×4) | The launch complex from the handoff art: launch tower and mount, hangar and propellant tanks |
 
 ## How it fits the tech format
@@ -87,7 +99,11 @@ the screen is redrawn; and the rocket has no separate shadow sprite.
 The compiled `starship.grf` is committed; the integration suite fails if it no longer matches its
 source.
 
-## Tested
+## Previous-version validation
+
+The results below describe the original airport-pair version, not the requested orbital shuttle.
+The 25 October enhancements and outstanding work are tracked in
+[`ENHANCEMENTS_2026-10-25.md`](../../../docs/future_logistics/ENHANCEMENTS_2026-10-25.md).
 
 With the integration harness (`tests/future_logistics/integration.py`):
 

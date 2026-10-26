@@ -8,6 +8,11 @@
 /** @file station_cmd.cpp Handling of station tiles. */
 
 #include "stdafx.h"
+#include "future_logistics/tag_index.h"
+#include "future_logistics/tech_library.h"
+#include "object_base.h"
+#include "object_cmd.h"
+#include "newgrf_object.h"
 #include "core/flatset_type.hpp"
 #include "aircraft.h"
 #include "bridge.h"
@@ -2063,7 +2068,7 @@ CommandCost CalculateRoadStopCost(TileArea tile_area, DoCommandFlags flags, bool
  * @param adjacent Allow stations directly adjacent to other stations.
  * @return The cost of this operation or an error.
  */
-CommandCost CmdBuildRoadStop(DoCommandFlags flags, TileIndex tile, uint8_t width, uint8_t length, RoadStopType stop_type, bool is_drive_through,
+static CommandCost BuildRoadStopInternal(DoCommandFlags flags, TileIndex tile, uint8_t width, uint8_t length, RoadStopType stop_type, bool is_drive_through,
 		DiagDirection ddir, RoadType rt, RoadStopClassID spec_class, uint16_t spec_index, StationID station_to_join, bool adjacent)
 {
 	if (!ValParamRoadType(rt) || !IsValidDiagDirection(ddir) || stop_type >= RoadStopType::End) return CMD_ERROR;
@@ -2214,6 +2219,79 @@ CommandCost CmdBuildRoadStop(DoCommandFlags flags, TileIndex tile, uint8_t width
 		}
 	}
 	return cost;
+}
+
+/**
+ * Construct a complete 4x4 Distribution Centre with four working truck bays.
+ * @param flags Command flags.
+ * @param tile North corner of the facility.
+ * @param rt Road type of its bays.
+ * @param spec Road stop artwork specification.
+ * @param join Station to join, or NEW_STATION.
+ * @param adjacent Allow adjacent stations.
+ * @return Complete construction cost or placement error.
+ */
+static CommandCost BuildDistributionHub(DoCommandFlags flags, TileIndex tile, RoadType rt, const RoadStopSpec *spec, StationID join, bool adjacent)
+{
+	if (!Company::IsValidID(_current_company) || !ValParamRoadType(rt) || RoadTypeIsTram(rt) || !IsValidTile(tile) || TileAddWrap(tile, 3, 3) == INVALID_TILE) return CMD_ERROR;
+	Town *town = ClosestTownFromTile(tile, UINT_MAX);
+	if (town == nullptr || town->cache.population < 5000) return CommandCost(STR_DISTRIBUTION_REQUIRES_CITY);
+	const auto warehouse = FutureLogistics::FindObjectById("distribution_warehouse");
+	if (!warehouse.has_value()) return CMD_ERROR;
+	for (const Object *object : Object::Iterate()) {
+		if (object->town == town && object->type == *warehouse) return CommandCost(STR_DISTRIBUTION_ONE_PER_TOWN);
+	}
+	const int z = GetTileZ(tile);
+	for (TileIndex part : TileArea(tile, 4, 4)) {
+		if ((!IsTileType(part, TileType::Clear) && !IsTileType(part, TileType::Trees)) || GetTileSlope(part) != SLOPE_FLAT || GetTileZ(part) != z) return CommandCost(STR_DISTRIBUTION_CLEAR_SITE);
+	}
+	if ((Company::Get(_current_company)->clear_limit >> 16) < 32) return CommandCost(STR_ERROR_CLEARING_LIMIT_REACHED);
+	if (!RoadStop::CanAllocateItem(4)) return CommandCost(STR_ERROR_TOO_MANY_STATIONS_LOADING);
+	DoCommandFlags test_flags = flags;
+	test_flags.Reset(DoCommandFlag::Execute);
+	CommandCost total = Command<Commands::BuildObject>::Do(test_flags, tile, *warehouse, 0);
+	if (total.Failed()) return total;
+	for (uint i = 0; i < 4; i++) {
+		CommandCost cost = BuildRoadStopInternal(test_flags, TileAddXY(tile, 3, i), 1, 1, RoadStopType::Truck, false, DiagDirection::SW, rt, spec->class_index, spec->index, join, adjacent);
+		if (cost.Failed()) return cost;
+		total.AddCost(std::move(cost));
+	}
+	if (!flags.Test(DoCommandFlag::Execute)) return total;
+	std::vector<TileIndex> built;
+	auto rollback = [&]() {
+		for (TileIndex part : built) {
+			[[maybe_unused]] CommandCost clear = Command<Commands::LandscapeClear>::Do(DoCommandFlag::Execute, part);
+			assert(clear.Succeeded()); // Only new, empty, owned components.
+		}
+	};
+	for (uint i = 0; i < 4; i++) {
+		const TileIndex bay = TileAddXY(tile, 3, i);
+		CommandCost cost = BuildRoadStopInternal(flags, bay, 1, 1, RoadStopType::Truck, false, DiagDirection::SW, rt, spec->class_index, spec->index, join, true);
+		if (cost.Failed()) { rollback(); return cost; }
+		built.push_back(bay);
+		join = GetStationIndex(bay);
+		/* Match the four painted bays with four active positions. */
+		RoadStop::GetByTile(bay, RoadStopType::Truck)->status.Reset(RoadStop::RoadStopStatusFlag::Bay1Free);
+	}
+	CommandCost object = Command<Commands::BuildObject>::Do(flags, tile, *warehouse, 0);
+	if (object.Failed()) { rollback(); return object; }
+	Debug(Facility::Misc, Severity::Notice, "FL distribution hub company={} town={} station={} tile={} bays=4", _current_company, town->index, join, tile);
+	return total;
+}
+
+/** @copydoc BuildRoadStopInternal */
+CommandCost CmdBuildRoadStop(DoCommandFlags flags, TileIndex tile, uint8_t width, uint8_t length, RoadStopType stop_type, bool is_drive_through,
+		DiagDirection ddir, RoadType rt, RoadStopClassID spec_class, uint16_t spec_index, StationID station_to_join, bool adjacent)
+{
+	if (spec_class.base() >= RoadStopClass::GetClassCount()) return CMD_ERROR;
+	const RoadStopClass *cls = RoadStopClass::Get(spec_class);
+	if (spec_index >= cls->GetSpecCount()) return CMD_ERROR;
+	const RoadStopSpec *spec = cls->GetSpec(spec_index);
+	if (spec != nullptr && ReadItemTags(spec->badges).id == "distribution_centre") {
+		if (stop_type != RoadStopType::Truck) return CMD_ERROR;
+		return BuildDistributionHub(flags, tile, rt, spec, station_to_join, adjacent);
+	}
+	return BuildRoadStopInternal(flags, tile, width, length, stop_type, is_drive_through, ddir, rt, spec_class, spec_index, station_to_join, adjacent);
 }
 
 /**

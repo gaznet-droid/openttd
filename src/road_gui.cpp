@@ -8,6 +8,7 @@
 /** @file road_gui.cpp GUI for building roads. */
 
 #include "stdafx.h"
+#include "future_logistics/tech_library.h"
 #include "gui.h"
 #include "window_gui.h"
 #include "station_gui.h"
@@ -237,6 +238,12 @@ static void PlaceRoadStop(TileIndex start_tile, TileIndex end_tile, RoadStopType
 	if (drive_through) ddir = ddir - DiagDirection::End; // Adjust picker result to actual direction.
 	RoadStopClassID spec_class = _roadstop_gui.sel_class;
 	uint16_t spec_index = _roadstop_gui.sel_type;
+	const RoadStopSpec *spec = RoadStopClass::Get(spec_class)->GetSpec(spec_index);
+	if (spec != nullptr && ReadItemTags(spec->badges).id == "distribution_centre") {
+		ta = TileArea(start_tile, 4, 4);
+		ddir = DiagDirection::SW;
+		drive_through = false;
+	}
 
 	auto proc = [=](bool test, StationID to_join) -> bool {
 		if (test) {
@@ -1460,6 +1467,15 @@ public:
 	void OnPaint() override
 	{
 		const RoadStopSpec *spec = RoadStopClass::Get(_roadstop_gui.sel_class)->GetSpec(_roadstop_gui.sel_type);
+		const bool hub = spec != nullptr && ReadItemTags(spec->badges).id == "distribution_centre";
+		if (hub) {
+			this->RaiseWidget(WID_BROS_STATION_NE + _roadstop_gui.orientation);
+			_roadstop_gui.orientation = DiagDirection::SW;
+			this->LowerWidget(WID_BROS_STATION_SW);
+		}
+		for (WidgetID widget = WID_BROS_STATION_NE; widget <= WID_BROS_STATION_Y; widget++) {
+			if (this->GetWidget<NWidgetBase>(widget) != nullptr) this->SetWidgetDisabledState(widget, hub && widget != WID_BROS_STATION_SW);
+		}
 
 		this->DrawWidgets();
 
@@ -1470,6 +1486,7 @@ public:
 			SetTileSelectSize(1, 1);
 		}
 
+		if (hub) SetTileSelectSize(4, 4);
 		if (this->IsShaded()) return;
 
 		/* 'Accepts' and 'Supplies' texts. */

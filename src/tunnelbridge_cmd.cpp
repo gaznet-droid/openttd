@@ -11,6 +11,7 @@
  */
 
 #include "stdafx.h"
+#include "future_logistics/hyperloop.h"
 #include "bridge.h"
 #include "viewport_func.h"
 #include "command_func.h"
@@ -310,6 +311,7 @@ static CommandCost CheckBuildAbove(TileIndex tile, DoCommandFlags flags, Axis ax
  */
 CommandCost CmdBuildBridge(DoCommandFlags flags, TileIndex tile_end, TileIndex tile_start, TransportType transport_type, BridgeType bridge_type, RailType railtype, RoadType roadtype)
 {
+	if (transport_type == TransportType::Rail && IsHyperloopRailType(railtype)) return CommandCost(STR_HYPERLOOP_USE_TUBE_TOOL);
 	CompanyID company = _current_company;
 
 	for (TileIndex t : {tile_start, tile_end}) {
@@ -646,6 +648,7 @@ CommandCost CmdBuildTunnel(DoCommandFlags flags, TileIndex start_tile, Transport
 	CompanyID company = _current_company;
 
 	_build_tunnel_endtile = INVALID_TILE;
+	if (HyperloopTubeUnder(start_tile, GetTileZ(start_tile))) return CommandCost(STR_ERROR_ANOTHER_TUNNEL_IN_THE_WAY);
 	switch (transport_type) {
 		case TransportType::Rail:
 			if (!ValParamRailType(railtype)) return CMD_ERROR;
@@ -708,6 +711,8 @@ CommandCost CmdBuildTunnel(DoCommandFlags flags, TileIndex start_tile, Transport
 		end_tile += delta;
 		if (!IsValidTile(end_tile)) return CommandCost(STR_ERROR_TUNNEL_THROUGH_MAP_BORDER);
 		std::tie(end_tileh, end_z) = GetTileSlopeZ(end_tile);
+
+		if (HyperloopTubeUnder(end_tile, start_z)) return CommandCost(STR_ERROR_ANOTHER_TUNNEL_IN_THE_WAY);
 
 		if (start_z == end_z) break;
 
@@ -802,6 +807,63 @@ CommandCost CmdBuildTunnel(DoCommandFlags flags, TileIndex start_tile, Transport
 		DirtyCompanyInfrastructureWindows(company);
 	}
 
+	return cost;
+}
+
+
+/**
+ * Construct flat access shafts connected by an independent native tunnel layer.
+ * Only the two access tiles are cleared. Surface land above the tube stays usable.
+ * Junctions remain at terminals; interior tube intersections are rejected.
+ * @param flags Command flags.
+ * @param start First access shaft.
+ * @param end Second access shaft.
+ * @param railtype Dedicated HYPL rail type.
+ * @return Construction cost or a placement error.
+ */
+CommandCost CmdBuildHyperloopTube(DoCommandFlags flags, TileIndex start, TileIndex end, RailType railtype)
+{
+	if (!ValParamRailType(railtype) || !IsHyperloopRailType(railtype) || !IsValidTile(start) || !IsValidTile(end) || !Company::IsValidID(_current_company)) return CMD_ERROR;
+	if (start == end || DistanceManhattan(start, end) < 2) return CommandCost(STR_ERROR_CAN_T_START_AND_END_ON);
+	DiagDirection dir;
+	if (TileX(start) == TileX(end)) {
+		dir = TileY(start) < TileY(end) ? DiagDirection::SE : DiagDirection::NW;
+	} else if (TileY(start) == TileY(end)) {
+		dir = TileX(start) < TileX(end) ? DiagDirection::SW : DiagDirection::NE;
+	} else {
+		return CommandCost(STR_ERROR_START_AND_END_MUST_BE_IN);
+	}
+	if (GetTileSlope(start) != SLOPE_FLAT || GetTileSlope(end) != SLOPE_FLAT || GetTileZ(start) != GetTileZ(end)) return CommandCost(STR_HYPERLOOP_FLAT_ENDPOINTS);
+	const int z = GetTileZ(start);
+	const TileIndexDiff delta = TileOffsByDiagDir(dir);
+	for (TileIndex tile = start;; tile += delta) {
+		/* Reject overlapping tubes and existing tunnel portals: the native endpoint
+		 * search must never encounter a third portal before its paired exit. */
+		if (HyperloopTubeUnder(tile, z) || (IsTunnelTile(tile) && GetTileZ(tile) == z)) return CommandCost(STR_ERROR_ANOTHER_TUNNEL_IN_THE_WAY);
+		if (tile != start && tile != end && (IsTunnelInWayDir(tile, z, DiagDirection::NE) || IsTunnelInWayDir(tile, z, DiagDirection::SE))) return CommandCost(STR_ERROR_ANOTHER_TUNNEL_IN_THE_WAY);
+		if (tile == end) break;
+	}
+	CommandCost cost(ExpensesType::Construction);
+	for (TileIndex tile : {start, end}) {
+		if (IsWaterTile(tile)) return CommandCost(STR_ERROR_SITE_UNSUITABLE_FOR_TUNNEL);
+		CommandCost clear = Command<Commands::LandscapeClear>::Do(flags, tile);
+		if (clear.Failed()) return clear;
+		cost.AddCost(std::move(clear));
+	}
+	const uint length = DistanceManhattan(start, end) + 1;
+	cost.AddCost(length * (_price[Price::BuildTunnel] + RailBuildCost(railtype)));
+	if (flags.Test(DoCommandFlag::Execute)) {
+		MakeRailTunnel(start, _current_company, dir, railtype);
+		MakeRailTunnel(end, _current_company, ReverseDiagDir(dir), railtype);
+		Company::Get(_current_company)->infrastructure.rail[railtype] += length * TUNNELBRIDGE_TRACKBIT_FACTOR;
+		for (TileIndex tile : {start, end}) {
+			MarkTileDirtyByTile(tile);
+			AddSideToSignalBuffer(tile, DiagDirection::Invalid, _current_company);
+			YapfNotifyTrackLayoutChange(tile, DiagDirToDiagTrack(dir));
+		}
+		InvalidateHyperloopTubes();
+		DirtyCompanyInfrastructureWindows(_current_company);
+	}
 	return cost;
 }
 
@@ -910,6 +972,7 @@ static CommandCost DoClearTunnel(TileIndex tile, DoCommandFlags flags)
 
 			DoClearSquare(tile);
 			DoClearSquare(endtile);
+			InvalidateHyperloopTubes();
 
 			/* cannot use DiagDirection::Invalid for signal update because the tunnel doesn't exist anymore */
 			AddSideToSignalBuffer(tile,    ReverseDiagDir(dir), owner);

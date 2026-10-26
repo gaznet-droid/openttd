@@ -7,6 +7,7 @@ add_test_files(
     history_func.cpp
     landscape_partial_pixel_z.cpp
     math_func.cpp
+    orbital_rules.cpp
     mock_environment.h
     mock_fontcache.h
     mock_spritecache.cpp
@@ -21,4 +22,9 @@ add_test_files(
     test_window_desc.cpp
     tilearea.cpp
     utf8.cpp
+)
+
+add_test_files(
+    cursor_sprite.cpp
+    CONDITION NOT OPTION_DEDICATED
 )

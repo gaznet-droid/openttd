@@ -9,8 +9,12 @@ add_files(
     freight_planner.h
     growth.cpp
     growth.h
+    hyperloop.cpp
+    hyperloop.h
     mechanics.cpp
     mechanics.h
+    orbital.cpp
+    orbital.h
     planner_common.h
     rail_planner.cpp
     rail_planner.h

@@ -5539,6 +5539,7 @@ STR_ERROR_NO_RAIL_STATION                                       :There is no rai
 STR_ERROR_NO_BUS_STATION                                        :There is no bus station
 STR_ERROR_NO_TRUCK_STATION                                      :There is no lorry station
 STR_ERROR_NO_DOCK                                               :There is no dock
+STR_ERROR_AIRPORT_MISSING_REQUIRED_FACILITIES                     :This aircraft requires a compatible specialist airport (rockets require a launchpad)
 STR_ERROR_NO_AIRPORT                                            :There is no airport/heliport
 STR_ERROR_NO_STOP_COMPATIBLE_ROAD_TYPE                          :There are no stops with a compatible road type
 STR_ERROR_NO_STOP_COMPATIBLE_TRAM_TYPE                          :There are no stops with a compatible tram type
@@ -6079,3 +6080,34 @@ STR_BADGE_CONFIG_FILTERS                                        :{WHITE}Badge Fi
 STR_BADGE_CONFIG_PREVIEW                                        :Preview Image
 STR_BADGE_CONFIG_NAME                                           :Name
 STR_BADGE_FILTER_ANY_LABEL                                      :Any {STRING}
+
+STR_CONFIG_SETTING_CURSOR_SIZE                                 :Mouse cursor size: {STRING2}
+STR_CONFIG_SETTING_CURSOR_SIZE_HELPTEXT                         :Enlarge all mouse and tool cursors independently of fonts and toolbars. Large adds one zoom step, Extra large adds two, up to the renderer’s 4x limit. The clicked tile and cursor hotspot remain unchanged.
+###length 3
+STR_CONFIG_SETTING_CURSOR_SIZE_NORMAL                          :Normal
+STR_CONFIG_SETTING_CURSOR_SIZE_LARGE                           :Large
+STR_CONFIG_SETTING_CURSOR_SIZE_EXTRA_LARGE                     :Extra large
+
+STR_ORBITAL_NOT_BOARDING                                         :Shuttle must be boarding at an open spaceport
+STR_ORBITAL_PASSENGERS_ONLY                                      :Orbital shuttles carry passengers
+STR_ORBITAL_NO_ACCEPTANCE                                        :The originating spaceport must accept passengers
+STR_ORBITAL_MINIMUM_LOAD                                         :At least 500 passengers are required for early dispatch
+STR_ORBITAL_MONTHLY_LIMIT                                        :This spaceport has already launched this calendar month
+STR_ORBITAL_PAD_BUSY                                             :The spaceport pad is reserved for an active mission
+STR_ORBITAL_READY                                                :Ready for orbital service
+STR_ORBITAL_BOARDING                                             :Boarding for orbit: {COMMA}/{COMMA}
+STR_ORBITAL_WAIT_MONTH                                           :Boarding; next launch slot opens next calendar month
+STR_ORBITAL_LAUNCHING                                            :Launching vertically
+STR_ORBITAL_SPACE                                                :In orbit; return due {DATE_LONG}
+STR_ORBITAL_RETURNING                                            :Returning to home spaceport with {COMMA} passengers
+STR_ORBITAL_SERVICING                                            :Servicing on the launch pad
+STR_ORBITAL_DISPATCH_TOOLTIP                                     :{BLACK}Launch early with at least 500 passengers, subject to the spaceport's monthly launch limit
+STR_ORBITAL_HOME_ONLY                                           :Orbital missions return to their originating spaceport
+STR_HYPERLOOP_FLAT_ENDPOINTS                                    :Hyperloop access shafts must be on flat land at the same height
+STR_HYPERLOOP_NO_CONVERSION                                     :Remove the underground Hyperloop tube before changing its rail type
+STR_ORBITAL_SERVICE_HOME                                        :Orbital shuttles are serviced automatically on their home launch pad
+STR_DISTRIBUTION_REQUIRES_CITY                                  :A Distribution Centre requires a town of at least 5,000 people
+STR_DISTRIBUTION_ONE_PER_TOWN                                   :This town already has a Distribution Centre
+STR_DISTRIBUTION_CLEAR_SITE                                     :A Distribution Centre needs a clear, flat 4x4 site
+STR_HYPERLOOP_USE_TUBE_TOOL                                     :Build Hyperloop routes with the underground tube tool; surface track is limited to terminal approaches
+STR_HYPERLOOP_BUILD_TUBE_TOOLTIP                                :{BLACK}Drag between two aligned, flat access shafts at the same height to build an underground Hyperloop tube

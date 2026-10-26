@@ -15,8 +15,8 @@ grf {
     grfid: "FL\01\02";
     name: string(STR_GRF_NAME);
     desc: string(STR_GRF_DESC);
-    version: 1;
-    min_compatible_version: 1;
+    version: 3;
+    min_compatible_version: 3;
 }
 
 cargotable {
@@ -123,18 +123,18 @@ alternative_sprites(starship_flame, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/flam
     [136, 0, 66, 360, 27, -260]
 }
 
-/* On the ground: nothing. */
-spriteset(starship_no_flame, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/flame_strip_1x.png") {
-    [0, 0, 1, 1, 0, 0]
-    [0, 0, 1, 1, 0, 0]
-    [0, 0, 1, 1, 0, 0]
-    [0, 0, 1, 1, 0, 0]
+/* Separate idle vehicle body, also visible while servicing on its pad. */
+spriteset(starship_no_flame, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/rocket_idle_1x.png") {
+    [0, 0, 19, 125, 21, -130]
+    [0, 0, 19, 125, 21, -130]
+    [0, 0, 19, 125, 21, -130]
+    [0, 0, 19, 125, 21, -130]
 }
-alternative_sprites(starship_no_flame, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/flame_strip_2x.png") {
-    [0, 0, 1, 1, 0, 0]
-    [0, 0, 1, 1, 0, 0]
-    [0, 0, 1, 1, 0, 0]
-    [0, 0, 1, 1, 0, 0]
+alternative_sprites(starship_no_flame, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/rocket_idle_2x.png") {
+    [0, 0, 38, 250, 41, -260]
+    [0, 0, 38, 250, 41, -260]
+    [0, 0, 38, 250, 41, -260]
+    [0, 0, 38, 250, 41, -260]
 }
 
 /* The rotor by flight phase (var 0xE2, the TTDPatch movement states the game reports): launching (23 at an airport,
@@ -167,9 +167,9 @@ item(FEAT_AIRCRAFT, starship, 64) {
         running_cost_factor:          255;
         speed:                        2000 km/h;
         acceleration:                 50;
-        passenger_capacity:           500;
+        passenger_capacity:           1000;
         mail_capacity:                120;
-        refittable_cargo_classes:     bitmask(CC_PASSENGERS, CC_MAIL, CC_EXPRESS, CC_ARMOURED);
+        refittable_cargo_classes:     bitmask(CC_PASSENGERS);
         range:                        0;
         sound_effect:                 SOUND_TAKEOFF_JET_FAST;
         badges: ["fl_format/2", "fl_id/starship", "fl_tech/rocket", "fl_tier/4", "fl_needs/launchpad",
@@ -193,226 +193,85 @@ item(FEAT_AIRCRAFT, starship, 64) {
  * building; the runway the country airport's planes would use is covered by the art, as only Starships use it. */
 spriteset(pad_sprite_0_0, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_0_0_1x.png") { [0, 0, 91, 129, -60, -97] }
 alternative_sprites(pad_sprite_0_0, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_0_0_2x.png") { [0, 0, 184, 259, -121, -195] }
-spritelayout pad_layout_0_0 {
-    ground { sprite: pad_sprite_0_0(0); }
-}
-item(FEAT_AIRPORTTILES, pad_tile_0_0, 0) {
-    property { substitute: 0; }
-    graphics { default: pad_layout_0_0; }
-}
-
+spritelayout pad_layout_0_0 { ground { sprite: pad_sprite_0_0(0); } }
+item(FEAT_AIRPORTTILES, pad_tile_0_0, 0) { property { substitute: 0; } graphics { default: pad_layout_0_0; } }
 spriteset(pad_sprite_1_0, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_1_0_1x.png") { [0, 0, 82, 45, -51, -13] }
 alternative_sprites(pad_sprite_1_0, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_1_0_2x.png") { [0, 0, 166, 91, -103, -27] }
-spritelayout pad_layout_1_0 {
-    ground { sprite: pad_sprite_1_0(0); }
-}
-item(FEAT_AIRPORTTILES, pad_tile_1_0, 1) {
-    property { substitute: 0; }
-    graphics { default: pad_layout_1_0; }
-}
-
+spritelayout pad_layout_1_0 { ground { sprite: pad_sprite_1_0(0); } }
+item(FEAT_AIRPORTTILES, pad_tile_1_0, 1) { property { substitute: 0; } graphics { default: pad_layout_1_0; } }
 spriteset(pad_sprite_2_0, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_2_0_1x.png") { [0, 0, 96, 45, -65, -13] }
 alternative_sprites(pad_sprite_2_0, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_2_0_2x.png") { [0, 0, 194, 90, -131, -26] }
-spritelayout pad_layout_2_0 {
-    ground { sprite: pad_sprite_2_0(0); }
-}
-item(FEAT_AIRPORTTILES, pad_tile_2_0, 2) {
-    property { substitute: 0; }
-    graphics { default: pad_layout_2_0; }
-}
-
-spriteset(pad_sprite_3_0, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_3_0_1x.png") { [0, 0, 85, 48, -54, -16] }
-alternative_sprites(pad_sprite_3_0, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_3_0_2x.png") { [0, 0, 172, 98, -109, -34] }
-spritelayout pad_layout_3_0 {
-    ground { sprite: pad_sprite_3_0(0); }
-}
-item(FEAT_AIRPORTTILES, pad_tile_3_0, 3) {
-    property { substitute: 0; }
-    graphics { default: pad_layout_3_0; }
-}
-
-spriteset(pad_sprite_4_0, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_4_0_1x.png") { [0, 0, 61, 43, -30, -11] }
-alternative_sprites(pad_sprite_4_0, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_4_0_2x.png") { [0, 0, 124, 86, -61, -22] }
-spritelayout pad_layout_4_0 {
-    ground { sprite: pad_sprite_4_0(0); }
-}
-item(FEAT_AIRPORTTILES, pad_tile_4_0, 4) {
-    property { substitute: 0; }
-    graphics { default: pad_layout_4_0; }
-}
-
+spritelayout pad_layout_2_0 { ground { sprite: pad_sprite_2_0(0); } }
+item(FEAT_AIRPORTTILES, pad_tile_2_0, 2) { property { substitute: 0; } graphics { default: pad_layout_2_0; } }
+spriteset(pad_sprite_3_0, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_3_0_1x.png") { [0, 0, 86, 52, -55, -16] }
+alternative_sprites(pad_sprite_3_0, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_3_0_2x.png") { [0, 0, 174, 106, -111, -34] }
+spritelayout pad_layout_3_0 { ground { sprite: pad_sprite_3_0(0); } }
+item(FEAT_AIRPORTTILES, pad_tile_3_0, 3) { property { substitute: 0; } graphics { default: pad_layout_3_0; } }
 spriteset(pad_sprite_0_1, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_0_1_1x.png") { [0, 0, 62, 32, -31, 0] }
 alternative_sprites(pad_sprite_0_1, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_0_1_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout pad_layout_0_1 {
-    ground { sprite: pad_sprite_0_1(0); }
-}
-item(FEAT_AIRPORTTILES, pad_tile_0_1, 5) {
-    property { substitute: 0; }
-    graphics { default: pad_layout_0_1; }
-}
-
+spritelayout pad_layout_0_1 { ground { sprite: pad_sprite_0_1(0); } }
+item(FEAT_AIRPORTTILES, pad_tile_0_1, 4) { property { substitute: 0; } graphics { default: pad_layout_0_1; } }
 spriteset(pad_sprite_1_1, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_1_1_1x.png") { [0, 0, 62, 32, -31, 0] }
 alternative_sprites(pad_sprite_1_1, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_1_1_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout pad_layout_1_1 {
-    ground { sprite: pad_sprite_1_1(0); }
-}
-item(FEAT_AIRPORTTILES, pad_tile_1_1, 6) {
-    property { substitute: 0; }
-    graphics { default: pad_layout_1_1; }
-}
-
+spritelayout pad_layout_1_1 { ground { sprite: pad_sprite_1_1(0); } }
+item(FEAT_AIRPORTTILES, pad_tile_1_1, 5) { property { substitute: 0; } graphics { default: pad_layout_1_1; } }
 spriteset(pad_sprite_2_1, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_2_1_1x.png") { [0, 0, 62, 32, -31, 0] }
 alternative_sprites(pad_sprite_2_1, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_2_1_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout pad_layout_2_1 {
-    ground { sprite: pad_sprite_2_1(0); }
-}
-item(FEAT_AIRPORTTILES, pad_tile_2_1, 7) {
-    property { substitute: 0; }
-    graphics { default: pad_layout_2_1; }
-}
-
-spriteset(pad_sprite_3_1, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_3_1_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(pad_sprite_3_1, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_3_1_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout pad_layout_3_1 {
-    ground { sprite: pad_sprite_3_1(0); }
-}
-item(FEAT_AIRPORTTILES, pad_tile_3_1, 8) {
-    property { substitute: 0; }
-    graphics { default: pad_layout_3_1; }
-}
-
-spriteset(pad_sprite_4_1, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_4_1_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(pad_sprite_4_1, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_4_1_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout pad_layout_4_1 {
-    ground { sprite: pad_sprite_4_1(0); }
-}
-item(FEAT_AIRPORTTILES, pad_tile_4_1, 9) {
-    property { substitute: 0; }
-    graphics { default: pad_layout_4_1; }
-}
-
+spritelayout pad_layout_2_1 { ground { sprite: pad_sprite_2_1(0); } }
+item(FEAT_AIRPORTTILES, pad_tile_2_1, 6) { property { substitute: 0; } graphics { default: pad_layout_2_1; } }
+spriteset(pad_sprite_3_1, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_3_1_1x.png") { [0, 0, 72, 36, -41, 0] }
+alternative_sprites(pad_sprite_3_1, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_3_1_2x.png") { [0, 0, 144, 72, -81, 0] }
+spritelayout pad_layout_3_1 { ground { sprite: pad_sprite_3_1(0); } }
+item(FEAT_AIRPORTTILES, pad_tile_3_1, 7) { property { substitute: 0; } graphics { default: pad_layout_3_1; } }
 spriteset(pad_sprite_0_2, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_0_2_1x.png") { [0, 0, 62, 32, -31, 0] }
 alternative_sprites(pad_sprite_0_2, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_0_2_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout pad_layout_0_2 {
-    ground { sprite: pad_sprite_0_2(0); }
-}
-item(FEAT_AIRPORTTILES, pad_tile_0_2, 10) {
-    property { substitute: 0; }
-    graphics { default: pad_layout_0_2; }
-}
-
+spritelayout pad_layout_0_2 { ground { sprite: pad_sprite_0_2(0); } }
+item(FEAT_AIRPORTTILES, pad_tile_0_2, 8) { property { substitute: 0; } graphics { default: pad_layout_0_2; } }
 spriteset(pad_sprite_1_2, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_1_2_1x.png") { [0, 0, 62, 32, -31, 0] }
 alternative_sprites(pad_sprite_1_2, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_1_2_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout pad_layout_1_2 {
-    ground { sprite: pad_sprite_1_2(0); }
-}
-item(FEAT_AIRPORTTILES, pad_tile_1_2, 11) {
-    property { substitute: 0; }
-    graphics { default: pad_layout_1_2; }
-}
-
+spritelayout pad_layout_1_2 { ground { sprite: pad_sprite_1_2(0); } }
+item(FEAT_AIRPORTTILES, pad_tile_1_2, 9) { property { substitute: 0; } graphics { default: pad_layout_1_2; } }
 spriteset(pad_sprite_2_2, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_2_2_1x.png") { [0, 0, 62, 32, -31, 0] }
 alternative_sprites(pad_sprite_2_2, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_2_2_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout pad_layout_2_2 {
-    ground { sprite: pad_sprite_2_2(0); }
-}
-item(FEAT_AIRPORTTILES, pad_tile_2_2, 12) {
-    property { substitute: 0; }
-    graphics { default: pad_layout_2_2; }
-}
-
-spriteset(pad_sprite_3_2, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_3_2_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(pad_sprite_3_2, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_3_2_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout pad_layout_3_2 {
-    ground { sprite: pad_sprite_3_2(0); }
-}
-item(FEAT_AIRPORTTILES, pad_tile_3_2, 13) {
-    property { substitute: 0; }
-    graphics { default: pad_layout_3_2; }
-}
-
-spriteset(pad_sprite_4_2, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_4_2_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(pad_sprite_4_2, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_4_2_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout pad_layout_4_2 {
-    ground { sprite: pad_sprite_4_2(0); }
-}
-item(FEAT_AIRPORTTILES, pad_tile_4_2, 14) {
-    property { substitute: 0; }
-    graphics { default: pad_layout_4_2; }
-}
-
+spritelayout pad_layout_2_2 { ground { sprite: pad_sprite_2_2(0); } }
+item(FEAT_AIRPORTTILES, pad_tile_2_2, 10) { property { substitute: 0; } graphics { default: pad_layout_2_2; } }
+spriteset(pad_sprite_3_2, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_3_2_1x.png") { [0, 0, 72, 36, -41, 0] }
+alternative_sprites(pad_sprite_3_2, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_3_2_2x.png") { [0, 0, 144, 72, -81, 0] }
+spritelayout pad_layout_3_2 { ground { sprite: pad_sprite_3_2(0); } }
+item(FEAT_AIRPORTTILES, pad_tile_3_2, 11) { property { substitute: 0; } graphics { default: pad_layout_3_2; } }
 spriteset(pad_sprite_0_3, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_0_3_1x.png") { [0, 0, 62, 32, -31, 0] }
 alternative_sprites(pad_sprite_0_3, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_0_3_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout pad_layout_0_3 {
-    ground { sprite: pad_sprite_0_3(0); }
-}
-item(FEAT_AIRPORTTILES, pad_tile_0_3, 15) {
-    property { substitute: 0; }
-    graphics { default: pad_layout_0_3; }
-}
-
+spritelayout pad_layout_0_3 { ground { sprite: pad_sprite_0_3(0); } }
+item(FEAT_AIRPORTTILES, pad_tile_0_3, 12) { property { substitute: 0; } graphics { default: pad_layout_0_3; } }
 spriteset(pad_sprite_1_3, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_1_3_1x.png") { [0, 0, 62, 32, -31, 0] }
 alternative_sprites(pad_sprite_1_3, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_1_3_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout pad_layout_1_3 {
-    ground { sprite: pad_sprite_1_3(0); }
-}
-item(FEAT_AIRPORTTILES, pad_tile_1_3, 16) {
-    property { substitute: 0; }
-    graphics { default: pad_layout_1_3; }
-}
-
+spritelayout pad_layout_1_3 { ground { sprite: pad_sprite_1_3(0); } }
+item(FEAT_AIRPORTTILES, pad_tile_1_3, 13) { property { substitute: 0; } graphics { default: pad_layout_1_3; } }
 spriteset(pad_sprite_2_3, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_2_3_1x.png") { [0, 0, 62, 32, -31, 0] }
 alternative_sprites(pad_sprite_2_3, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_2_3_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout pad_layout_2_3 {
-    ground { sprite: pad_sprite_2_3(0); }
-}
-item(FEAT_AIRPORTTILES, pad_tile_2_3, 17) {
-    property { substitute: 0; }
-    graphics { default: pad_layout_2_3; }
-}
-
-spriteset(pad_sprite_3_3, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_3_3_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(pad_sprite_3_3, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_3_3_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout pad_layout_3_3 {
-    ground { sprite: pad_sprite_3_3(0); }
-}
-item(FEAT_AIRPORTTILES, pad_tile_3_3, 18) {
-    property { substitute: 0; }
-    graphics { default: pad_layout_3_3; }
-}
-
-spriteset(pad_sprite_4_3, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_4_3_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(pad_sprite_4_3, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_4_3_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout pad_layout_4_3 {
-    ground { sprite: pad_sprite_4_3(0); }
-}
-item(FEAT_AIRPORTTILES, pad_tile_4_3, 19) {
-    property { substitute: 0; }
-    graphics { default: pad_layout_4_3; }
-}
-
-tilelayout starship_pad_layout {
-    rotation: DIRECTION_NORTH;
+spritelayout pad_layout_2_3 { ground { sprite: pad_sprite_2_3(0); } }
+item(FEAT_AIRPORTTILES, pad_tile_2_3, 14) { property { substitute: 0; } graphics { default: pad_layout_2_3; } }
+spriteset(pad_sprite_3_3, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/pad_3_3_1x.png") { [0, 0, 72, 32, -41, 0] }
+alternative_sprites(pad_sprite_3_3, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/pad_3_3_2x.png") { [0, 0, 144, 64, -81, 0] }
+spritelayout pad_layout_3_3 { ground { sprite: pad_sprite_3_3(0); } }
+item(FEAT_AIRPORTTILES, pad_tile_3_3, 15) { property { substitute: 0; } graphics { default: pad_layout_3_3; } }
+tilelayout starship_pad_layout { rotation: DIRECTION_NORTH;
     0, 0: pad_tile_0_0;
     1, 0: pad_tile_1_0;
     2, 0: pad_tile_2_0;
     3, 0: pad_tile_3_0;
-    4, 0: pad_tile_4_0;
     0, 1: pad_tile_0_1;
     1, 1: pad_tile_1_1;
     2, 1: pad_tile_2_1;
     3, 1: pad_tile_3_1;
-    4, 1: pad_tile_4_1;
     0, 2: pad_tile_0_2;
     1, 2: pad_tile_1_2;
     2, 2: pad_tile_2_2;
     3, 2: pad_tile_3_2;
-    4, 2: pad_tile_4_2;
     0, 3: pad_tile_0_3;
     1, 3: pad_tile_1_3;
     2, 3: pad_tile_2_3;
     3, 3: pad_tile_3_3;
-    4, 3: pad_tile_4_3;
 }
 
 /* The first NewGRF airport based on a built-in airport replaces it. This unchanged copy of the country airport

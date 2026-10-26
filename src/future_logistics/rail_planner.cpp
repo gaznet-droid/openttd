@@ -5,6 +5,7 @@
 /** @file rail_planner.cpp Day-zero railways: two terminus stations, a single line, a depot and one train. */
 #include "../stdafx.h"
 #include "rail_planner.h"
+#include "hyperloop.h"
 #include "catalogue.h"
 #include "freight_planner.h"
 #include "scale.h"
@@ -334,6 +335,20 @@ static RailPath SearchRailPath2(const Terminus &a, const Terminus &b, bool cross
  */
 RailPath FindRailPath(const Terminus &a, const Terminus &b, RailType railtype)
 {
+	if (IsHyperloopRailType(railtype)) {
+		/* Native tubes are straight between access shafts; keep junctions at terminals. */
+		if ((TileX(a.Exit()) != TileX(b.Exit()) && TileY(a.Exit()) != TileY(b.Exit())) ||
+			a.exit != ReverseDiagDir(b.exit) || RouteDirection(a.Exit(), b.Exit()) != a.exit) return {};
+		if (Command<Commands::BuildHyperloopTube>::Do(CONSTRUCT, a.Exit(), b.Exit(), railtype).Failed()) return {};
+		RailPath path;
+		for (TileIndex tile = a.Exit();; tile = Step(tile, a.exit)) {
+			path.tiles.push_back(tile);
+			if (tile == b.Exit()) break;
+			if (tile != a.Exit()) path.tunnelled.insert(tile);
+		}
+		return path;
+	}
+
 	/* Searching again only helps if the first search met a road it could have crossed. */
 	bool crossable = false;
 	auto path = SearchRailPath(a, b, false, &crossable);
@@ -419,6 +434,7 @@ ConstructionResult BuildRailway(const Terminus &a, const Terminus &b, const Rail
 		for (const RouteBridge &b : *spans) std::fill(bridge_part.begin() + b.head, bridge_part.begin() + b.tail + 1, true);
 	}
 	auto build_tunnel = [&](const RouteBridge &t, DoCommandFlags flags) {
+		if (IsHyperloopRailType(consist.railtype)) return Command<Commands::BuildHyperloopTube>::Do(flags | CONSTRUCT, path[t.head], path[t.tail], consist.railtype);
 		return Command<Commands::BuildTunnel>::Do(flags | CONSTRUCT, path[t.head], TransportType::Rail, consist.railtype, INVALID_ROADTYPE);
 	};
 	auto build_bridge = [&](const RouteBridge &b, DoCommandFlags flags) {
@@ -572,7 +588,18 @@ ConstructionResult BuildRailway(const Terminus &a, const Terminus &b, const Rail
 ConstructionResult TrySites(const std::vector<Terminus> &from, const std::vector<Terminus> &to, const Consist &consist)
 {
 	for (const Terminus &a : from) {
-		for (const Terminus &b : to) {
+		for (const Terminus &candidate : to) {
+			Terminus b = candidate;
+			if (IsHyperloopRailType(consist.railtype)) {
+				b.exit = ReverseDiagDir(a.exit);
+				b.front = DiagDirToAxis(a.exit) == Axis::X ? TileXY(TileX(candidate.front), TileY(a.front)) : TileXY(TileX(a.front), TileY(candidate.front));
+				if (DistanceManhattan(b.front, candidate.front) > 12 || ClosestTownFromTile(b.front, UINT_MAX) != ClosestTownFromTile(candidate.front, UINT_MAX)) continue;
+				const auto footprint = b.Footprint();
+				if (footprint.empty() || !std::ranges::all_of(footprint, [&](TileIndex tile) { return Buildable(tile) && GetTileZ(tile) == GetTileZ(a.front); })) continue;
+				const TileArea area = b.Area();
+				const int radius = _settings_game.station.modified_catchment ? CA_TRAIN : CA_UNMODIFIED;
+				if (GetAcceptanceAroundTiles(area.tile, area.w, area.h, radius).first[consist.cargo] < 8 || GetProductionAroundTiles(area.tile, area.w, area.h, radius)[consist.cargo] == 0) continue;
+			}
 			const auto path = FindRailPath(a, b, consist.railtype);
 			if (path.empty()) continue;
 			const auto result = BuildRailway(a, b, path, consist);
@@ -678,6 +705,9 @@ ConstructionResult BuildTownRail(const TechLibrary &library, const ServiceSpec &
 	std::ranges::stable_sort(pairs, {}, &Pair::distance);
 
 	const int radius = _settings_game.station.modified_catchment ? CA_TRAIN : CA_UNMODIFIED;
+	const bool underground = std::ranges::any_of(library.Infrastructure(), [&](const InfraRecord &infra) {
+		return infra.kind == InfraKind::RailType && infra.tech == spec.family && infra.id == "HYPL";
+	});
 	std::map<std::pair<TownID, int>, std::vector<Terminus>> sites;
 	auto town_sites = [&](const Town *town, int length) -> const std::vector<Terminus> & {
 		auto it = sites.find({town->index, length});
@@ -686,7 +716,7 @@ ConstructionResult BuildTownRail(const TechLibrary &library, const ServiceSpec &
 			if (ClosestTownFromTile(site.front, UINT_MAX)->index != town->index) return false;
 			const TileArea area = site.Area();
 			return GetAcceptanceAroundTiles(area.tile, area.w, area.h, radius).first[cargo] >= 8 && GetProductionAroundTiles(area.tile, area.w, area.h, radius)[cargo] > 0;
-		})).first->second;
+		}, underground ? 64 : MAX_ENDPOINTS)).first->second;
 	};
 	for (size_t i = 0; i < std::min(MAX_RAIL_PAIRS, pairs.size()); i++) {
 		const Pair &pair = pairs[i];

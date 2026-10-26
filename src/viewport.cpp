@@ -61,6 +61,8 @@
  */
 
 #include "stdafx.h"
+#include "future_logistics/hyperloop.h"
+#include "rail_gui.h"
 #include "core/backup_type.hpp"
 #include "landscape.h"
 #include "viewport_func.h"
@@ -1119,6 +1121,8 @@ static void HighlightTownLocalAuthorityTiles(const TileInfo *ti)
  */
 static void DrawTileSelection(const TileInfo *ti)
 {
+	/* Surface selection is an inspection guide; tube occupancy remains in the native wormhole layer. */
+	if (IsHyperloopConstructionActive() && HyperloopTubeUnder(ti->tile)) DrawTileSelectionRect(ti, PALETTE_SEL_TILE_BLUE);
 	/* Highlight tiles inside local authority of selected towns. */
 	HighlightTownLocalAuthorityTiles(ti);
 

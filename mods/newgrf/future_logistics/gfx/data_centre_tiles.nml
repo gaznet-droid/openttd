@@ -1,0 +1,82 @@
+spriteset(data_centre_0_0_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/data_centre_0_0_1x.png") { [0, 0, 116, 102, -55, -70] }
+alternative_sprites(data_centre_0_0_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/data_centre_0_0_2x.png") { [0, 0, 233, 205, -111, -141] }
+spritelayout data_centre_0_0_layout { ground { sprite: data_centre_0_0_sprite(0); } }
+item(FEAT_INDUSTRYTILES, data_centre_0_0_tile, 0) { property { substitute: 0; land_shape_flags: 15; accepted_cargos: [[VALU, 8], [GOLD, 8], [DIAM, 8]]; } graphics { default: data_centre_0_0_layout; } }
+spriteset(data_centre_1_0_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/data_centre_1_0_1x.png") { [0, 0, 78, 43, -47, -11] }
+alternative_sprites(data_centre_1_0_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/data_centre_1_0_2x.png") { [0, 0, 156, 87, -93, -23] }
+spritelayout data_centre_1_0_layout { ground { sprite: data_centre_1_0_sprite(0); } }
+item(FEAT_INDUSTRYTILES, data_centre_1_0_tile, 1) { property { substitute: 0; land_shape_flags: 15; accepted_cargos: [[VALU, 8], [GOLD, 8], [DIAM, 8]]; } graphics { default: data_centre_1_0_layout; } }
+spriteset(data_centre_2_0_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/data_centre_2_0_1x.png") { [0, 0, 66, 39, -35, -7] }
+alternative_sprites(data_centre_2_0_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/data_centre_2_0_2x.png") { [0, 0, 133, 79, -70, -15] }
+spritelayout data_centre_2_0_layout { ground { sprite: data_centre_2_0_sprite(0); } }
+item(FEAT_INDUSTRYTILES, data_centre_2_0_tile, 2) { property { substitute: 0; land_shape_flags: 15; accepted_cargos: [[VALU, 8], [GOLD, 8], [DIAM, 8]]; } graphics { default: data_centre_2_0_layout; } }
+spriteset(data_centre_3_0_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/data_centre_3_0_1x.png") { [0, 0, 63, 35, -32, -1] }
+alternative_sprites(data_centre_3_0_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/data_centre_3_0_2x.png") { [0, 0, 127, 71, -64, -3] }
+spritelayout data_centre_3_0_layout { ground { sprite: data_centre_3_0_sprite(0); } }
+item(FEAT_INDUSTRYTILES, data_centre_3_0_tile, 3) { property { substitute: 0; land_shape_flags: 15; accepted_cargos: [[VALU, 8], [GOLD, 8], [DIAM, 8]]; } graphics { default: data_centre_3_0_layout; } }
+spriteset(data_centre_0_1_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/data_centre_0_1_1x.png") { [0, 0, 76, 46, -31, -14] }
+alternative_sprites(data_centre_0_1_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/data_centre_0_1_2x.png") { [0, 0, 154, 93, -63, -29] }
+spritelayout data_centre_0_1_layout { ground { sprite: data_centre_0_1_sprite(0); } }
+item(FEAT_INDUSTRYTILES, data_centre_0_1_tile, 4) { property { substitute: 0; land_shape_flags: 15; accepted_cargos: [[VALU, 8], [GOLD, 8], [DIAM, 8]]; } graphics { default: data_centre_0_1_layout; } }
+spriteset(data_centre_1_1_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/data_centre_1_1_1x.png") { [0, 0, 62, 32, -31, 0] }
+alternative_sprites(data_centre_1_1_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/data_centre_1_1_2x.png") { [0, 0, 126, 64, -63, 0] }
+spritelayout data_centre_1_1_layout { ground { sprite: data_centre_1_1_sprite(0); } }
+item(FEAT_INDUSTRYTILES, data_centre_1_1_tile, 5) { property { substitute: 0; land_shape_flags: 15; accepted_cargos: [[VALU, 8], [GOLD, 8], [DIAM, 8]]; } graphics { default: data_centre_1_1_layout; } }
+spriteset(data_centre_2_1_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/data_centre_2_1_1x.png") { [0, 0, 62, 32, -31, 0] }
+alternative_sprites(data_centre_2_1_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/data_centre_2_1_2x.png") { [0, 0, 126, 64, -63, 0] }
+spritelayout data_centre_2_1_layout { ground { sprite: data_centre_2_1_sprite(0); } }
+item(FEAT_INDUSTRYTILES, data_centre_2_1_tile, 6) { property { substitute: 0; land_shape_flags: 15; accepted_cargos: [[VALU, 8], [GOLD, 8], [DIAM, 8]]; } graphics { default: data_centre_2_1_layout; } }
+spriteset(data_centre_3_1_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/data_centre_3_1_1x.png") { [0, 0, 68, 34, -37, 0] }
+alternative_sprites(data_centre_3_1_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/data_centre_3_1_2x.png") { [0, 0, 136, 69, -73, 0] }
+spritelayout data_centre_3_1_layout { ground { sprite: data_centre_3_1_sprite(0); } }
+item(FEAT_INDUSTRYTILES, data_centre_3_1_tile, 7) { property { substitute: 0; land_shape_flags: 15; accepted_cargos: [[VALU, 8], [GOLD, 8], [DIAM, 8]]; } graphics { default: data_centre_3_1_layout; } }
+spriteset(data_centre_0_2_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/data_centre_0_2_1x.png") { [0, 0, 76, 39, -31, -7] }
+alternative_sprites(data_centre_0_2_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/data_centre_0_2_2x.png") { [0, 0, 154, 78, -63, -14] }
+spritelayout data_centre_0_2_layout { ground { sprite: data_centre_0_2_sprite(0); } }
+item(FEAT_INDUSTRYTILES, data_centre_0_2_tile, 8) { property { substitute: 0; land_shape_flags: 15; accepted_cargos: [[VALU, 8], [GOLD, 8], [DIAM, 8]]; } graphics { default: data_centre_0_2_layout; } }
+spriteset(data_centre_1_2_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/data_centre_1_2_1x.png") { [0, 0, 62, 32, -31, 0] }
+alternative_sprites(data_centre_1_2_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/data_centre_1_2_2x.png") { [0, 0, 126, 64, -63, 0] }
+spritelayout data_centre_1_2_layout { ground { sprite: data_centre_1_2_sprite(0); } }
+item(FEAT_INDUSTRYTILES, data_centre_1_2_tile, 9) { property { substitute: 0; land_shape_flags: 15; accepted_cargos: [[VALU, 8], [GOLD, 8], [DIAM, 8]]; } graphics { default: data_centre_1_2_layout; } }
+spriteset(data_centre_2_2_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/data_centre_2_2_1x.png") { [0, 0, 62, 32, -31, 0] }
+alternative_sprites(data_centre_2_2_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/data_centre_2_2_2x.png") { [0, 0, 126, 64, -63, 0] }
+spritelayout data_centre_2_2_layout { ground { sprite: data_centre_2_2_sprite(0); } }
+item(FEAT_INDUSTRYTILES, data_centre_2_2_tile, 10) { property { substitute: 0; land_shape_flags: 15; accepted_cargos: [[VALU, 8], [GOLD, 8], [DIAM, 8]]; } graphics { default: data_centre_2_2_layout; } }
+spriteset(data_centre_3_2_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/data_centre_3_2_1x.png") { [0, 0, 68, 34, -37, 0] }
+alternative_sprites(data_centre_3_2_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/data_centre_3_2_2x.png") { [0, 0, 136, 68, -73, 0] }
+spritelayout data_centre_3_2_layout { ground { sprite: data_centre_3_2_sprite(0); } }
+item(FEAT_INDUSTRYTILES, data_centre_3_2_tile, 11) { property { substitute: 0; land_shape_flags: 15; accepted_cargos: [[VALU, 8], [GOLD, 8], [DIAM, 8]]; } graphics { default: data_centre_3_2_layout; } }
+spriteset(data_centre_0_3_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/data_centre_0_3_1x.png") { [0, 0, 63, 40, -31, -7] }
+alternative_sprites(data_centre_0_3_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/data_centre_0_3_2x.png") { [0, 0, 127, 80, -63, -14] }
+spritelayout data_centre_0_3_layout { ground { sprite: data_centre_0_3_sprite(0); } }
+item(FEAT_INDUSTRYTILES, data_centre_0_3_tile, 12) { property { substitute: 0; land_shape_flags: 15; accepted_cargos: [[VALU, 8], [GOLD, 8], [DIAM, 8]]; } graphics { default: data_centre_0_3_layout; } }
+spriteset(data_centre_1_3_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/data_centre_1_3_1x.png") { [0, 0, 66, 32, -31, 0] }
+alternative_sprites(data_centre_1_3_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/data_centre_1_3_2x.png") { [0, 0, 132, 64, -63, 0] }
+spritelayout data_centre_1_3_layout { ground { sprite: data_centre_1_3_sprite(0); } }
+item(FEAT_INDUSTRYTILES, data_centre_1_3_tile, 13) { property { substitute: 0; land_shape_flags: 15; accepted_cargos: [[VALU, 8], [GOLD, 8], [DIAM, 8]]; } graphics { default: data_centre_1_3_layout; } }
+spriteset(data_centre_2_3_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/data_centre_2_3_1x.png") { [0, 0, 64, 32, -31, 0] }
+alternative_sprites(data_centre_2_3_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/data_centre_2_3_2x.png") { [0, 0, 128, 64, -63, 0] }
+spritelayout data_centre_2_3_layout { ground { sprite: data_centre_2_3_sprite(0); } }
+item(FEAT_INDUSTRYTILES, data_centre_2_3_tile, 14) { property { substitute: 0; land_shape_flags: 15; accepted_cargos: [[VALU, 8], [GOLD, 8], [DIAM, 8]]; } graphics { default: data_centre_2_3_layout; } }
+spriteset(data_centre_3_3_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/data_centre_3_3_1x.png") { [0, 0, 68, 32, -37, 0] }
+alternative_sprites(data_centre_3_3_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/data_centre_3_3_2x.png") { [0, 0, 136, 64, -73, 0] }
+spritelayout data_centre_3_3_layout { ground { sprite: data_centre_3_3_sprite(0); } }
+item(FEAT_INDUSTRYTILES, data_centre_3_3_tile, 15) { property { substitute: 0; land_shape_flags: 15; accepted_cargos: [[VALU, 8], [GOLD, 8], [DIAM, 8]]; } graphics { default: data_centre_3_3_layout; } }
+tilelayout data_centre_footprint {
+    0, 0: data_centre_0_0_tile;
+    1, 0: data_centre_1_0_tile;
+    2, 0: data_centre_2_0_tile;
+    3, 0: data_centre_3_0_tile;
+    0, 1: data_centre_0_1_tile;
+    1, 1: data_centre_1_1_tile;
+    2, 1: data_centre_2_1_tile;
+    3, 1: data_centre_3_1_tile;
+    0, 2: data_centre_0_2_tile;
+    1, 2: data_centre_1_2_tile;
+    2, 2: data_centre_2_2_tile;
+    3, 2: data_centre_3_2_tile;
+    0, 3: data_centre_0_3_tile;
+    1, 3: data_centre_1_3_tile;
+    2, 3: data_centre_2_3_tile;
+    3, 3: data_centre_3_3_tile;
+}

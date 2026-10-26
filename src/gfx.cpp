@@ -1407,7 +1407,8 @@ void DrawMouseCursor()
 	/* Draw cursor on screen */
 	_cur_dpi = &_screen;
 	for (const auto &cs : _cursor.sprites) {
-		DrawSprite(cs.image.sprite, cs.image.pal, _cursor.pos.x + cs.pos.x, _cursor.pos.y + cs.pos.y);
+		const Point pos = ScaleCursorOffset(cs.pos);
+		DrawSprite(cs.image.sprite, cs.image.pal, _cursor.pos.x + pos.x, _cursor.pos.y + pos.y, nullptr, GetCursorZoom());
 	}
 
 	VideoDriver::GetInstance()->MakeDirty(_cursor.draw_pos.x, _cursor.draw_pos.y, _cursor.draw_size.x, _cursor.draw_size.y);
@@ -1615,9 +1616,27 @@ bool FillDrawPixelInfo(DrawPixelInfo *n, int left, int top, int width, int heigh
 }
 
 /**
- * Update cursor dimension.
- * Called when changing cursor sprite resp. reloading grfs.
+ * Effective mouse sprite zoom, independent of viewport limits and font size.
+ * @return Cursor zoom limited to the sprite renderer's supported range.
  */
+ZoomLevel GetCursorZoom()
+{
+	/* Sprite blitters support up to 4x. This is independent of the viewport zoom limits. */
+	return std::clamp(_gui_zoom - _settings_client.gui.cursor_size, ZoomLevel::Min, ZoomLevel::Normal);
+}
+
+/**
+ * Scale composite tool-cursor offsets around the unchanged mouse hotspot.
+ * @param pos Offset at GUI sprite scale.
+ * @return Offset at the selected cursor scale.
+ */
+Point ScaleCursorOffset(Point pos)
+{
+	const int shift = _gui_zoom - GetCursorZoom();
+	return {AdjustByZoom(pos.x, shift), AdjustByZoom(pos.y, shift)};
+}
+
+/** Update the cursor backup bounds after a sprite or size change. */
 void UpdateCursorSize()
 {
 	/* Ignore setting any cursor before the sprites are loaded. */
@@ -1627,10 +1646,11 @@ void UpdateCursorSize()
 	for (const auto &cs : _cursor.sprites) {
 		const Sprite *p = GetSprite(GB(cs.image.sprite, 0, SPRITE_WIDTH), SpriteType::Normal);
 		Point offs, size;
-		offs.x = UnScaleGUI(p->x_offs) + cs.pos.x;
-		offs.y = UnScaleGUI(p->y_offs) + cs.pos.y;
-		size.x = UnScaleGUI(p->width);
-		size.y = UnScaleGUI(p->height);
+		const Point pos = ScaleCursorOffset(cs.pos);
+		offs.x = UnScaleByZoom(p->x_offs, GetCursorZoom()) + pos.x;
+		offs.y = UnScaleByZoom(p->y_offs, GetCursorZoom()) + pos.y;
+		size.x = UnScaleByZoom(p->width, GetCursorZoom());
+		size.y = UnScaleByZoom(p->height, GetCursorZoom());
 
 		if (first) {
 			/* First sprite sets the total. */
@@ -1844,7 +1864,8 @@ bool AdjustGUIZoom(bool automatic)
 
 	/* Update cursors if sprite zoom level has changed. */
 	if (old_gui_zoom != _gui_zoom) {
-		VideoDriver::GetInstance()->ClearSystemSprites();
+		/* The cursor may now need a zoom level omitted from the encoded cache. */
+		GfxClearSpriteCache();
 		UpdateCursorSize();
 	}
 	if (old_font_zoom != _font_zoom) {

@@ -4,6 +4,7 @@
  */
 /** @file bootstrap.cpp Bounded, deterministic town-to-town bus network bootstrap. */
 #include "../stdafx.h"
+#include "../aircraft.h"
 #include "bootstrap.h"
 #include "air_planner.h"
 #include "planner_common.h"
@@ -165,7 +166,8 @@ bool InspectFutureLogistics()
 			continue;
 		}
 		/* Implicit orders record stations a vehicle stopped at on the way; only the vehicle's own orders count. */
-		bool connected = Company::IsValidAiID(vehicle->owner) && vehicle->GetNumManualOrders() == 2 && !vehicle->vehstatus.Test(VehState::Stopped);
+		const bool orbital = vehicle->type == VehicleType::Aircraft && Aircraft::From(vehicle)->acache.orbital_shuttle;
+		bool connected = Company::IsValidAiID(vehicle->owner) && vehicle->GetNumManualOrders() == (orbital ? 1 : 2) && !vehicle->vehstatus.Test(VehState::Stopped);
 		std::set<StationID> destinations;
 		for (const Order &order : vehicle->Orders()) {
 			if (order.IsType(OT_IMPLICIT)) continue;
@@ -179,7 +181,7 @@ bool InspectFutureLogistics()
 			case VehicleType::Ship: reached = DocksReachable(vehicle); break;
 			default: reached = RoadStationsReachable(vehicle); break;
 		}
-		connected &= destinations.size() == 2 && std::ranges::includes(reached, destinations);
+		connected &= destinations.size() == (orbital ? 1U : 2U) && std::ranges::includes(reached, destinations);
 		if (!connected) {
 			Debug(Facility::Misc, Severity::Notice, "FL check detail vehicle={} orders={} stopped={} destinations={} reached={}", vehicle->index, vehicle->GetNumOrders(),
 				vehicle->vehstatus.Test(VehState::Stopped), destinations.size(), reached.size());
@@ -193,7 +195,7 @@ bool InspectFutureLogistics()
 		uint carrying = 0;
 		for (const Vehicle *part = vehicle; part != nullptr; part = part->Next()) carrying += part->cargo.StoredCount();
 		Debug(Facility::Misc, Severity::Notice, "FL check company={} vehicle={} type={} connected={} served={} tile={} profit={} delivered={} carrying={} engine={} age={}",
-			vehicle->owner, vehicle->index, vehicle->type == VehicleType::Train ? "rail" : (vehicle->type == VehicleType::Aircraft ? "air" : (vehicle->type == VehicleType::Ship ? "water" : "road")), connected, destinations.contains(vehicle->last_station_visited),
+			vehicle->owner, vehicle->index, vehicle->type == VehicleType::Train ? "rail" : (vehicle->type == VehicleType::Aircraft ? "air" : (vehicle->type == VehicleType::Ship ? "water" : "road")), connected, orbital ? Aircraft::From(vehicle)->orbital.completed_trips > 0 : destinations.contains(vehicle->last_station_visited),
 			vehicle->tile, vehicle->profit_this_year, delivered, carrying, TechId(Engine::Get(vehicle->engine_type)), vehicle->age.base() / 366);
 	}
 	Debug(Facility::Misc, Severity::Notice, "FL check result={} companies={} vehicles={} human={}", valid, Company::GetNumItems(), checked, _local_company);

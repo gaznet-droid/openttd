@@ -7,6 +7,7 @@
 
 /** @file afterload.cpp Code updating data after game load. */
 
+#include "../future_logistics/hyperloop.h"
 #include "../stdafx.h"
 #include "../void_map.h"
 #include "../signs_base.h"
@@ -557,6 +558,7 @@ static void StartScripts()
  */
 bool AfterLoadGame()
 {
+	InvalidateHyperloopTubes();
 	SetSignalHandlers();
 
 	extern TileIndex _cur_tileloop_tile; // From landscape.cpp.

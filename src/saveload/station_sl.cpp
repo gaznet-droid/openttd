@@ -514,6 +514,7 @@ static const SaveLoad _old_station_desc[] = {
 	SaveLoad::Variable<VarFileType::U64>("airport.flags", SLE_OBJECT_ADDRESS(Station, airport.blocks), SaveLoadVersion::MoreAirportBlocks),
 
 	SaveLoad::Variable<VarFileType::U8>("last_vehicle_type", SLE_OBJECT_ADDRESS(Station, last_vehicle_type), SaveLoadVersion::LastVehicleType),
+	SaveLoad::Variable<VarFileType::I32>("last_orbital_launch_month", SLE_OBJECT_ADDRESS(Station, last_orbital_launch_month), SaveLoadVersion::FutureLogisticsOrbital),
 
 	SaveLoad::Variable<VarFileType::U16>("build_date", SLE_OBJECT_ADDRESS(Station, build_date), SaveLoadVersion::BiggerStationVariables, SaveLoadVersion::BigDates),
 	SaveLoad::Variable<VarFileType::I32>("build_date", SLE_OBJECT_ADDRESS(Station, build_date), SaveLoadVersion::BigDates),

@@ -9,6 +9,7 @@
 
 #include "stdafx.h"
 #include "debug.h"
+#include "future_logistics/tech_library.h"
 #include "timer/timer_game_calendar.h"
 #include "newgrf_badge.h"
 #include "newgrf_spritegroup.h"
@@ -132,7 +133,12 @@ void BindAirportSpecs()
 {
 	for (int i = 0; i < NUM_AIRPORTS; i++) {
 		AirportSpec *as = AirportSpec::GetWithoutOverride(i);
-		if (as->enabled) AirportClass::Assign(as);
+		if (as->enabled) {
+			const auto id = ReadItemTags(as->badges).id;
+			if (id == "drone_port") as->fsm = GetDronePortAirport();
+			if (id == "spaceport" || id == "starship_launch_site") as->fsm = GetOrbitalAirport();
+			AirportClass::Assign(as);
+		}
 	}
 }
 

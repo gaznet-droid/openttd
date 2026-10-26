@@ -8,6 +8,7 @@
 /** @file rail_gui.cpp %File for dealing with rail construction user interface. */
 
 #include "stdafx.h"
+#include "future_logistics/hyperloop.h"
 #include "gui.h"
 #include "station_base.h"
 #include "station_func.h"
@@ -525,6 +526,10 @@ struct BuildRailToolbarWindow : Window {
 		this->GetWidget<NWidgetCore>(WID_RAT_BUILD_DEPOT)->SetSprite(rti->gui_sprites.build_depot);
 		this->GetWidget<NWidgetCore>(WID_RAT_CONVERT_RAIL)->SetSprite(rti->gui_sprites.convert_rail);
 		this->GetWidget<NWidgetCore>(WID_RAT_BUILD_TUNNEL)->SetSprite(rti->gui_sprites.build_tunnel);
+		const bool hyperloop = IsHyperloopRailType(_cur_railtype);
+		this->SetWidgetDisabledState(WID_RAT_BUILD_BRIDGE, hyperloop);
+		this->GetWidget<NWidgetCore>(WID_RAT_AUTORAIL)->SetToolTip(hyperloop ? STR_HYPERLOOP_BUILD_TUBE_TOOLTIP : STR_RAIL_TOOLBAR_TOOLTIP_BUILD_AUTORAIL);
+		this->GetWidget<NWidgetCore>(WID_RAT_BUILD_TUNNEL)->SetToolTip(hyperloop ? STR_HYPERLOOP_BUILD_TUBE_TOOLTIP : STR_RAIL_TOOLBAR_TOOLTIP_BUILD_RAILROAD_TUNNEL);
 	}
 
 	/**
@@ -704,6 +709,10 @@ struct BuildRailToolbarWindow : Window {
 				break;
 
 			case WID_RAT_AUTORAIL:
+				if (IsHyperloopRailType(_cur_railtype)) {
+					VpStartPlaceSizing(tile, VPM_X_OR_Y, DDSP_BUILD_BRIDGE);
+					break;
+				}
 				VpStartPlaceSizing(tile, VPM_RAILDIRS, DDSP_PLACE_RAIL);
 				break;
 
@@ -732,6 +741,10 @@ struct BuildRailToolbarWindow : Window {
 				break;
 
 			case WID_RAT_BUILD_TUNNEL:
+				if (IsHyperloopRailType(_cur_railtype)) {
+					VpStartPlaceSizing(tile, VPM_X_OR_Y, DDSP_BUILD_BRIDGE);
+					break;
+				}
 				Command<Commands::BuildTunnel>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, CcBuildRailTunnel, tile, TransportType::Rail, _cur_railtype, INVALID_ROADTYPE);
 				break;
 
@@ -762,6 +775,11 @@ struct BuildRailToolbarWindow : Window {
 			switch (select_proc) {
 				default: NOT_REACHED();
 				case DDSP_BUILD_BRIDGE:
+					if (IsHyperloopRailType(_cur_railtype) && (this->IsWidgetLowered(WID_RAT_BUILD_TUNNEL) || this->IsWidgetLowered(WID_RAT_AUTORAIL))) {
+						Command<Commands::BuildHyperloopTube>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, start_tile, end_tile, _cur_railtype);
+						if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+						break;
+					}
 					if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
 					ShowBuildBridgeWindow(start_tile, end_tile, TransportType::Rail, _cur_railtype, INVALID_ROADTYPE);
 					break;
@@ -2152,4 +2170,13 @@ DropDownList GetRailTypeDropDownList(bool for_replacement, bool all_option)
 	}
 
 	return list;
+}
+
+/**
+ * Check whether the local player is inspecting/building the underground network.
+ * @return Whether the dedicated Hyperloop construction toolbar is open.
+ */
+bool IsHyperloopConstructionActive()
+{
+	return FindWindowById(WindowClass::BuildToolbar, TransportType::Rail) != nullptr && IsHyperloopRailType(_cur_railtype);
 }

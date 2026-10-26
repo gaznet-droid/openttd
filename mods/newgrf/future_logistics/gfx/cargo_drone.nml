@@ -1,0 +1,22 @@
+/* A multirotor can translate in every direction while maintaining a fixed yaw. */
+spriteset(cargo_drone_body, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/cargo_drone_1x.png") {
+    [0, 0, 40, 24, -20, -24]
+    [0, 0, 40, 24, -20, -24]
+    [0, 0, 40, 24, -20, -24]
+    [0, 0, 40, 24, -20, -24]
+    [0, 0, 40, 24, -20, -24]
+    [0, 0, 40, 24, -20, -24]
+    [0, 0, 40, 24, -20, -24]
+    [0, 0, 40, 24, -20, -24]
+}
+alternative_sprites(cargo_drone_body, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/cargo_drone_2x.png") {
+    [0, 0, 80, 47, -40, -47]
+    [0, 0, 80, 47, -40, -47]
+    [0, 0, 80, 47, -40, -47]
+    [0, 0, 80, 47, -40, -47]
+    [0, 0, 80, 47, -40, -47]
+    [0, 0, 80, 47, -40, -47]
+    [0, 0, 80, 47, -40, -47]
+    [0, 0, 80, 47, -40, -47]
+}
+spriteset(cargo_drone_rotor, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/empty.png") { [0, 0, 1, 1, 0, 0] [0, 0, 1, 1, 0, 0] [0, 0, 1, 1, 0, 0] [0, 0, 1, 1, 0, 0] }
