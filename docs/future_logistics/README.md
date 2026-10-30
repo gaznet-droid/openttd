@@ -177,6 +177,31 @@ rewrite `tests/future_logistics/tech_snapshots/`.
 The tests use a real GUI-capable SDL driver with SDL's dummy display, not a
 multiplayer dedicated server. Test artifacts go in `work/`.
 
+### Controlled 2050 inflation tests
+
+By default, Future Logistics integration worlds write `inflation = false`
+explicitly in their isolated `[economy]` configuration. That is the standard
+balancing baseline, including 2050 starts: vehicle, road, station and airport
+prices do not inherit historical inflation just because the calendar year is
+late.
+
+To run an ordinary focused test with deliberate inflation enabled, add
+`--inflation on`; omit it (or use `--inflation off`) for the default controlled
+baseline. To compare fresh 2050 worlds directly, run:
+
+```sh
+python3 tests/future_logistics/integration.py \
+  --binary build/openttd --baseset /path/to/OpenGFX --only inflation
+```
+
+The comparison creates two **fresh** 2050 worlds, one with inflation off and
+one on, and records current road, truck-stop, depot, international-airport,
+Starship purchase and Starship running costs. It does not toggle an existing
+save. For a manual 2050 game, turn off **Settings → Economy → Inflation** before
+creating the new game. Turning it off in an existing inflated save prevents
+future rises but does not reverse prices already inflated at the original game
+start; use separate fresh saves for a meaningful comparison.
+
 ## Scope and remaining work
 
 Freight routes have at most two legs (one transfer). No signals,
