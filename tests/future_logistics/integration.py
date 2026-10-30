@@ -30,16 +30,19 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT / "work/integration")
     parser.add_argument("--update-snapshots", action="store_true",
                         help="rewrite the Tech Library snapshots instead of comparing against them")
-    parser.add_argument("--only", choices=["data-centre", "orbital", "hyperloop", "hub", "airports"], help="run a focused gameplay regression")
+    parser.add_argument("--only", choices=["data-centre", "orbital", "hyperloop", "hub", "airports", "inflation"], help="run a focused gameplay regression")
+    parser.add_argument("--inflation", choices=["off", "on"], default="off",
+                        help="set inflation explicitly for ordinary test worlds (default: off); the inflation probe always runs both modes")
     args = parser.parse_args()
     binary, baseset, output = args.binary.resolve(), args.baseset.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
 
     def run(name, *, seed=12345, load=None, enabled=True, limit=4, capital=25000000,
-            towns=48, year=1950, service=False, dedicated=False, vehicle_limit=500, clear_limit=4096, default_world=False,
+            towns=48, year=1950, inflation=None, service=False, dedicated=False, vehicle_limit=500, clear_limit=4096, default_world=False,
             climate="temperate", commands="", industries=4, map_bits=8, grfs=(), coastal=False, months=3, mountains=False, rivers=False, game_script=None, multiple_industries=False, daily_commands="", town_cargo_scale=100):
         folder = output / name
         folder.mkdir(exist_ok=True)
+        effective_inflation = args.inflation == "on" if inflation is None else inflation
         if grfs:
             (folder / "newgrf").mkdir(exist_ok=True)
             for grf in grfs:
@@ -74,6 +77,7 @@ max_roadveh = {vehicle_limit}
 max_trains = {vehicle_limit}
 max_aircraft = {vehicle_limit}
 [economy]
+inflation = {str(effective_inflation).lower()}
 town_layout = 1
 town_cargo_scale = {town_cargo_scale}
 [gui]
@@ -154,6 +158,34 @@ DayZeroMonopolies =
         require(any(int(n) < 1200 for n in re.findall(r"DC funded town=\d+ population=(\d+)", centres)), "no data centre was funded in a small town")
         require("DC placement built=2 different_towns=true duplicate_rejected=true open_land=true" in centres,
                 "data-centre funding on open land or the one-per-town restriction failed")
+
+    def check_inflation():
+        """Compare fresh 2050 worlds; never toggle a setting inside an existing save."""
+        starship = ROOT / "mods/newgrf/starship/starship.grf"
+        script = ROOT / "tests/future_logistics/gs/InflationCheck"
+
+        def probe(mode, enabled):
+            text, _ = run("inflation-2050-" + mode, enabled=False, limit=1, year=2050, inflation=enabled,
+                          grfs=[starship], game_script=script, commands="future_logistics_tech list\n", service=True, months=1)
+            building = re.search(r"INFLATION probe setting=(\d+) road=(\d+) truck_stop=(\d+) depot=(\d+) international_airport=(\d+)", text)
+            ship = re.search(r"FL tech vehicle .* cost=(\d+) running_cost=(\d+) name=Starship(?:\n|$)", text)
+            require(building and ship, mode + " inflation price probe did not report all values")
+            return {
+                "setting": int(building.group(1)), "road": int(building.group(2)),
+                "truck_stop": int(building.group(3)), "depot": int(building.group(4)),
+                "international_airport": int(building.group(5)), "starship": int(ship.group(1)),
+                "starship_running": int(ship.group(2)),
+            }
+
+        without = probe("off", False)
+        with_inflation = probe("on", True)
+        require(without["setting"] == 0 and with_inflation["setting"] == 1,
+                "2050 inflation setting did not match the requested mode")
+        for field in ("road", "truck_stop", "depot", "international_airport", "starship", "starship_running"):
+            require(with_inflation[field] > without[field], f"inflation did not increase {field} in a fresh 2050 world")
+        print("2050 inflation comparison passed: "
+              + "off=" + ",".join(f"{key}:{without[key]}" for key in ("road", "truck_stop", "depot", "international_airport", "starship", "starship_running"))
+              + " on=" + ",".join(f"{key}:{with_inflation[key]}" for key in ("road", "truck_stop", "depot", "international_airport", "starship", "starship_running")), flush=True)
 
     def check_orbital():
         grf = ROOT / "mods/newgrf/starship/starship.grf"
@@ -247,6 +279,10 @@ DayZeroMonopolies =
             require(len(re.findall(r"FL tech infra kind=airport id=airport:\d+ speed=0 size=4x3", text)) == 1,
                     name + " replaces or duplicates the country airport")
         print("Country airport preservation with either graphics-pack loading order passed", flush=True)
+
+    if args.only == "inflation":
+        check_inflation()
+        return
 
     if args.only == "airports":
         check_airports()
