@@ -1,7 +1,9 @@
 /* GPL-2.0-only. Changes only the isolated regression world. */
 class HubCheck extends GSController {
     ready = false; site = -1; second = -1; small = -1; vehicle = -1; entered = false;
-    function Save() { return { ready = this.ready, site = this.site, second = this.second, small = this.small, vehicle = this.vehicle, entered = this.entered }; }
+    hub_visits = 0; return_visits = 0; last_stop = -1;
+    function Save() { return { ready = this.ready, site = this.site, second = this.second, small = this.small, vehicle = this.vehicle, entered = this.entered,
+        hub_visits = this.hub_visits, return_visits = this.return_visits, last_stop = this.last_stop }; }
     function Load(version, data) { foreach (key, value in data) this[key] = value; }
     function Tile(dx, dy) { return GSMap.GetTileIndex(GSMap.GetTileX(this.site) + dx, GSMap.GetTileY(this.site) + dy); }
     function Site(tile) {
@@ -22,6 +24,31 @@ class HubCheck extends GSController {
             !GSRoad.BuildRoadStation(this.Tile(5, 5), this.Tile(5, 4), GSRoad.ROADVEHTYPE_TRUCK, GSStation.STATION_NEW)) {
             GSLog.Error("HUB traffic infrastructure: " + GSError.GetLastErrorString()); return false;
         }
+        /* A road alongside a bay does not include the branch into its entrance.
+         * BuildRoad adds the missing approach bit; the existing entrance bit on
+         * the bay/depot endpoint is already built and is left unchanged. */
+        for (local i = 0; i < 4; i++) {
+            if (!GSRoad.BuildRoad(this.Tile(3, i), this.Tile(4, i))) {
+                GSLog.Error("HUB bay approach " + i + ": " + GSError.GetLastErrorString()); return false;
+            }
+        }
+        if (!GSRoad.BuildRoad(this.Tile(5, 4), this.Tile(6, 4)) ||
+            !GSRoad.BuildRoad(this.Tile(5, 4), this.Tile(5, 5))) {
+            GSLog.Error("HUB traffic approaches: " + GSError.GetLastErrorString()); return false;
+        }
+        for (local i = 0; i < 4; i++) {
+            if (!GSRoad.AreRoadTilesConnected(this.Tile(4, i), this.Tile(3, i)) ||
+                !GSRoad.AreRoadTilesConnected(this.Tile(3, i), this.Tile(4, i))) {
+                GSLog.Error("HUB disconnected bay approach " + i); return false;
+            }
+        }
+        if (!GSRoad.AreRoadTilesConnected(this.Tile(6, 4), this.Tile(5, 4)) ||
+            !GSRoad.AreRoadTilesConnected(this.Tile(5, 4), this.Tile(6, 4)) ||
+            !GSRoad.AreRoadTilesConnected(this.Tile(5, 4), this.Tile(5, 5)) ||
+            !GSRoad.AreRoadTilesConnected(this.Tile(5, 5), this.Tile(5, 4))) {
+            GSLog.Error("HUB disconnected depot or return approach"); return false;
+        }
+        GSLog.Info("HUB access connected bays=4 depot=true return=true");
         local mail = -1, engine = -1;
         foreach (cargo, unused in GSCargoList()) if (GSCargo.GetCargoLabel(cargo) == "MAIL") mail = cargo;
         foreach (candidate, unused in GSEngineList(GSVehicle.VT_ROAD)) {
@@ -57,6 +84,12 @@ class HubCheck extends GSController {
             GSLog.Info("HUB fixture ready tile=" + this.site + " second=" + this.second + " small=" + this.small);
         }
         local mode = GSCompanyMode(0);
+        /* Road-stop queries use the script's current road type, which is not
+         * restored by Load(). Select it before polling, not only in Traffic(). */
+        GSRoad.SetCurrentRoadType(GSRoad.ROADTYPE_ROAD);
+        if (this.vehicle != -1) {
+            GSLog.Info("HUB traffic restored vehicle=" + this.vehicle + " hub_visits=" + this.hub_visits + " return_visits=" + this.return_visits);
+        }
         while (true) {
             local complete = true, station = -1;
             for (local i = 0; i < 4; i++) {
@@ -67,10 +100,22 @@ class HubCheck extends GSController {
                 if (station != next) complete = false;
             }
             if (complete && this.vehicle == -1 && !this.Traffic()) return;
-            if (this.vehicle != -1 && !this.entered && GSVehicle.GetCurrentSpeed(this.vehicle) == 0 &&
-                GSRoad.IsRoadStationTile(GSVehicle.GetLocation(this.vehicle)) && GSStation.GetStationID(GSVehicle.GetLocation(this.vehicle)) == station) {
-                this.entered = true;
-                GSLog.Info("HUB truck entered loading bay vehicle=" + this.vehicle + " station=" + station);
+            if (this.vehicle != -1 && GSVehicle.GetCurrentSpeed(this.vehicle) == 0 &&
+                GSRoad.IsRoadStationTile(GSVehicle.GetLocation(this.vehicle))) {
+                local stopped = GSStation.GetStationID(GSVehicle.GetLocation(this.vehicle));
+                if (stopped == station && this.last_stop != station) {
+                    if (!this.entered) {
+                        this.entered = true;
+                        GSLog.Info("HUB truck entered loading bay vehicle=" + this.vehicle + " station=" + station);
+                    }
+                    this.hub_visits++;
+                    this.last_stop = stopped;
+                    GSLog.Info("HUB traffic visit vehicle=" + this.vehicle + " kind=hub count=" + this.hub_visits + " tile=" + GSVehicle.GetLocation(this.vehicle));
+                } else if (GSVehicle.GetLocation(this.vehicle) == this.Tile(5, 5) && this.last_stop != stopped) {
+                    this.return_visits++;
+                    this.last_stop = stopped;
+                    GSLog.Info("HUB traffic visit vehicle=" + this.vehicle + " kind=return count=" + this.return_visits);
+                }
             }
             this.Sleep(5);
         }
