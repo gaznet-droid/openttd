@@ -214,14 +214,27 @@ DayZeroMonopolies =
                            commands=f"future_logistics_tech build-hub {tile}\n", daily_commands="future_logistics_tech hub-audit\n")
         require(re.search(rf"FL distribution request tile={tile} accepted=true", built), "hub construction rejected")
         require(re.search(r"FL distribution audit .*bays=4 reserved_secondary=4", built), "hub does not have four joined single-vehicle bays")
+        require("HUB access connected bays=4 depot=true return=true" in built, "hub fixture approaches are disconnected or traffic setup did not run")
         require("HUB truck entered loading bay" in built, "truck did not use the warehouse's loading bays")
+        visits = lambda text, kind: [int(n) for n in re.findall(rf"HUB traffic visit vehicle=\d+ kind={kind} count=(\d+)", text)]
+        require(visits(built, "hub") and max(visits(built, "hub")) >= 2 and visits(built, "return"),
+                "hub truck did not complete a round trip and re-enter a loading bay")
         rejected, _ = run("hub-reloaded", load=ready, enabled=False, year=2050, grfs=[grf], game_script=script, service=True, months=1,
                           commands=f"future_logistics_tech build-hub {second}\nfuture_logistics_tech build-hub {small}\n",
                           daily_commands="future_logistics_tech hub-audit\n")
         require(re.search(rf"FL distribution request tile={second} accepted=false .*already has a Distribution Centre", rejected), "second hub in one town was allowed")
         require(re.search(rf"FL distribution request tile={small} accepted=false .*5,000", rejected), "small town restriction did not apply")
         require(re.search(r"FL distribution audit .*bays=4 reserved_secondary=4", rejected), "hub bays did not survive reload")
-        print("Distribution hub build, four live bays, town restrictions and reload passed", flush=True)
+        require("HUB fixture ready" not in rejected and "HUB access connected" not in rejected, "reload recreated the hub traffic fixture")
+        vehicle = re.search(r"HUB truck entered loading bay vehicle=(\d+)", built).group(1)
+        restored = re.search(rf"HUB traffic restored vehicle={vehicle} hub_visits=(\d+) return_visits=(\d+)", rejected)
+        require(restored, "reload did not restore the original truck and its visit counters")
+        # The save can precede the last logged visit in the previous process.
+        # Compare against the actual saved counters, not that process's log tail.
+        for kind, count in zip(("hub", "return"), map(int, restored.groups())):
+            require(count > 0 and visits(rejected, kind) and max(visits(rejected, kind)) > count,
+                    f"hub truck did not resume its {kind} visits after reload")
+        print("Distribution hub build, four connected bays, live round trips, town restrictions and traffic reload passed", flush=True)
 
     def check_airports():
         fl = ROOT / "mods/newgrf/future_logistics/future_logistics.grf"
