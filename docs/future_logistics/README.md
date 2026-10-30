@@ -177,6 +177,50 @@ rewrite `tests/future_logistics/tech_snapshots/`.
 The tests use a real GUI-capable SDL driver with SDL's dummy display, not a
 multiplayer dedicated server. Test artifacts go in `work/`.
 
+### Controlled 2050 economy baseline
+
+Future Logistics balancing uses a **fresh 2050 world with inflation disabled**.
+The integration runner explicitly writes `inflation = false` in `[economy]` for
+every normally generated configuration; it does not inherit this choice from a
+local OpenTTD configuration. Use `--inflation on` for a deliberate inflation-enabled
+comparison or balance run. That flag controls generated world settings, not the
+accumulated inflation stored in a loaded save.
+
+For manual testing, turn off **Settings → Economy → Inflation before creating a
+new 2050 game**. Disabling it in an already-inflated save only stops future
+inflation; it does **not** reset previously accumulated price or vehicle-cost
+inflation. Start a fresh world for the no-inflation baseline.
+
+Run the paired regression with an existing SDL-capable build and OpenGFX:
+
+```sh
+python3 tests/future_logistics/integration.py \
+  --binary build/openttd --baseset /path/to/opengfx \
+  --output work/inflation --only inflation
+```
+
+This always creates two separate fresh worlds with the same seed and 2050 start,
+one explicitly off and one explicitly on, irrespective of `--inflation`. A read-only
+Game Script logs the active saved-game setting and road, truck-stop, road-depot
+and international-airport construction prices. The Tech Library supplies Starship
+purchase and annual running costs. The test checks both settings and requires all
+six on-world prices to exceed their off-world counterparts; exact money amounts
+are not compatibility contracts. Figures are internal money units, independent
+of the display currency. Logs, separate snapshots and measured figures
+(`inflation-comparison.json`) remain in the output directory.
+
+For an intentional inflation-enabled hub run, for example:
+
+```sh
+python3 tests/future_logistics/integration.py \
+  --binary build/openttd --baseset /path/to/opengfx \
+  --output work/hub-inflation-on --only hub --inflation on
+```
+
+Omit `--inflation on` for the default no-inflation hub regression. These controls
+and probes change test infrastructure only; they do not rebalance gameplay,
+NewGRF definitions or savegame formats.
+
 ## Scope and remaining work
 
 Freight routes have at most two legs (one transfer). No signals,

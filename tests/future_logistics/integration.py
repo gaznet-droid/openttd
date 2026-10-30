@@ -7,6 +7,7 @@ Saved games use OpenTTD's null driver to simulate ticks quickly in single-player
 This is runtime integration testing, independent of the C++ unit test suite.
 """
 import argparse
+import json
 import os
 from pathlib import Path
 import re
@@ -30,14 +31,17 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT / "work/integration")
     parser.add_argument("--update-snapshots", action="store_true",
                         help="rewrite the Tech Library snapshots instead of comparing against them")
-    parser.add_argument("--only", choices=["data-centre", "orbital", "hyperloop", "hub", "airports"], help="run a focused gameplay regression")
+    parser.add_argument("--inflation", choices=["off", "on"], default="off",
+                        help="set inflation explicitly for generated worlds (default: off)")
+    parser.add_argument("--only", choices=["data-centre", "orbital", "hyperloop", "hub", "airports", "inflation"], help="run a focused gameplay regression")
     args = parser.parse_args()
     binary, baseset, output = args.binary.resolve(), args.baseset.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
 
     def run(name, *, seed=12345, load=None, enabled=True, limit=4, capital=25000000,
             towns=48, year=1950, service=False, dedicated=False, vehicle_limit=500, clear_limit=4096, default_world=False,
-            climate="temperate", commands="", industries=4, map_bits=8, grfs=(), coastal=False, months=3, mountains=False, rivers=False, game_script=None, multiple_industries=False, daily_commands="", town_cargo_scale=100):
+            climate="temperate", commands="", industries=4, map_bits=8, grfs=(), coastal=False, months=3, mountains=False, rivers=False, game_script=None, multiple_industries=False, daily_commands="", town_cargo_scale=100, inflation=None):
+        inflation = args.inflation if inflation is None else inflation
         folder = output / name
         folder.mkdir(exist_ok=True)
         if grfs:
@@ -74,6 +78,7 @@ max_roadveh = {vehicle_limit}
 max_trains = {vehicle_limit}
 max_aircraft = {vehicle_limit}
 [economy]
+inflation = {str(inflation == "on").lower()}
 town_layout = 1
 town_cargo_scale = {town_cargo_scale}
 [gui]
@@ -145,6 +150,38 @@ DayZeroMonopolies =
         require("FL rollback failed" not in text, f"{name}: cleanup failed")
         require("Your script made an error" not in text and "is not a valid index" not in text, f"{name}: Squirrel runtime error")
         return text, folder / "snapshot.sav"
+
+    def check_inflation():
+        # These must be two fresh worlds: disabling inflation in a loaded save
+        # does not undo its accumulated price and vehicle-cost inflation.
+        grfs = [ROOT / "mods/newgrf/future_logistics/future_logistics.grf",
+                ROOT / "mods/newgrf/starship/starship.grf"]
+        measurements = {}
+        for mode, setting in (("off", 0), ("on", 1)):
+            text, _ = run(f"inflation-{mode}", enabled=False, limit=0, year=2050,
+                          towns=8, map_bits=7, grfs=grfs, service=True, months=1,
+                          inflation=mode, game_script=ROOT / "tests/future_logistics/gs/InflationCheck",
+                          commands="future_logistics_tech validate\nfuture_logistics_tech list\n")
+            require("FL tech validate problems=0" in text, f"inflation-{mode}: invalid tech declarations")
+            probe = re.search(r"FL inflation probe year=(\d+) setting=(-?\d+) road=(-?\d+) truck_stop=(-?\d+) "
+                              r"road_depot=(-?\d+) international_airport=(-?\d+)", text)
+            require(probe, f"inflation-{mode}: economic probe did not report its setting and prices")
+            year, actual_setting, *prices = map(int, probe.groups())
+            require(year == 2050, f"inflation-{mode}: probe did not run in 2050")
+            require(actual_setting == setting, f"inflation-{mode}: saved-game inflation setting is not {setting}")
+            starship = re.search(r"FL tech vehicle id=464C0102:air:64 .*cost=(\d+) running_cost=(\d+) name=", text)
+            require(starship, f"inflation-{mode}: Starship costs are missing from the Tech Library")
+            measurements[mode] = dict(zip(
+                ("road", "truck_stop", "road_depot", "international_airport", "starship_purchase", "starship_annual_running"),
+                prices + list(map(int, starship.groups()))))
+            require(all(value > 0 for value in measurements[mode].values()),
+                    f"inflation-{mode}: a sampled price is invalid or zero")
+        for metric, off in measurements["off"].items():
+            on = measurements["on"][metric]
+            require(on > off, f"inflation-on {metric} ({on}) is not higher than inflation-off ({off})")
+            print(f"Inflation comparison {metric}: off={off} on={on} ratio={on / off:.3f}", flush=True)
+        (output / "inflation-comparison.json").write_text(json.dumps(measurements, indent=2) + "\n")
+        print("PASS: fresh 2050 inflation off/on settings and all six price comparisons", flush=True)
 
     def check_data_centres():
         # Data centres must be fundable on open land, once per town, without bank/house restrictions.
@@ -247,6 +284,10 @@ DayZeroMonopolies =
             require(len(re.findall(r"FL tech infra kind=airport id=airport:\d+ speed=0 size=4x3", text)) == 1,
                     name + " replaces or duplicates the country airport")
         print("Country airport preservation with either graphics-pack loading order passed", flush=True)
+
+    if args.only == "inflation":
+        check_inflation()
+        return
 
     if args.only == "airports":
         check_airports()
