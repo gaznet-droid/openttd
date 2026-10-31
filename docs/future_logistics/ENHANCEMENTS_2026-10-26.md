@@ -3,6 +3,7 @@
 ## Implemented
 
 - Data centres can be funded on ordinary open 4×4 land, including towns below 1,200 population. The inherited bank requirement to demolish houses is removed. One centre per town remains enforced even when the global multiple-industry setting is enabled. Supplied tower art is used on the actual industry.
+- New temperate Banks created by this build produce Valuables at ten times the former base rate. At 100% industry cargo scale, complete economy months normally produce 1,080–1,200 Valuables (the observed 31-day test month produced 1,140). Existing Banks retain their saved production rate; build a new Bank or start a new game to test the higher source supply.
 - The functional Drone Port uses the supplied 4×4 building and three rooftop landing stands. The fourth stand is intentionally unused. The moving drone uses its supplied art and its 1,609 km/h speed without the conventional-plane speed divisor.
 - Starship uses a persistent orbital controller, one home spaceport, 1,000 automatic outbound/inbound passengers, early dispatch at 500 passengers, and one shared launch per spaceport per calendar month. It returns to and services on the same pad. Outbound cargo is actual boarded cargo; the orbital destination supplies the returning manifest. The standalone rocket remains a smaller 200-passenger vehicle using the same controller/art.
 - Both functional spaceports use the recovered launch scenery and separate vehicle/flame sprites. Their footprint is 4×4. Ordinary aircraft cannot occupy these dedicated orbital pads.

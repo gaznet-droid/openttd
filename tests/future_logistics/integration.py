@@ -30,14 +30,14 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT / "work/integration")
     parser.add_argument("--update-snapshots", action="store_true",
                         help="rewrite the Tech Library snapshots instead of comparing against them")
-    parser.add_argument("--only", choices=["data-centre", "orbital", "hyperloop", "hub", "airports"], help="run a focused gameplay regression")
+    parser.add_argument("--only", choices=["bank", "data-centre", "orbital", "hyperloop", "hub", "airports"], help="run a focused gameplay regression")
     args = parser.parse_args()
     binary, baseset, output = args.binary.resolve(), args.baseset.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
 
     def run(name, *, seed=12345, load=None, enabled=True, limit=4, capital=25000000,
-            towns=48, year=1950, service=False, dedicated=False, vehicle_limit=500, clear_limit=4096, default_world=False,
-            climate="temperate", commands="", industries=4, map_bits=8, grfs=(), coastal=False, months=3, mountains=False, rivers=False, game_script=None, multiple_industries=False, daily_commands="", town_cargo_scale=100):
+            towns=48, year=1950, economy_type=1, service=False, dedicated=False, vehicle_limit=500, clear_limit=4096, default_world=False,
+            climate="temperate", commands="", industries=4, map_bits=8, grfs=(), coastal=False, months=3, mountains=False, rivers=False, game_script=None, multiple_industries=False, daily_commands="", town_cargo_scale=100, industry_cargo_scale=None, larger_towns=4):
         folder = output / name
         folder.mkdir(exist_ok=True)
         if grfs:
@@ -74,8 +74,10 @@ max_roadveh = {vehicle_limit}
 max_trains = {vehicle_limit}
 max_aircraft = {vehicle_limit}
 [economy]
+type = {economy_type}
 town_layout = 1
 town_cargo_scale = {town_cargo_scale}
+larger_towns = {larger_towns}
 [gui]
 pause_on_newgame = false
 threaded_saves = false
@@ -98,6 +100,8 @@ DayZeroMonopolies =
         if game_script:
             shutil.copytree(game_script, folder / "game" / game_script.name, dirs_exist_ok=True)
             cfg.write_text(cfg.read_text().replace("DayZeroMonopolies =", f"{game_script.name} ="))
+        if industry_cargo_scale is not None:
+            cfg.write_text(cfg.read_text().replace(f"town_cargo_scale = {town_cargo_scale}\n", f"town_cargo_scale = {town_cargo_scale}\nindustry_cargo_scale = {industry_cargo_scale}\n"))
         if multiple_industries:
             cfg.write_text(cfg.read_text().replace("[economy]\n", "[economy]\nmultiple_industry_per_town = true\n"))
         if coastal:
@@ -145,6 +149,22 @@ DayZeroMonopolies =
         require("FL rollback failed" not in text, f"{name}: cleanup failed")
         require("Your script made an error" not in text and "is not a valid index" not in text, f"{name}: Squirrel runtime error")
         return text, folder / "snapshot.sav"
+
+    def check_bank_valuables():
+        script = ROOT / "tests/future_logistics/gs/BankValuablesCheck"
+        future_logistics = ROOT / "mods/newgrf/future_logistics/future_logistics.grf"
+        cases = (
+            ("base-original", [], 0, lambda value: value % 60 == 0 and 1080 <= value <= 1200),
+            ("future-logistics-original", [future_logistics], 0, lambda value: value % 60 == 0 and 1080 <= value <= 1200),
+            ("future-logistics-smooth", [future_logistics], 1, lambda value: 540 <= value <= 1780),
+        )
+        for name, grfs, economy_type, valid_output in cases:
+            text, _ = run("bank-valuables-" + name, enabled=False, limit=1, year=2026, towns=4, map_bits=9,
+                          industries=0, economy_type=economy_type, industry_cargo_scale=100, larger_towns=4, service=True, months=8, grfs=grfs, game_script=script)
+            output = re.search(r"BANK valuables type=12 industry=(\d+) last_month=(\d+)", text)
+            require(output and valid_output(int(output.group(2))),
+                    name + " temperate Bank output did not match its expected complete-month range")
+        print("Temperate Bank Valuables production, default-economy range and Future Logistics coexistence passed", flush=True)
 
     def check_data_centres():
         # Data centres must be fundable on open land, once per town, without bank/house restrictions.
@@ -247,6 +267,10 @@ DayZeroMonopolies =
             require(len(re.findall(r"FL tech infra kind=airport id=airport:\d+ speed=0 size=4x3", text)) == 1,
                     name + " replaces or duplicates the country airport")
         print("Country airport preservation with either graphics-pack loading order passed", flush=True)
+
+    if args.only == "bank":
+        check_bank_valuables()
+        return
 
     if args.only == "airports":
         check_airports()
@@ -494,6 +518,7 @@ DayZeroMonopolies =
     require("CI objects built=6" in objects and "FL tech validate problems=0" in objects,
             "the Corporate Infrastructure objects could not all be built alongside Future Logistics")
 
+    check_bank_valuables()
     check_data_centres()
     check_orbital()
     check_hyperloop()

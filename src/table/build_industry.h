@@ -1256,7 +1256,7 @@ extern const IndustrySpec _origin_industry_specs[NEW_INDUSTRYOFFSET] = {
 	MI(_tile_table_bank,                       {},
 	   255,  0xA6666666,                       7, 0, 0, 0,    0, 0, 0, 0,         15,
 	   IT_BANK_TEMP,      IT_INVALID,          IT_INVALID,       IndustryCheck::None,
-	   MCT_VALUABLES_GOLD_DIAMONDS,   6, CT_INVALID,       0, 5,
+	   MCT_VALUABLES_GOLD_DIAMONDS,  60, CT_INVALID,       0, 5,
 	   MCT_VALUABLES_GOLD_DIAMONDS,   0, CT_INVALID,       0, CT_INVALID,     0,
 	   INDUSTRYLIFE_BLACK_HOLE,                LandscapeType::Temperate,
 	   IndustryBehaviour::Town1200More,
