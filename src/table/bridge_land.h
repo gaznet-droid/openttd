@@ -712,7 +712,7 @@ static const std::span<const PalSpriteID> _bridge_sprite_table_tubular_silicon[]
 	_bridge_sprite_table_generic_concrete_heads,
 };
 
-static const std::span<const std::span<const PalSpriteID>> _bridge_sprite_table[MAX_BRIDGES] = {
+static const std::span<const std::span<const PalSpriteID>> _bridge_sprite_table[NUM_BRIDGE_SPECS] = {
 	_bridge_sprite_table_wood,
 	_bridge_sprite_table_concrete,
 	_bridge_sprite_table_archgirder,
@@ -726,6 +726,7 @@ static const std::span<const std::span<const PalSpriteID>> _bridge_sprite_table[
 	_bridge_sprite_table_tubular_oxide,
 	_bridge_sprite_table_tubular_yellow,
 	_bridge_sprite_table_tubular_silicon,
+	_bridge_sprite_table_tubular_silicon, // Hyperloop viaduct, until its own NewGRF artwork.
 };
 
 static constexpr BridgePillarFlags BRIDGEPILLARFLAGS_ALL_CORNERS = {
@@ -820,4 +821,9 @@ const BridgeSpec _orig_bridge[] = {
 
 	{TimerGameCalendar::Year{2010}, 2, UINT16_MAX, 510, 608, 0xA28, PALETTE_TO_STRUCT_CONCRETE,
 	   STR_BRIDGE_TUBULAR_SILICON,          {STR_LAI_BRIDGE_DESCRIPTION_RAIL_TUBULAR_STEEL,       STR_LAI_BRIDGE_DESCRIPTION_ROAD_TUBULAR_STEEL},       CANTILEVER_PILLARS},
+
+	/* Hyperloop viaduct (BRIDGE_HYPERLOOP): HYPL only, no speed cap and no length cap; availability follows the rail type. */
+	{CalendarTime::MIN_YEAR,        0, UINT16_MAX, 510, UINT16_MAX, 0xA28, PALETTE_TO_STRUCT_CONCRETE,
+	   STR_BRIDGE_NAME_HYPERLOOP,           {STR_LAI_BRIDGE_DESCRIPTION_RAIL_HYPERLOOP,           STR_LAI_BRIDGE_DESCRIPTION_ROAD_TUBULAR_STEEL},       CANTILEVER_PILLARS},
 };
+static_assert(std::size(_orig_bridge) == NUM_BRIDGE_SPECS);

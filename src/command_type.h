@@ -381,6 +381,7 @@ enum class Commands : uint8_t {
 	RemoveLeagueTableElement, ///< remove a league table element
 
 	BuildHyperloopTube, ///< Construct a straight underground Hyperloop tube between flat access shafts.
+	BuildHyperloopViaduct, ///< Construct a straight elevated Hyperloop viaduct between two ramps.
 	StarshipDispatch, ///< Dispatch an orbital shuttle with at least 500 passengers.
 
 	End, ///< @important Must ALWAYS be on the end of this list!! (period)

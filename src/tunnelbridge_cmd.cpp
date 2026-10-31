@@ -46,7 +46,7 @@
 
 #include "safeguards.h"
 
-BridgeSpec _bridge[MAX_BRIDGES]; ///< The specification of all bridges.
+BridgeSpec _bridge[NUM_BRIDGE_SPECS]; ///< The specification of all bridges.
 TileIndex _build_tunnel_endtile; ///< The end of a tunnel; as hidden return from the tunnel build command for GUI purposes.
 
 /** Z position of the bridge sprites relative to bridge height (downwards) */
@@ -240,16 +240,17 @@ static CommandCost CheckBridgeSlope(BridgePieces bridge_piece, Axis axis, Slope 
 CommandCost CheckBridgeAvailability(BridgeType bridge_type, uint bridge_len, DoCommandFlags flags)
 {
 	if (flags.Test(DoCommandFlag::QueryCost)) {
-		if (bridge_len <= _settings_game.construction.max_bridge_length) return CommandCost();
+		if (bridge_type == BRIDGE_HYPERLOOP || bridge_len <= _settings_game.construction.max_bridge_length) return CommandCost();
 		return CommandCost(STR_ERROR_BRIDGE_TOO_LONG);
 	}
 
-	if (bridge_type >= MAX_BRIDGES) return CMD_ERROR;
+	if (bridge_type >= NUM_BRIDGE_SPECS) return CMD_ERROR;
 
 	const BridgeSpec *b = GetBridgeSpec(bridge_type);
 	if (b->avail_year > TimerGameCalendar::year) return CMD_ERROR;
 
-	uint max = std::min(b->max_length, _settings_game.construction.max_bridge_length);
+	/* Hyperloop viaducts replace unlimited underground tubes, so the ordinary bridge length setting does not apply. */
+	uint max = bridge_type == BRIDGE_HYPERLOOP ? b->max_length : std::min(b->max_length, _settings_game.construction.max_bridge_length);
 
 	if (b->min_length > bridge_len) return CMD_ERROR;
 	if (bridge_len <= max) return CommandCost();
@@ -311,7 +312,9 @@ static CommandCost CheckBuildAbove(TileIndex tile, DoCommandFlags flags, Axis ax
  */
 CommandCost CmdBuildBridge(DoCommandFlags flags, TileIndex tile_end, TileIndex tile_start, TransportType transport_type, BridgeType bridge_type, RailType railtype, RoadType roadtype)
 {
-	if (transport_type == TransportType::Rail && IsHyperloopRailType(railtype)) return CommandCost(STR_HYPERLOOP_USE_TUBE_TOOL);
+	/* The Hyperloop viaduct carries only HYPL, and HYPL crosses ground only on its viaduct or in its own tubes. */
+	const bool hyperloop = transport_type == TransportType::Rail && IsHyperloopRailType(railtype);
+	if (hyperloop != (bridge_type == BRIDGE_HYPERLOOP)) return CommandCost(hyperloop ? STR_HYPERLOOP_USE_HYPERLOOP_TOOLS : STR_HYPERLOOP_VIADUCT_ONLY);
 	CompanyID company = _current_company;
 
 	for (TileIndex t : {tile_start, tile_end}) {
@@ -652,6 +655,7 @@ CommandCost CmdBuildTunnel(DoCommandFlags flags, TileIndex start_tile, Transport
 	switch (transport_type) {
 		case TransportType::Rail:
 			if (!ValParamRailType(railtype)) return CMD_ERROR;
+			if (IsHyperloopRailType(railtype)) return CommandCost(STR_HYPERLOOP_USE_HYPERLOOP_TOOLS);
 			break;
 
 		case TransportType::Road:
@@ -865,6 +869,23 @@ CommandCost CmdBuildHyperloopTube(DoCommandFlags flags, TileIndex start, TileInd
 		DirtyCompanyInfrastructureWindows(_current_company);
 	}
 	return cost;
+}
+
+/**
+ * Construct an elevated Hyperloop viaduct: a straight HYPL bridge of the dedicated
+ * viaduct type between two ramps. It is the default way to build a Hyperloop route;
+ * underground tubes remain for routes that hills or buildings would block.
+ * Roads, rail and clear land under the viaduct stay usable; buildings must be demolished first.
+ * @param flags Command flags.
+ * @param start First ramp.
+ * @param end Second ramp, on the same row or column and at the same height.
+ * @param railtype Dedicated HYPL rail type.
+ * @return Construction cost or a placement error.
+ */
+CommandCost CmdBuildHyperloopViaduct(DoCommandFlags flags, TileIndex start, TileIndex end, RailType railtype)
+{
+	if (!ValParamRailType(railtype) || !IsHyperloopRailType(railtype) || !IsValidTile(start) || !IsValidTile(end)) return CMD_ERROR;
+	return Command<Commands::BuildBridge>::Do(flags, end, start, TransportType::Rail, BRIDGE_HYPERLOOP, railtype, INVALID_ROADTYPE);
 }
 
 

@@ -66,6 +66,7 @@ public:
 	/**
 	 * Construct a straight underground Hyperloop tube with flat access shafts.
 	 * Only the two access tiles are cleared; surface land between them remains usable.
+	 * Prefer ScriptBridge::BuildHyperloopViaduct; tubes are for routes that hills or buildings would block.
 	 * @param start First shaft tile.
 	 * @param end Second shaft tile, on the same row or column and height.
 	 * @pre ScriptMap::IsValidTile(start).

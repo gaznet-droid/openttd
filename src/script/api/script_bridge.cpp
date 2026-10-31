@@ -72,6 +72,14 @@ static void _DoCommandReturnBuildBridge1(class ScriptInstance &instance)
 	NOT_REACHED();
 }
 
+/* static */ bool ScriptBridge::BuildHyperloopViaduct(TileIndex start, TileIndex end)
+{
+	EnforceCompanyModeValid(false);
+	EnforcePrecondition(false, ::IsValidTile(start) && ::IsValidTile(end));
+	EnforcePrecondition(false, ScriptRail::IsRailTypeAvailable(ScriptRail::GetCurrentRailType()));
+	return ScriptObject::Command<Commands::BuildHyperloopViaduct>::Do(start, end, static_cast<::RailType>(ScriptRail::GetCurrentRailType()));
+}
+
 /* static */ bool ScriptBridge::BuildBridge(ScriptVehicle::VehicleType vehicle_type, BridgeType bridge_type, TileIndex start, TileIndex end)
 {
 	EnforceDeityOrCompanyModeValid(false);

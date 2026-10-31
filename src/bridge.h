@@ -15,7 +15,9 @@
 #include "timer/timer_game_calendar.h"
 #include "bridge_type.h"
 
-static const uint MAX_BRIDGES = 13; ///< Maximal number of available bridge specs.
+static const uint MAX_BRIDGES = 13; ///< Number of ordinary bridge specs, available to every transport type and to NewGRFs.
+static const BridgeType BRIDGE_HYPERLOOP = MAX_BRIDGES; ///< Dedicated Hyperloop viaduct, only for the HYPL rail type.
+static const uint NUM_BRIDGE_SPECS = MAX_BRIDGES + 1; ///< All bridge specs, including the Hyperloop viaduct.
 constexpr uint SPRITES_PER_BRIDGE_PIECE = 32; ///< Number of sprites there are per bridge piece.
 
 /** Container for Bridge pillar flags for each axis of each bridge middle piece. */
@@ -50,7 +52,7 @@ struct BridgeSpec {
 	std::vector<std::vector<PalSpriteID>> sprite_table{}; ///< table of sprites for drawing the bridge, NewGRF-only
 };
 
-extern BridgeSpec _bridge[MAX_BRIDGES];
+extern BridgeSpec _bridge[NUM_BRIDGE_SPECS];
 
 Foundation GetBridgeFoundation(Slope tileh, Axis axis);
 bool HasBridgeFlatRamp(Slope tileh, Axis axis);

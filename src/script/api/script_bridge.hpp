@@ -156,6 +156,24 @@ public:
 	static bool BuildBridge(ScriptVehicle::VehicleType vehicle_type, BridgeType bridge_type, TileIndex start, TileIndex end);
 
 	/**
+	 * Build an elevated Hyperloop viaduct with the current rail type, which must be the Hyperloop (label HYPL).
+	 * This is the default way to build a Hyperloop route; it has no length or speed limit of its own.
+	 * Roads and rail may pass under it, buildings may not; use ScriptTunnel::BuildHyperloopTube where they block it.
+	 * @param start First ramp.
+	 * @param end Second ramp, on the same row or column and at the same height.
+	 * @pre ScriptMap::IsValidTile(start).
+	 * @pre ScriptMap::IsValidTile(end).
+	 * @pre ScriptRail::IsRailTypeAvailable(ScriptRail::GetCurrentRailType()).
+	 * @game @pre ScriptCompanyMode::IsValid().
+	 * @exception ScriptError::ERR_ALREADY_BUILT
+	 * @exception ScriptError::ERR_AREA_NOT_CLEAR
+	 * @exception ScriptError::ERR_LAND_SLOPED_WRONG
+	 * @exception ScriptBridge::ERR_BRIDGE_HEADS_NOT_ON_SAME_HEIGHT
+	 * @return Whether the viaduct has been/can be built or not.
+	 */
+	static bool BuildHyperloopViaduct(TileIndex start, TileIndex end);
+
+	/**
 	 * Removes a bridge, by executing it on either the start or end tile.
 	 * @param tile An end or start tile of the bridge.
 	 * @pre ScriptMap::IsValidTile(tile).

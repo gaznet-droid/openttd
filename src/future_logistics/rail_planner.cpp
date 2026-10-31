@@ -336,15 +336,17 @@ static RailPath SearchRailPath2(const Terminus &a, const Terminus &b, bool cross
 RailPath FindRailPath(const Terminus &a, const Terminus &b, RailType railtype)
 {
 	if (IsHyperloopRailType(railtype)) {
-		/* Native tubes are straight between access shafts; keep junctions at terminals. */
+		/* Viaducts and tubes are straight between their ends; keep junctions at terminals. Prefer the
+		 * viaduct, and go underground only where hills or buildings block it. */
 		if ((TileX(a.Exit()) != TileX(b.Exit()) && TileY(a.Exit()) != TileY(b.Exit())) ||
 			a.exit != ReverseDiagDir(b.exit) || RouteDirection(a.Exit(), b.Exit()) != a.exit) return {};
-		if (Command<Commands::BuildHyperloopTube>::Do(CONSTRUCT, a.Exit(), b.Exit(), railtype).Failed()) return {};
+		const bool viaduct = Command<Commands::BuildHyperloopViaduct>::Do(CONSTRUCT, a.Exit(), b.Exit(), railtype).Succeeded();
+		if (!viaduct && Command<Commands::BuildHyperloopTube>::Do(CONSTRUCT, a.Exit(), b.Exit(), railtype).Failed()) return {};
 		RailPath path;
 		for (TileIndex tile = a.Exit();; tile = Step(tile, a.exit)) {
 			path.tiles.push_back(tile);
 			if (tile == b.Exit()) break;
-			if (tile != a.Exit()) path.tunnelled.insert(tile);
+			if (tile != a.Exit()) (viaduct ? path.bridged : path.tunnelled).insert(tile);
 		}
 		return path;
 	}
@@ -438,6 +440,7 @@ ConstructionResult BuildRailway(const Terminus &a, const Terminus &b, const Rail
 		return Command<Commands::BuildTunnel>::Do(flags | CONSTRUCT, path[t.head], TransportType::Rail, consist.railtype, INVALID_ROADTYPE);
 	};
 	auto build_bridge = [&](const RouteBridge &b, DoCommandFlags flags) {
+		if (IsHyperloopRailType(consist.railtype)) return Command<Commands::BuildHyperloopViaduct>::Do(flags | CONSTRUCT, path[b.head], path[b.tail], consist.railtype);
 		const BridgeType type = CheapestBridge(static_cast<uint>(b.tail - b.head - 1));
 		if (type == MAX_BRIDGES) return CommandCost(CMD_ERROR);
 		return Command<Commands::BuildBridge>::Do(flags | CONSTRUCT, path[b.tail], path[b.head], TransportType::Rail, type, consist.railtype, INVALID_ROADTYPE);
@@ -705,7 +708,7 @@ ConstructionResult BuildTownRail(const TechLibrary &library, const ServiceSpec &
 	std::ranges::stable_sort(pairs, {}, &Pair::distance);
 
 	const int radius = _settings_game.station.modified_catchment ? CA_TRAIN : CA_UNMODIFIED;
-	const bool underground = std::ranges::any_of(library.Infrastructure(), [&](const InfraRecord &infra) {
+	const bool hyperloop = std::ranges::any_of(library.Infrastructure(), [&](const InfraRecord &infra) {
 		return infra.kind == InfraKind::RailType && infra.tech == spec.family && infra.id == "HYPL";
 	});
 	std::map<std::pair<TownID, int>, std::vector<Terminus>> sites;
@@ -716,7 +719,7 @@ ConstructionResult BuildTownRail(const TechLibrary &library, const ServiceSpec &
 			if (ClosestTownFromTile(site.front, UINT_MAX)->index != town->index) return false;
 			const TileArea area = site.Area();
 			return GetAcceptanceAroundTiles(area.tile, area.w, area.h, radius).first[cargo] >= 8 && GetProductionAroundTiles(area.tile, area.w, area.h, radius)[cargo] > 0;
-		}, underground ? 64 : MAX_ENDPOINTS)).first->second;
+		}, hyperloop ? 64 : MAX_ENDPOINTS)).first->second;
 	};
 	for (size_t i = 0; i < std::min(MAX_RAIL_PAIRS, pairs.size()); i++) {
 		const Pair &pair = pairs[i];

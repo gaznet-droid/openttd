@@ -415,7 +415,7 @@ static inline bool ValParamTrackOrientation(Track track)
 }
 
 /**
- * Allow short surface connections at Hyperloop terminals, depots and access shafts.
+ * Allow short surface connections at Hyperloop terminals, depots, viaduct ramps and tube access shafts.
  * @param tile Candidate surface track tile.
  * @return Whether an owned Hyperloop terminal is within three tiles.
  */
@@ -424,7 +424,7 @@ static bool IsHyperloopApproach(TileIndex tile)
 	TileArea area(tile, 1, 1);
 	area.Expand(3);
 	for (TileIndex part : area) {
-		if ((IsRailStationTile(part) || IsRailDepotTile(part) || IsHyperloopTube(part)) &&
+		if ((IsRailStationTile(part) || IsRailDepotTile(part) || IsHyperloopTube(part) || IsHyperloopViaduct(part)) &&
 			GetTileOwner(part) == _current_company && IsHyperloopRailType(GetRailType(part))) return true;
 	}
 	return false;
@@ -444,7 +444,7 @@ CommandCost CmdBuildSingleRail(DoCommandFlags flags, TileIndex tile, RailType ra
 	CommandCost cost(ExpensesType::Construction);
 
 	if (!ValParamRailType(railtype) || !ValParamTrackOrientation(track)) return CMD_ERROR;
-	if (IsHyperloopRailType(railtype) && !IsHyperloopApproach(tile)) return CommandCost(STR_HYPERLOOP_USE_TUBE_TOOL);
+	if (IsHyperloopRailType(railtype) && !IsHyperloopApproach(tile)) return CommandCost(STR_HYPERLOOP_USE_HYPERLOOP_TOOLS);
 
 	Slope tileh = GetTileSlope(tile);
 	TrackBits trackbit = track;
@@ -1613,13 +1613,15 @@ CommandCost CmdConvertRail(DoCommandFlags flags, TileIndex tile, TileIndex area_
 			default: continue;
 		}
 
-		if (IsHyperloopTube(cur_tile) && !IsHyperloopRailType(totype)) {
+		if ((IsHyperloopTube(cur_tile) || IsHyperloopViaduct(cur_tile)) && !IsHyperloopRailType(totype)) {
 			error.MakeError(STR_HYPERLOOP_NO_CONVERSION);
 			continue;
 		}
 
-		if (IsHyperloopRailType(totype) && IsPlainRailTile(cur_tile) && !IsHyperloopApproach(cur_tile)) {
-			error.MakeError(STR_HYPERLOOP_USE_TUBE_TOOL);
+		/* HYPL crosses ground only on its own viaduct or in its own tubes: ordinary bridges and tunnels cannot be converted to it. */
+		if (IsHyperloopRailType(totype) && ((IsPlainRailTile(cur_tile) && !IsHyperloopApproach(cur_tile)) ||
+				(IsTileType(cur_tile, TileType::TunnelBridge) && !IsHyperloopTube(cur_tile) && !IsHyperloopViaduct(cur_tile)))) {
+			error.MakeError(STR_HYPERLOOP_USE_HYPERLOOP_TOOLS);
 			continue;
 		}
 
