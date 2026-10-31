@@ -33,7 +33,7 @@ match it.
 | Starship | tier | `fl_tier/4` | One above nothing else yet; only ordering within the family |
 | Starship | flame | by flight phase: plume while launching and landing, flame in flight, none on the ground | Checked in game: see the README |
 | Starship Launch Site | available from | 2045 | |
-| Starship Launch Site | layout | the handoff launch complex over a 5×4 layout, moving like a country airport | Starship launches and lands vertically on the launch mount |
+| Starship Launch Site | layout | **3×4, decided 31 Oct 2026**: the handoff launch complex, moving like a country airport turned a quarter turn | Starship docks on the launch mount, launches and lands vertically there |
 | Starship Launch Site | catchment / noise / maintenance | **12 (decided 31 Oct 2026)** / 25 / 80 | Catchment doubled so a spaceport can sit outside a town and still serve it; needs "modified catchment" on |
 | Rockets family | minimum market tier / markets | city / passengers, mail, freight | The same as the Future Logistics NewGRF declares |
 | AeroLink | Starship adoption delay | 2 years | Its built-in rule for any new air family |

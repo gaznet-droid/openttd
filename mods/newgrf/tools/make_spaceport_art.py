@@ -72,9 +72,26 @@ def cut_rocket(docked, empty):
     return image.crop(box), (x0 + box[0], y0 + box[1])
 
 
+MOUNT = (21, 36)  # launch mount in sixteenths of a tile from the footprint's north corner (src/future_logistics/orbital.h)
+ROTOR_Z = 5  # a helicopter's rotor is drawn this many pixels above its body (aircraft.h)
+GROUND_Z = 1  # the orbital controller stands the rocket one pixel above the ground (orbital.cpp)
+EDGE = (104, 104, 102, 255)  # fill for any ground pixel inside the footprint the art does not reach
+
+# Each GRF that defines the spaceport: its folder, NML file, sprite file prefix, NML name prefix and first airport tile ID.
+TARGETS = [
+    ("starship", "starship.nml", "pad", "pad", 0, "starship_pad_layout"),
+    ("future_logistics", "future_logistics.nml", "orbital_pad", "orbital_pad", 16, "orbital_spaceport_layout"),
+]
+BEGIN, END = "/* BEGIN generated spaceport pad (tools/make_spaceport_art.py) */", "/* END generated spaceport pad */"
+
+
+def sprite_line(kind, name, zoom, path, m):
+    level = "ZOOM_LEVEL_NORMAL" if zoom == 1 else "ZOOM_LEVEL_IN_2X"
+    head = "spriteset" if zoom == 1 else "alternative_sprites"
+    return f'{head}({name}, {level}, BIT_DEPTH_32BPP, "gfx/{path}") {{ [0, 0, {m[0]}, {m[1]}, {m[2]}, {m[3]}] }}'
+
+
 def main():
-    out = Path(sys.argv[1]) if len(sys.argv) > 1 else NEWGRF / "starship" / "gfx"
-    out.mkdir(parents=True, exist_ok=True)
     empty = Image.open(ORIGINALS / "spaceport_empty_pad_transparent.png").convert("RGBA")
     docked = Image.open(ORIGINALS / "spaceport_starship_on_pad_transparent.png").convert("RGBA")
     powered = Image.open(POWERED).convert("RGBA")
@@ -83,32 +100,106 @@ def main():
     flame_start = (FLAME_START - box[1]) * POWERED_SCALE
     powered = powered.resize((round(powered.width * POWERED_SCALE), round(powered.height * POWERED_SCALE)), Image.BOX)
     rocket, rocket_at = cut_rocket(docked, empty)
-    north = (WEST[0] + EAST[0] - SOUTH[0], WEST[1] + EAST[1] - SOUTH[1])
-    layout = {"footprint": FOOTPRINT}
+    north_src = (WEST[0] + EAST[0] - SOUTH[0], WEST[1] + EAST[1] - SOUTH[1])
+    tiles = {}   # (state, x, y, zoom) -> (image, xrel, yrel)
+    rockets = {}  # zoom -> dict of rocket sprites and offsets
+    preview = {}
     for zoom in (1, 2):
         f = source_per_pixel(zoom)
-        for name, image in (("pad_empty", empty), ("pad_docked", docked)):
-            to_grid(image.crop(CROP), zoom, 96).save(out / f"{name}_{zoom}x.png")
+        north = (round((north_src[0] - CROP[0]) / f), round((north_src[1] - CROP[1]) / f))
+        for state, image in (("e", empty), ("d", docked)):
+            grid = to_grid(image.crop(CROP), zoom, 96)
+            for (x, y), (piece, xrel, yrel) in P.slice_footprint(grid, *FOOTPRINT, north, zoom, fill=EDGE).items():
+                tiles[(state, x, y, zoom)] = (piece, xrel, yrel)
+            if state == "d":
+                pw = 96 * zoom
+                preview[zoom] = P.pixelate(image.crop(CROP), pw, 64)
+        # Rocket: placed so that, standing at the launch mount, it covers exactly the docked rocket in the pad art.
         idle = to_grid(rocket, zoom, 48)
-        idle.save(out / f"rocket_idle_{zoom}x.png")
+        at = (round((rocket_at[0] - CROP[0]) / f), round((rocket_at[1] - CROP[1]) / f))
+        mx, my = MOUNT
+        vx = north[0] + 2 * (my - mx) * zoom
+        vy = north[1] + (mx + my) * zoom - (GROUND_Z + ROTOR_Z) * zoom
         lit = to_grid(powered, zoom, 48)
-        # Flicker: the flame below the engines is stretched slightly differently in each frame.
         body_h = round(flame_start / f)
-        for frame, stretch in enumerate((1.0, 1.12, 0.9)):
+        frames = []
+        for stretch in (1.0, 1.12, 0.9):
             flame = lit.crop((0, body_h, lit.width, lit.height))
             flame = flame.resize((flame.width, max(1, round(flame.height * stretch))), Image.NEAREST)
             img = Image.new("RGBA", (lit.width, body_h + flame.height))
             img.alpha_composite(lit.crop((0, 0, lit.width, body_h)))
             img.alpha_composite(flame, (0, body_h))
-            img.save(out / f"rocket_lit_{zoom}x_{frame}.png")
-        layout[f"{zoom}x"] = {
-            # The footprint's north corner in the pad images, and the docked rocket's top-left corner, in game pixels.
-            "north": [round((north[0] - CROP[0]) / f), round((north[1] - CROP[1]) / f)],
-            "rocket_at": [round((rocket_at[0] - CROP[0]) / f), round((rocket_at[1] - CROP[1]) / f)],
-            "rocket_size": list(idle.size),
-        }
-    (out / "spaceport_layout.json").write_text(json.dumps(layout, indent=1) + "\n")
-    print(json.dumps(layout))
+            frames.append(img)
+        rockets[zoom] = {"idle": idle, "frames": frames,
+                         "rotor_xrel": at[0] - vx - (lit.width - idle.width) // 2, "rotor_yrel": at[1] - vy,
+                         "mount_screen": (vx, vy)}
+        # Where the docked rocket's foot actually is, as a check on MOUNT.
+        foot = (at[0] + idle.width / 2 - north[0], at[1] + idle.height - north[1])
+        print(f"zoom {zoom}: rocket foot at screen {foot}, mount world ~ x={(foot[1] - foot[0] / 2) / 2 / zoom:.1f} y={(foot[1] + foot[0] / 2) / 2 / zoom:.1f}")
+
+    for folder, nml, file_prefix, name_prefix, first_id, layout_name in TARGETS:
+        gfx = NEWGRF / folder / "gfx"
+        gfx.mkdir(exist_ok=True)
+        lines = [BEGIN,
+                 "/* The launch pad, 3x4 tiles, from the Corporate Infrastructure spaceport art in the base game's pixel density.",
+                 " * Each tile draws its piece of the picture as a building with a tall box, so no tile draws over another and the",
+                 " * tall parts sort correctly against neighbouring buildings. The pad shows Starship",
+                 " * docked on its launch mount (animation frame 1, set by the orbital controller while a shuttle boards or is",
+                 " * serviced) or empty with the tower arms swung open (frame 0). The layout turns the country airport, whose",
+                 " * movement the spaceport uses, a quarter turn to fit the art's 3x4 footprint. */"]
+        idx = 0
+        layout_lines = [f"tilelayout {layout_name} {{ rotation: DIRECTION_EAST;"]
+        for y in range(FOOTPRINT[1]):
+            for x in range(FOOTPRINT[0]):
+                names = {}
+                for state in ("e", "d"):
+                    sname = f"{name_prefix}_{state}_{x}_{y}"
+                    for zoom in (1, 2):
+                        piece, xrel, yrel = tiles[(state, x, y, zoom)]
+                        path = f"{file_prefix}_{state}_{x}_{y}_{zoom}x.png"
+                        piece.save(gfx / path)
+                        lines.append(sprite_line(state, sname, zoom, path, (piece.width, piece.height, xrel, yrel)))
+                    # A building sprite with a tall box over the whole tile, so the game's sprite sorter draws the pad's
+                    # tall parts (tower, rocket, tanks) in front of buildings behind the pad and behind those in front.
+                    lines.append(f"spritelayout {sname}_layout {{ ground {{ sprite: GROUNDSPRITE_CONCRETE; }} "
+                                 f"building {{ sprite: {sname}(0); xextent: 16; yextent: 16; zextent: 160; }} }}")
+                    names[state] = f"{sname}_layout"
+                lines.append(f"switch (FEAT_AIRPORTTILES, SELF, {name_prefix}_switch_{x}_{y}, animation_frame) {{ 1: {names['d']}; {names['e']}; }}")
+                lines.append(f"item(FEAT_AIRPORTTILES, {name_prefix}_tile_{x}_{y}, {first_id + idx}) {{ property {{ substitute: 0; }} graphics {{ default: {name_prefix}_switch_{x}_{y}; }} }}")
+                layout_lines.append(f"    {x}, {y}: {name_prefix}_tile_{x}_{y};")
+                idx += 1
+        layout_lines.append("}")
+        lines += layout_lines
+        # Picker preview: the whole docked pad.
+        for zoom in (1, 2):
+            path = f"{file_prefix}_preview_{zoom}x.png"
+            preview[zoom].save(gfx / path)
+            img = preview[zoom]
+            lines.append(sprite_line("p", f"{name_prefix}_preview", zoom, path, (img.width, img.height, -img.width // 2, -img.height // 2)))
+        lines.append(END)
+        text = (NEWGRF / folder / nml).read_text()
+        a, b = text.index(BEGIN), text.index(END) + len(END)
+        (NEWGRF / folder / nml).write_text(text[:a] + "\n".join(lines) + text[b:])
+        print(f"{folder}: {idx} pad tiles")
+
+    # Starship's own sprites, in the Starship GRF.
+    gfx = NEWGRF / "starship" / "gfx"
+    for zoom in (1, 2):
+        r = rockets[zoom]
+        r["idle"].save(gfx / f"starship_idle_{zoom}x.png")
+        strip = Image.new("RGBA", (sum(fr.width + 1 for fr in r["frames"]), max(fr.height for fr in r["frames"])))
+        x = 0
+        boxes = []
+        for fr in r["frames"]:
+            strip.alpha_composite(fr, (x, 0))
+            boxes.append((x, fr.width, fr.height))
+            x += fr.width + 1
+        strip.save(gfx / f"starship_lit_{zoom}x.png")
+        r["boxes"] = boxes
+    meta = {z: {"idle": list(rockets[z]["idle"].size), "lit": rockets[z]["boxes"],
+                "rotor_xrel": rockets[z]["rotor_xrel"], "rotor_yrel": rockets[z]["rotor_yrel"]} for z in (1, 2)}
+    (gfx / "starship_sprites.json").write_text(json.dumps(meta, indent=1) + "\n")
+    print(json.dumps(meta))
 
 
 if __name__ == "__main__":

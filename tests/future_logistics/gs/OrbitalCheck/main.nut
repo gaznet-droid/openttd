@@ -10,7 +10,7 @@ class OrbitalCheck extends GSController {
             local company_mode = GSCompanyMode(0);
             local airport_type = -1, pass = -1, engine = -1;
             for (local type = 0; type < 128; type++) {
-                if (GSAirport.IsValidAirportType(type) && GSAirport.GetAirportWidth(type) == 4 && GSAirport.GetAirportHeight(type) == 4) {
+                if (GSAirport.IsValidAirportType(type) && GSAirport.GetAirportWidth(type) * GSAirport.GetAirportHeight(type) == 12 && GSAirport.GetAirportWidth(type) >= 3) {
                     airport_type = type; break;
                 }
             }
@@ -25,8 +25,8 @@ class OrbitalCheck extends GSController {
                 for (local y = max(8, cy - 14); y <= min(GSMap.GetMapSizeY() - 8, cy + 14); y++) {
                     for (local x = max(8, cx - 14); x <= min(GSMap.GetMapSizeX() - 8, cx + 14); x++) {
                         local tile = GSMap.GetTileIndex(x, y);
-                        if (!GSTile.IsBuildableRectangle(tile, 4, 4) || GSTile.GetCargoAcceptance(tile, pass, 4, 4, 6) < 8) continue;
-                        local production = GSTile.GetCargoProduction(tile, pass, 4, 4, 6);
+                        if (!GSTile.IsBuildableRectangle(tile, 4, 4) || GSTile.GetCargoAcceptance(tile, pass, 3, 4, 6) < 8) continue;
+                        local production = GSTile.GetCargoProduction(tile, pass, 3, 4, 6);
                         if (production <= best_production) continue;
                         local test_mode = GSTestMode();
                         if (GSAirport.BuildAirport(tile, airport_type, GSStation.STATION_NEW)) { site = tile; best_production = production; }
