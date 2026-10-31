@@ -475,10 +475,64 @@ alternative_sprites(orbital_pad_preview, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx
 spriteset(distribution_hub_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/distribution_hub_1x.png") { [0, 0, 256, 186, -128, -58] }
 alternative_sprites(distribution_hub_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/distribution_hub_2x.png") { [0, 0, 512, 373, -256, -117] }
 spritelayout distribution_hub_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_sprite(0); xextent: 48; yextent: 64; zextent: 56; } }
-spritelayout distribution_hub_ground { ground { sprite: GROUNDSPRITE_CONCRETE; } }
-switch(FEAT_OBJECTS, SELF, distribution_hub_object_graphics, relative_pos) { 0: distribution_hub_layout; distribution_hub_ground; }
+/* BEGIN generated Distribution Centre tiles (tools/slice_distribution_hub.py) */
+spriteset(distribution_hub_tiles, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/distribution_hub_tiles_1x.png") {
+    [0, 0, 183, 90, -92, -58]
+    [184, 0, 99, 62, -68, -30]
+    [284, 0, 69, 50, -38, -18]
+    [354, 0, 63, 36, -32, -3]
+    [418, 0, 123, 62, -31, -30]
+    [542, 0, 62, 32, -31, 0]
+    [605, 0, 62, 32, -31, 0]
+    [668, 0, 65, 33, -34, 0]
+    [734, 0, 95, 62, -31, -30]
+    [830, 0, 62, 32, -31, 0]
+    [893, 0, 62, 32, -31, 0]
+    [956, 0, 65, 33, -34, 0]
+    [1022, 0, 63, 49, -31, -16]
+    [1086, 0, 64, 33, -31, 0]
+    [1151, 0, 64, 33, -31, 0]
+    [1216, 0, 68, 32, -34, 0]
+}
+alternative_sprites(distribution_hub_tiles, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/distribution_hub_tiles_2x.png") {
+    [0, 0, 365, 181, -183, -117]
+    [366, 0, 194, 123, -131, -59]
+    [561, 0, 136, 97, -73, -33]
+    [698, 0, 127, 68, -64, -4]
+    [826, 0, 245, 123, -63, -59]
+    [1072, 0, 126, 64, -63, 0]
+    [1199, 0, 126, 64, -63, 0]
+    [1326, 0, 129, 65, -66, 0]
+    [1456, 0, 191, 123, -63, -59]
+    [1648, 0, 126, 64, -63, 0]
+    [1775, 0, 126, 64, -63, 0]
+    [1902, 0, 128, 65, -65, 0]
+    [2031, 0, 127, 96, -63, -32]
+    [2159, 0, 129, 65, -63, 0]
+    [2289, 0, 128, 65, -63, 0]
+    [2418, 0, 131, 64, -65, 0]
+}
+spritelayout distribution_hub_tile_0_0 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_1_0 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(1); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_2_0 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(2); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_3_0 { ground { sprite: GROUNDSPRITE_CONCRETE; } childsprite { sprite: distribution_hub_tiles(3); } }
+spritelayout distribution_hub_tile_0_1 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(4); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_1_1 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(5); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_2_1 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(6); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_3_1 { ground { sprite: GROUNDSPRITE_CONCRETE; } childsprite { sprite: distribution_hub_tiles(7); } }
+spritelayout distribution_hub_tile_0_2 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(8); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_1_2 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(9); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_2_2 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(10); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_3_2 { ground { sprite: GROUNDSPRITE_CONCRETE; } childsprite { sprite: distribution_hub_tiles(11); } }
+spritelayout distribution_hub_tile_0_3 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(12); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_1_3 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(13); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_2_3 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(14); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_3_3 { ground { sprite: GROUNDSPRITE_CONCRETE; } childsprite { sprite: distribution_hub_tiles(15); } }
+switch(FEAT_OBJECTS, SELF, distribution_hub_object_graphics, relative_pos) { 0x0000: distribution_hub_tile_0_0; 0x0001: distribution_hub_tile_1_0; 0x0002: distribution_hub_tile_2_0; 0x0100: distribution_hub_tile_0_1; 0x0101: distribution_hub_tile_1_1; 0x0102: distribution_hub_tile_2_1; 0x0200: distribution_hub_tile_0_2; 0x0201: distribution_hub_tile_1_2; 0x0202: distribution_hub_tile_2_2; 0x0300: distribution_hub_tile_0_3; 0x0301: distribution_hub_tile_1_3; 0x0302: distribution_hub_tile_2_3; distribution_hub_tile_0_0; }
+switch(FEAT_ROADSTOPS, SELF, distribution_hub_bay_graphics, animation_frame) { 0: distribution_hub_tile_3_0; 1: distribution_hub_tile_3_1; 2: distribution_hub_tile_3_2; 3: distribution_hub_tile_3_3; distribution_hub_tile_3_0; }
+/* END generated Distribution Centre tiles */
 item(FEAT_OBJECTS, distribution_warehouse, 0) { property { class: "FLHB"; name: string(STR_DISTRIBUTION_WAREHOUSE); climates_available: ALL_CLIMATES; size: [3, 4]; build_cost_multiplier: 4; remove_cost_multiplier: 3; introduction_date: date(2022, 1, 1); end_of_life_date: 0xFFFFFFFF; object_flags: bitmask(OBJ_FLAG_NO_FOUNDATIONS); height: 56; num_views: 1; badges: ["fl_format/2", "fl_id/distribution_warehouse"]; } graphics { default: distribution_hub_object_graphics; purchase: distribution_hub_layout; tile_check: ((extra_callback_info1 & bitmask(0,1,2,3,4)) == 0) ? CB_RESULT_LOCATION_ALLOW : CB_RESULT_LOCATION_DISALLOW; } }
-item(FEAT_ROADSTOPS, distribution_centre, 0) { property { class: "FLHB"; classname: string(STR_DISTRIBUTION_CENTRE); name: string(STR_DISTRIBUTION_CENTRE); availability_type: 1; draw_mode: 0; general_flags: bitmask(2,4,5); badges: ["fl_format/2", "fl_id/distribution_centre"]; } graphics { default: distribution_hub_ground; purchase: distribution_hub_layout; } }
+item(FEAT_ROADSTOPS, distribution_centre, 0) { property { class: "FLHB"; classname: string(STR_DISTRIBUTION_CENTRE); name: string(STR_DISTRIBUTION_CENTRE); availability_type: 1; draw_mode: 0; general_flags: bitmask(2,4,5); badges: ["fl_format/2", "fl_id/distribution_centre"]; } graphics { default: distribution_hub_bay_graphics; purchase: distribution_hub_layout; } }
 /* END GENERATED FUNCTIONAL SPRITES */
 
 /* Cargo drone uses the supplied multirotor art, with fixed yaw during translation. */
@@ -971,7 +1025,7 @@ item(FEAT_AIRCRAFT, rocket, 65) {
         acceleration:                 40;
         passenger_capacity:           200;
         mail_capacity:                40;
-        refittable_cargo_classes:     bitmask(CC_PASSENGERS);
+        refittable_cargo_classes:     bitmask(CC_PASSENGERS, CC_MAIL);
         range:                        0;
         sound_effect:                 SOUND_TAKEOFF_JET_FAST;
         badges: ["fl_format/2", "fl_id/rocket", "fl_tech/rocket", "fl_needs/launchpad",

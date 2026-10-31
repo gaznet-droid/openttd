@@ -1156,6 +1156,9 @@ static GRFConfigList GRFLoadConfig(const IniFile &ini, std::string_view grpname,
 
 		/* Check if item is valid */
 		if (!FillGRFDetails(*c, is_static) || c->flags.Test(GRFConfigFlag::Invalid)) {
+			/* The Corporate Infrastructure decorative objects were retired in favour of working facilities;
+			 * configurations that still list them drop the entry without a warning. */
+			if (c->status == GRFStatus::NotFound && filename.ends_with("CorporateInfrastructure.grf")) continue;
 			StringID reason;
 			if (c->status == GRFStatus::NotFound) {
 				reason = STR_CONFIG_ERROR_INVALID_GRF_NOT_FOUND;

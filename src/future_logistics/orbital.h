@@ -54,5 +54,6 @@ constexpr bool OrbitalMonthAvailable(int32_t last, int32_t current) { return las
 bool TickOrbitalAircraft(Aircraft *v);
 StringID OrbitalDispatchError(const Aircraft *v);
 std::string OrbitalStatus(const Aircraft *v);
+void InitSpaceportHangars();
 
 #endif /* FUTURE_LOGISTICS_ORBITAL_H */

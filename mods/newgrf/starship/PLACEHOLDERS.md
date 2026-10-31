@@ -28,7 +28,7 @@ match it.
 |---|---|---|---|
 | Starship | introduction date | 1 Jan 2045 | Before the Future Logistics rocket (2050), as the first of the reusable rockets |
 | Starship | range | unlimited | |
-| Starship | refits | passengers only | Secondary outbound mail capacity is retained |
+| Starship | refits | passengers or mail (1,120 bags when refitted to mail) | Secondary outbound mail capacity is retained when carrying passengers |
 | Starship | vehicle life / model life | 30 / 50 years | |
 | Starship | tier | `fl_tier/4` | One above nothing else yet; only ordering within the family |
 | Starship | flame | by flight phase: plume while launching and landing, flame in flight, none on the ground | Checked in game: see the README |

@@ -225,6 +225,7 @@ DayZeroMonopolies =
                            commands=f"future_logistics_tech build-hub-auto {tile}\n", daily_commands="future_logistics_tech hub-audit\n", distant_join=False)
         require(re.search(rf"FL distribution request tile={tile} accepted=true", built), "hub construction rejected")
         require(re.search(r"FL distribution audit .*bays=4 reserved_secondary=4", built), "hub does not have four joined single-vehicle bays")
+        require("HUB bay approaches connected automatically" in built, "the hub did not join its bays to the road along their side")
         require("HUB automatic join station=" in built, "hub did not append to the adjacent western station")
         require("HUB access connected bays=4 depot=true return=true" in built, "hub fixture approaches are disconnected or traffic setup did not run")
         require("HUB truck entered loading bay" in built, "truck did not use the warehouse's loading bays")

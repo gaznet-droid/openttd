@@ -146,7 +146,7 @@ item(FEAT_AIRCRAFT, starship, 64) {
         acceleration:                 50;
         passenger_capacity:           1000;
         mail_capacity:                120;
-        refittable_cargo_classes:     bitmask(CC_PASSENGERS);
+        refittable_cargo_classes:     bitmask(CC_PASSENGERS, CC_MAIL);
         range:                        0;
         sound_effect:                 SOUND_TAKEOFF_JET_FAST;
         badges: ["fl_format/2", "fl_id/starship", "fl_tech/rocket", "fl_tier/4", "fl_needs/launchpad",
