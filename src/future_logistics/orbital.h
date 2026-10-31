@@ -11,10 +11,10 @@
 #include "../strings_type.h"
 
 struct Aircraft;
-/* The launch mount on the 3x4 spaceport, in sixteenths of a tile from its north corner: Starship stands and
- * launches here, and the pad's docked graphics draw it in this spot (mods/newgrf/tools/make_spaceport_art.py). */
-static constexpr int ORBITAL_MOUNT_X = 21;
-static constexpr int ORBITAL_MOUNT_Y = 36;
+/* The launch mount on the 3x4 spaceport: Starship stands and launches here, and the pad's docked graphics draw it
+ * in this spot (mods/newgrf/tools/make_spaceport_art.py). */
+static constexpr int ORBITAL_MOUNT_X = 21; ///< Launch mount along x, in sixteenths of a tile from the spaceport's north corner.
+static constexpr int ORBITAL_MOUNT_Y = 36; ///< Launch mount along y, in sixteenths of a tile from the spaceport's north corner.
 /** Persistent stages of an orbital mission. */
 enum class OrbitalPhase : uint8_t {
 	None, ///< Not yet assigned to its home spaceport.
