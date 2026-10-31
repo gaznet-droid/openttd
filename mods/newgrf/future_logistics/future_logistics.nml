@@ -660,7 +660,7 @@ item(FEAT_AIRPORTS, spaceport, 5) {
         name: string(STR_SPACEPORT);
         layouts: [orbital_spaceport_layout];
         years_available: [2050, 65535];
-        catchment_area: 6;
+        catchment_area: 12;
         noise_level: 20;
         maintenance_cost: 60;
         badges: ["fl_format/2", "fl_id/spaceport", "fl_tech/rocket", "fl_provides/launchpad"];

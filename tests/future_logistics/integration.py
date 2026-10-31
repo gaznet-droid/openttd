@@ -172,6 +172,10 @@ DayZeroMonopolies =
                              daily_commands=f"future_logistics_tech orbital {offworld}\n")
         require("ORBIT fixture ready" in text, "orbital test fixture was not built")
         require(re.search(r"ORBIT fixture ready .* station=.*Spaceport", text), "orbital launch facility was not named as a Spaceport")
+        catchment = re.search(r"ORBIT catchment radius=(\d+) reach_x=(\d+) reach_y=(\d+) span=(\d+)x(\d+) footprint=(\d+)x(\d+)", text)
+        require(catchment and all(int(v) == 12 for v in catchment.group(1, 2, 3)), "spaceport catchment does not reach 12 tiles")
+        require(catchment and int(catchment.group(4)) <= int(catchment.group(6)) + 24 and int(catchment.group(5)) <= int(catchment.group(7)) + 24,
+                "spaceport catchment reaches further than 12 tiles")
         launches = re.findall(r"FL orbital launch vehicle=(\d+) origin=(\d+) month=(\d+) passengers=(\d+) manual=(\w+)", text)
         require(len(launches) >= 2, "orbital ships did not launch repeatedly")
         require(len({v for v, *_ in launches}) >= 2, "waiting fleet did not share the launch slot")

@@ -288,7 +288,7 @@ item(FEAT_AIRPORTS, starship_launch_site, 1) {
         name:             string(STR_STARSHIP_LAUNCH_SITE);
         layouts:          [starship_pad_layout];
         years_available:  [2045, 65535];
-        catchment_area:   6;
+        catchment_area:   12;
         noise_level:      25;
         maintenance_cost: 80;
         badges: ["fl_format/2", "fl_id/starship_launch_site", "fl_tech/rocket", "fl_provides/launchpad"];

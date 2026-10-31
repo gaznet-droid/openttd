@@ -37,6 +37,17 @@ class OrbitalCheck extends GSController {
             if (site == GSMap.TILE_INVALID) { GSLog.Error("ORBIT no launch site: " + GSError.GetLastErrorString()); return; }
             local spaceport_name = GSStation.GetName(GSStation.GetStationID(site));
             if (spaceport_name.find("Spaceport") == null) { GSLog.Error("ORBIT wrong station name: " + spaceport_name); return; }
+            /* The spaceport's catchment reaches 12 tiles beyond its edge, so it can serve a town from outside it. */
+            local cover = GSTileList_StationCoverage(GSStation.GetStationID(site));
+            local x0 = 99999, x1 = -1, y0 = 99999, y1 = -1;
+            foreach (t, unused in cover) {
+                x0 = min(x0, GSMap.GetTileX(t)); x1 = max(x1, GSMap.GetTileX(t));
+                y0 = min(y0, GSMap.GetTileY(t)); y1 = max(y1, GSMap.GetTileY(t));
+            }
+            GSLog.Info("ORBIT catchment radius=" + GSAirport.GetAirportCoverageRadius(airport_type) +
+                " reach_x=" + (GSMap.GetTileX(site) - x0) + " reach_y=" + (GSMap.GetTileY(site) - y0) +
+                " span=" + (x1 - x0 + 1) + "x" + (y1 - y0 + 1) +
+                " footprint=" + GSAirport.GetAirportWidth(airport_type) + "x" + GSAirport.GetAirportHeight(airport_type));
             local depot = GSAirport.GetHangarOfAirport(site);
             local ship = GSVehicle.BuildVehicle(depot, engine);
             if (!GSVehicle.IsValidVehicle(ship)) { GSLog.Error("ORBIT build failed: " + GSError.GetLastErrorString()); return; }
