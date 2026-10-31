@@ -834,14 +834,14 @@ item(FEAT_RAILTYPES, hyperloop_track) {
         badges: ["fl_format/2", "fl_id/hyperloop_track", "fl_tech/hyperloop"];
     }
     graphics {
-        gui:             hyperloop_gui;
-        underlay:        hyperloop_track_underlay;
-        track_overlay:   hyperloop_track_overlay;
-        tunnels:         hyperloop_tunnel_ground;
-        tunnel_overlay:  hyperloop_tunnel_portal;
-        bridge_surfaces: hyperloop_bridge;
-        depots:          hyperloop_depots;
-        fences:          hyperloop_fences;
+        gui:             hyperloop_gui_sprites;
+        underlay:        hyperloop_track_underlay_sprites;
+        track_overlay:   hyperloop_track_overlay_sprites;
+        tunnels:         hyperloop_tunnel_ground_sprites;
+        tunnel_overlay:  hyperloop_tunnel_portal_sprites;
+        bridge_surfaces: hyperloop_bridge_sprites;
+        depots:          hyperloop_depots_sprites;
+        fences:          hyperloop_fences_sprites;
     }
 }
 
@@ -850,16 +850,16 @@ item(FEAT_RAILTYPES, hyperloop_track) {
  * station, whichever station type was chosen, and only on Hyperloop track (src/future_logistics/hyperloop.cpp). */
 spritelayout hyperloop_terminal_x {
     ground { sprite: 1012; }
-    building { sprite: hyperloop_terminal(0); xoffset: 0; yoffset: 0;  zoffset: 0; xextent: 16; yextent: 5; zextent: 18;
+    building { sprite: hyperloop_terminal_sprites(0); xoffset: 0; yoffset: 0;  zoffset: 0; xextent: 16; yextent: 5; zextent: 18;
                recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; }
-    building { sprite: hyperloop_terminal(1); xoffset: 0; yoffset: 11; zoffset: 0; xextent: 16; yextent: 5; zextent: 18;
+    building { sprite: hyperloop_terminal_sprites(1); xoffset: 0; yoffset: 11; zoffset: 0; xextent: 16; yextent: 5; zextent: 18;
                recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; }
 }
 spritelayout hyperloop_terminal_y {
     ground { sprite: 1011; }
-    building { sprite: hyperloop_terminal(2); xoffset: 0;  yoffset: 0; zoffset: 0; xextent: 5; yextent: 16; zextent: 18;
+    building { sprite: hyperloop_terminal_sprites(2); xoffset: 0;  yoffset: 0; zoffset: 0; xextent: 5; yextent: 16; zextent: 18;
                recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; }
-    building { sprite: hyperloop_terminal(3); xoffset: 11; yoffset: 0; zoffset: 0; xextent: 5; yextent: 16; zextent: 18;
+    building { sprite: hyperloop_terminal_sprites(3); xoffset: 11; yoffset: 0; zoffset: 0; xextent: 5; yextent: 16; zextent: 18;
                recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; }
 }
 item(FEAT_STATIONS, hyperloop_terminal_station, 0) {
@@ -871,7 +871,7 @@ item(FEAT_STATIONS, hyperloop_terminal_station, 0) {
     }
     graphics {
         sprite_layouts: [hyperloop_terminal_x, hyperloop_terminal_y];
-        default: hyperloop_terminal;
+        default: hyperloop_terminal_sprites;
     }
 }
 
@@ -897,7 +897,7 @@ item(FEAT_TRAINS, hyperloop_pod, 120) {
         cargo_capacity:      0;
         badges: ["fl_format/2", "fl_id/hyperloop_pod", "fl_tech/hyperloop", "role/express", "power/electric"];
     }
-    graphics { default: hyperloop_pod; }
+    graphics { default: hyperloop_pod_sprites; }
 }
 
 /* Passenger capsule. Drawn by tools/hyperloop/make_hyperloop_art.py, in company colours. */
@@ -918,7 +918,7 @@ item(FEAT_TRAINS, hyperloop_passenger_capsule, 121) {
         refittable_cargo_classes: bitmask(CC_PASSENGERS);
         badges: ["fl_format/2", "fl_id/hyperloop_passenger_capsule", "fl_tech/hyperloop", "role/passenger"];
     }
-    graphics { default: hyperloop_passenger_capsule; }
+    graphics { default: hyperloop_passenger_capsule_sprites; }
 }
 
 /* Mail capsule. Drawn by tools/hyperloop/make_hyperloop_art.py, in company colours. */
@@ -939,7 +939,7 @@ item(FEAT_TRAINS, hyperloop_mail_capsule, 122) {
         refittable_cargo_classes: bitmask(CC_MAIL, CC_EXPRESS);
         badges: ["fl_format/2", "fl_id/hyperloop_mail_capsule", "fl_tech/hyperloop", "role/mail"];
     }
-    graphics { default: hyperloop_mail_capsule; }
+    graphics { default: hyperloop_mail_capsule_sprites; }
 }
 
 /* Reusable rocket: dedicated orbital controller and supplied vertical rocket artwork. */
