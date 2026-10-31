@@ -18,11 +18,13 @@ LIGHT = LIGHT / np.linalg.norm(LIGHT)
 
 
 class Material:
-    def __init__(self, rgb, shade=True, company=False, glow=False):
+    def __init__(self, rgb, shade=True, company=False, glow=False, grain=0.07, tones=5):
         self.rgb = np.array(rgb, float)
         self.shade = shade and not glow
         self.company = company
         self.glow = glow
+        self.grain = 0.0 if glow else grain  # strength of the fixed per-pixel speckle
+        self.tones = tones  # shades a face may take, like a hand-made palette ramp
 
 
 class Scene:
@@ -89,6 +91,10 @@ class Scene:
         else:
             (ox, oy), (w, h) = origin, size
         col = np.zeros((h, w, 3))
+        base = np.zeros((h, w, 3))
+        factor = np.ones((h, w))
+        grain = np.zeros((h, w))
+        tones = np.zeros((h, w))
         alpha = np.zeros((h, w), bool)
         depth = np.full((h, w), -1e9)
         mask = np.zeros((h, w), bool)
@@ -102,12 +108,10 @@ class Scene:
             view = np.array([1.0, 1.0, 2.0])
             if np.dot(n, view) < 0:
                 n = -n  # double-sided: shade the face we see
-            if m.glow:
-                rgb = m.rgb
-            elif m.shade:
-                rgb = m.rgb * (0.66 + 0.40 * max(0.0, float(np.dot(n, LIGHT))))
-            else:
-                rgb = m.rgb
+            f = 1.0
+            if m.shade:
+                f = 0.66 + 0.40 * max(0.0, float(np.dot(n, LIGHT)))
+            rgb = m.rgb * f
             sp = sp - (ox, oy)
             x0, x1 = max(0, int(math.floor(sp[:, 0].min()))), min(w - 1, int(math.ceil(sp[:, 0].max())))
             y0, y1 = max(0, int(math.floor(sp[:, 1].min()))), min(h - 1, int(math.ceil(sp[:, 1].max())))
@@ -131,9 +135,21 @@ class Scene:
             win = inside & (d > sub_d + 1e-6)
             sub_d[win] = d[win]
             col[y0:y1 + 1, x0:x1 + 1][win] = rgb
+            base[y0:y1 + 1, x0:x1 + 1][win] = m.rgb
+            factor[y0:y1 + 1, x0:x1 + 1][win] = f
+            grain[y0:y1 + 1, x0:x1 + 1][win] = m.grain
+            tones[y0:y1 + 1, x0:x1 + 1][win] = m.tones if m.shade else 0
             alpha[y0:y1 + 1, x0:x1 + 1][win] = True
             mask[y0:y1 + 1, x0:x1 + 1][win] = m.company
             ident[y0:y1 + 1, x0:x1 + 1][win] = id(m) % 100000 * 1000 + (0 if m.glow else int(abs(n[0]) * 9) * 100 + int(abs(n[1]) * 9) * 10 + int(abs(n[2]) * 9))
+        # Pixel-art finish: add a fixed speckle, then snap each pixel's shade to one of a few tones.
+        yy, xx = np.mgrid[0:h, 0:w]
+        noise = (((xx + ox) * 73856093 ^ (yy + oy) * 19349663) % 1000) / 1000.0 - 0.5
+        f = factor + grain * noise * 2
+        steps = np.maximum(tones, 1)
+        lo, hi = 0.6, 1.1
+        q = np.where(tones > 0, lo + np.round((np.clip(f, lo, hi) - lo) / (hi - lo) * (steps - 1)) / np.maximum(steps - 1, 1) * (hi - lo), f)
+        col = np.where(alpha[..., None], base * q[..., None], col)
         # Outlines: silhouette pixels and creases between differently facing surfaces get darker.
         out = col.copy()
         pad_a = np.pad(alpha, 1)

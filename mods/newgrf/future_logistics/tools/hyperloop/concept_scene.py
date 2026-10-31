@@ -7,12 +7,12 @@ import numpy as np
 T = 16  # units per tile
 GRASS = Material((86, 140, 52))
 GRASS2 = Material((78, 130, 47))
-CONCRETE = Material((196, 198, 196))
-CONCRETE_D = Material((150, 152, 152))
-PLATFORM = Material((220, 222, 220))
+CONCRETE = Material((178, 180, 178), grain=0.12)
+CONCRETE_D = Material((138, 140, 140), grain=0.12)
+PLATFORM = Material((196, 198, 194), grain=0.10)
 EDGE = Material((236, 196, 40))           # platform safety line
-WHITE = Material((242, 244, 246))
-PANEL = Material((214, 220, 226))
+WHITE = Material((214, 218, 222))
+PANEL = Material((178, 186, 194))
 DARK = Material((40, 46, 56))
 GLASS = Material((70, 120, 140))
 CYAN = Material((80, 240, 255), glow=True)
@@ -114,7 +114,6 @@ def portal_y(x_tile, y_tile):
     s.box(c-6.1, yA-0.3, 6.2, c+6.1, yA+0.6, 7.2, CC)
     s.box(c-5.2, yA-0.35, 7.6, c+5.2, yA+0.3, 8.1, CYAN)
 
-ground(-1, -1, 4, 13)
 X = 1
 terminal_y(X, 0, 3)
 pod_y(X, 0.55*T, 0, length=13)
@@ -128,29 +127,32 @@ pod_y(X, 7.4*T, 8 - 3.1 + 2.6, length=13)
 guideway_y(X, 9*T, 10*T)
 portal_y(X, 10)
 
-img, mask, (ox, oy) = s.render(zoom=2)
-img.save("hyperloop_concept_2x.png")
-# translucent glass canopy over the terminal, drawn as an overlay so the pod shows through
-canopy = Scene()
-c = X*T + T/2
-arch = TERMINAL_ARCH
-for i in range(len(arch)-1):
-    (u0, z0), (u1, z1) = arch[i], arch[i+1]
-    if i in (0, len(arch)-2): continue
-    canopy.quad((c+u0, 0, z0), (c+u1, 0, z1), (c+u1, 3*T, z1), (c+u0, 3*T, z0), Material((150, 220, 240)))
-cimg, _, (cox, coy) = canopy.render(zoom=2, origin=(ox, oy), size=img.size, outline=0.9, crease=1.0)
-a = np.asarray(cimg).astype(float)
-a[..., 3] *= 0.30
-img.alpha_composite(Image.fromarray(a.astype(np.uint8)))
-img.save("hyperloop_concept_2x.png")
-print(img.size)
 
-glass = Scene()
-for (c, zc, y0, y1, pts) in VIADUCT_GLASS:
-    for i in range(len(pts)-1):
-        (u0, z0), (u1, z1) = pts[i], pts[i+1]
-        glass.quad((c+u0, y0, zc+z0), (c+u0, y1, zc+z0), (c+u1, y1, zc+z1), (c+u1, y0, zc+z1), Material((120, 200, 225)))
-gimg, _, _ = glass.render(zoom=2, origin=(ox, oy), size=img.size, outline=0.85, crease=1.0)
-g = np.asarray(gimg).astype(float); g[..., 3] *= 0.42
-img.alpha_composite(Image.fromarray(g.astype(np.uint8)))
-img.save("hyperloop_concept_2x.png")
+def render_with_glass(scene, zoom):
+    """Render the scene, then lay the translucent terminal roof and viaduct glazing over it."""
+    img, mask, (ox, oy) = scene.render(zoom=zoom)
+    layers = []
+    canopy = Scene()
+    c = X*T + T/2
+    arch = TERMINAL_ARCH
+    for i in range(1, len(arch)-2):
+        (u0, z0), (u1, z1) = arch[i], arch[i+1]
+        canopy.quad((c+u0, 0, z0), (c+u1, 0, z1), (c+u1, 3*T, z1), (c+u0, 3*T, z0), Material((150, 210, 228), grain=0.03))
+    layers.append((canopy, 0.34))
+    glass = Scene()
+    for (cc, zc, y0, y1, pts) in VIADUCT_GLASS:
+        for i in range(len(pts)-1):
+            (u0, z0), (u1, z1) = pts[i], pts[i+1]
+            glass.quad((cc+u0, y0, zc+z0), (cc+u0, y1, zc+z0), (cc+u1, y1, zc+z1), (cc+u1, y0, zc+z1), Material((120, 196, 220), grain=0.03))
+    layers.append((glass, 0.45))
+    for sc, opacity in layers:
+        gimg, _, _ = sc.render(zoom=zoom, origin=(ox, oy), size=img.size, outline=0.85, crease=1.0)
+        g = np.asarray(gimg).astype(float); g[..., 3] *= opacity
+        img.alpha_composite(Image.fromarray(g.astype(np.uint8)))
+    return img, (ox, oy)
+
+
+if __name__ == "__main__":
+    img, _ = render_with_glass(s, 2)
+    img.save("hyperloop_concept_2x.png")
+    print(img.size)

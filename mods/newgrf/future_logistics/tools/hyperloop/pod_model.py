@@ -2,7 +2,7 @@ import math
 import sys
 sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parents[3] / 'tools'))
 from isorender import Material
-WHITE = Material((246, 248, 250)); PANEL = Material((200, 208, 216)); DARK = Material((30, 34, 44))
+WHITE = Material((220, 224, 228)); PANEL = Material((184, 192, 200)); DARK = Material((30, 34, 44))
 WIN = Material((20, 26, 40)); CC = Material((40, 90, 200), company=True); CYAN = Material((90, 240, 255), glow=True)
 GLOWR = Material((255, 70, 60), glow=True)
 
