@@ -1,9 +1,9 @@
 /* GPL-2.0-only. Changes only the isolated regression world. */
 class HubCheck extends GSController {
     ready = false; site = -1; second = -1; small = -1; vehicle = -1; entered = false;
-    hub_visits = 0; return_visits = 0; last_stop = -1;
+    hub_visits = 0; return_visits = 0; last_stop = -1; probe_station = -1; joined = false;
     function Save() { return { ready = this.ready, site = this.site, second = this.second, small = this.small, vehicle = this.vehicle, entered = this.entered,
-        hub_visits = this.hub_visits, return_visits = this.return_visits, last_stop = this.last_stop }; }
+        hub_visits = this.hub_visits, return_visits = this.return_visits, last_stop = this.last_stop, probe_station = this.probe_station, joined = this.joined }; }
     function Load(version, data) { foreach (key, value in data) this[key] = value; }
     function Tile(dx, dy) { return GSMap.GetTileIndex(GSMap.GetTileX(this.site) + dx, GSMap.GetTileY(this.site) + dy); }
     function Site(tile) {
@@ -62,6 +62,9 @@ class HubCheck extends GSController {
         return true;
     }
     function Start() {
+        if (GSGameSettings.GetValue("station.distant_join_stations") != 0) {
+            GSLog.Error("HUB regression requires distant station joining disabled"); return;
+        }
         while (GSCompany.ResolveCompanyID(0) == GSCompany.COMPANY_INVALID) this.Sleep(10);
         if (!this.ready) {
             GSCompany.ChangeBankBalance(0, 100000000, GSCompany.EXPENSES_OTHER, GSMap.TILE_INVALID);
@@ -87,6 +90,16 @@ class HubCheck extends GSController {
         /* Road-stop queries use the script's current road type, which is not
          * restored by Load(). Select it before polling, not only in Traffic(). */
         GSRoad.SetCurrentRoadType(GSRoad.ROADTYPE_ROAD);
+        if (this.probe_station == -1) {
+            /* This ordinary stop touches the western warehouse side, not the eastern bay side.
+             * A player-style hub placement must nevertheless append its four bays to this station. */
+            if (!GSRoad.BuildRoad(this.Tile(-2, 0), this.Tile(-1, 0)) ||
+                !GSRoad.BuildRoadStation(this.Tile(-1, 0), this.Tile(-2, 0), GSRoad.ROADVEHTYPE_TRUCK, GSStation.STATION_NEW)) {
+                GSLog.Error("HUB join probe: " + GSError.GetLastErrorString()); return;
+            }
+            this.probe_station = GSStation.GetStationID(this.Tile(-1, 0));
+            GSLog.Info("HUB join probe station=" + this.probe_station + " side=west");
+        }
         if (this.vehicle != -1) {
             GSLog.Info("HUB traffic restored vehicle=" + this.vehicle + " hub_visits=" + this.hub_visits + " return_visits=" + this.return_visits);
         }
@@ -98,6 +111,11 @@ class HubCheck extends GSController {
                 local next = GSStation.GetStationID(tile);
                 if (station == -1) station = next;
                 if (station != next) complete = false;
+            }
+            if (complete && !this.joined) {
+                if (station != this.probe_station) { GSLog.Error("HUB automatic join failed expected=" + this.probe_station + " actual=" + station); return; }
+                this.joined = true;
+                GSLog.Info("HUB automatic join station=" + station + " bays=4 warehouse_side=west");
             }
             if (complete && this.vehicle == -1 && !this.Traffic()) return;
             if (this.vehicle != -1 && GSVehicle.GetCurrentSpeed(this.vehicle) == 0 &&

@@ -24,6 +24,7 @@ enum StationCoverageType : uint8_t {
 };
 
 int DrawStationCoverageAreaText(const Rect &r, StationCoverageType sct, int rad, bool supplies);
+int DrawStationCoverageAreaText(const Rect &r, StationCoverageType sct, int rad, bool supplies, TileIndex tile, uint width, uint height);
 void CheckRedrawStationCoverage(const Window *w);
 void CheckRedrawRailWaypointCoverage(const Window *w);
 void CheckRedrawRoadWaypointCoverage(const Window *w);

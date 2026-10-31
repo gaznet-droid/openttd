@@ -3075,6 +3075,7 @@ STR_AIRPORT_CLASS_SMALL                                         :Small airports
 STR_AIRPORT_CLASS_LARGE                                         :Large airports
 STR_AIRPORT_CLASS_HUB                                           :Hub airports
 STR_AIRPORT_CLASS_HELIPORTS                                     :Helicopter airports
+STR_AIRPORT_CLASS_SPACEPORTS                                    :Spaceports
 
 STR_STATION_BUILD_NOISE                                         :{BLACK}Noise generated: {GOLD}{COMMA}
 
@@ -5667,7 +5668,7 @@ STR_SV_ROAD_VEHICLE_NAME                                        :Road Vehicle #{
 STR_SV_SHIP_NAME                                                :Ship #{COMMA}
 STR_SV_AIRCRAFT_NAME                                            :Aircraft #{COMMA}
 
-###length 27
+###length 28
 STR_SV_STNAME                                                   :{STRING1}
 STR_SV_STNAME_NORTH                                             :{STRING1} North
 STR_SV_STNAME_SOUTH                                             :{STRING1} South
@@ -5696,6 +5697,7 @@ STR_SV_STNAME_LOWER                                             :Lower {STRING1}
 STR_SV_STNAME_HELIPORT                                          :{STRING1} Heliport
 STR_SV_STNAME_FOREST                                            :{STRING1} Forest
 STR_SV_STNAME_FALLBACK                                          :{STRING1} Station #{NUM}
+STR_SV_STNAME_SPACEPORT                                         :{STRING1} Spaceport
 
 ############ end of savegame specific region!
 

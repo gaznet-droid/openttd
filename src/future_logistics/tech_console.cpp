@@ -101,17 +101,18 @@ CargoType ParseCargo(std::string_view label)
  */
 bool FutureLogisticsTechCommand(std::span<std::string_view> argv)
 {
-	if (argv.size() == 2 && argv[0] == "build-hub") {
+	if (argv.size() == 2 && (argv[0] == "build-hub" || argv[0] == "build-hub-auto")) {
 		const auto coordinate = ParseInteger<uint32_t>(argv[1]);
 		const RoadStopSpec *spec = FutureLogistics::FindRoadStopSpecById("distribution_centre");
 		if (!coordinate.has_value() || *coordinate >= Map::Size() || spec == nullptr || !Company::IsValidID(_local_company)) return false;
 		const TileIndex tile{*coordinate};
+		const bool automatic_join = argv[0] == "build-hub-auto";
 		AutoRestoreBackup company(_current_company, _local_company);
 		CommandCost test = Command<Commands::BuildRoadStop>::Do({DoCommandFlag::Auto, DoCommandFlag::NoWater}, tile, 4, 4, RoadStopType::Truck, false,
-			DiagDirection::SW, ROADTYPE_ROAD, spec->class_index, spec->index, NEW_STATION, true);
+			DiagDirection::SW, ROADTYPE_ROAD, spec->class_index, spec->index, NEW_STATION, !automatic_join);
 		Report(fmt::format("FL distribution request tile={} accepted={} error={}", tile, test.Succeeded(), test.Failed() ? GetString(test.GetErrorMessage()) : "-"));
 		if (test.Succeeded()) Command<Commands::BuildRoadStop>::Post(STR_ERROR_CAN_T_BUILD_TRUCK_STATION, tile, 4, 4, RoadStopType::Truck, false,
-			DiagDirection::SW, ROADTYPE_ROAD, spec->class_index, spec->index, NEW_STATION, true);
+			DiagDirection::SW, ROADTYPE_ROAD, spec->class_index, spec->index, NEW_STATION, !automatic_join);
 		return true;
 	}
 	if (argv.size() == 1 && argv[0] == "hub-audit") {

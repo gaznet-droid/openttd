@@ -1480,13 +1480,16 @@ public:
 		this->DrawWidgets();
 
 		int rad = _settings_game.station.modified_catchment ? ((this->window_class == WindowClass::BuildBusStation) ? CA_BUS : CA_TRUCK) : CA_UNMODIFIED;
+		SetTileSelectSize(hub ? 4 : 1, hub ? 4 : 1);
 		if (_settings_client.gui.station_show_coverage) {
-			SetTileSelectBigSize(-rad, -rad, 2 * rad, 2 * rad);
-		} else {
-			SetTileSelectSize(1, 1);
+			/* The 3x4 warehouse is an object. Only the eastern 1x4 truck-bay strip
+			 * contributes to the real station catchment. */
+			if (hub) {
+				SetTileSelectBigSize(3 - rad, -rad, 2 * rad - 3, 2 * rad);
+			} else {
+				SetTileSelectBigSize(-rad, -rad, 2 * rad, 2 * rad);
+			}
 		}
-
-		if (hub) SetTileSelectSize(4, 4);
 		if (this->IsShaded()) return;
 
 		/* 'Accepts' and 'Supplies' texts. */
@@ -1495,8 +1498,11 @@ public:
 		const int bottom = r.bottom;
 		r.bottom = INT_MAX; // Allow overflow as we want to know the required height.
 		if (spec != nullptr) r.top = DrawBadgeNameList(r, spec->badges, GrfSpecFeature::RoadStops);
-		r.top = DrawStationCoverageAreaText(r, sct, rad, false) + WidgetDimensions::scaled.vsep_normal;
-		r.top = DrawStationCoverageAreaText(r, sct, rad, true);
+		TileIndex coverage_tile = TileVirtXY(_thd.pos.x, _thd.pos.y);
+		if (hub && coverage_tile < Map::Size()) coverage_tile = TileAddWrap(coverage_tile, 3, 0);
+		r.top = hub ? DrawStationCoverageAreaText(r, sct, rad, false, coverage_tile, 1, 4) : DrawStationCoverageAreaText(r, sct, rad, false);
+		r.top += WidgetDimensions::scaled.vsep_normal;
+		r.top = hub ? DrawStationCoverageAreaText(r, sct, rad, true, coverage_tile, 1, 4) : DrawStationCoverageAreaText(r, sct, rad, true);
 		/* Resize background if the window is too small.
 		 * Never make the window smaller to avoid oscillating if the size change affects the acceptance.
 		 * (This is the case, if making the window bigger moves the mouse into the window.) */

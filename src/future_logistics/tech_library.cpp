@@ -4,6 +4,7 @@
  */
 /** @file tech_library.cpp Build and query the Future Logistics Tech Library. */
 #include "../stdafx.h"
+#include "../3rdparty/fmt/format.h"
 #include "tech_library.h"
 #include "../airport.h"
 #include "../articulated_vehicles.h"

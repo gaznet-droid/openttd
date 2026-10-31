@@ -81,13 +81,29 @@ using RoadWaypointTypeFilter = GenericWaypointTypeFilter<true, TileType::Road>;
 int DrawStationCoverageAreaText(const Rect &r, StationCoverageType sct, int rad, bool supplies)
 {
 	TileIndex tile = TileVirtXY(_thd.pos.x, _thd.pos.y);
+	return DrawStationCoverageAreaText(r, sct, rad, supplies, tile, _thd.size.x / TILE_SIZE, _thd.size.y / TILE_SIZE);
+}
+
+/**
+ * Calculates and draws the accepted or supplied cargo around an explicit tile rectangle.
+ * @param r Rect where the string is to be drawn.
+ * @param sct which type of cargo is to be displayed (passengers/non-passengers)
+ * @param rad radius around the selected tiles to be searched
+ * @param supplies if supplied cargoes should be drawn, else accepted cargoes
+ * @param tile northernmost tile of the selected rectangle
+ * @param width width of the selected rectangle, in tiles
+ * @param height height of the selected rectangle, in tiles
+ * @return Returns the y value below the string that was drawn
+ */
+int DrawStationCoverageAreaText(const Rect &r, StationCoverageType sct, int rad, bool supplies, TileIndex tile, uint width, uint height)
+{
 	CargoTypes cargo_mask{};
 	if (_thd.drawstyle == HT_RECT && tile < Map::Size()) {
 		CargoArray cargoes;
 		if (supplies) {
-			cargoes = GetProductionAroundTiles(tile, _thd.size.x / TILE_SIZE, _thd.size.y / TILE_SIZE, rad);
+			cargoes = GetProductionAroundTiles(tile, width, height, rad);
 		} else {
-			cargoes = GetAcceptanceAroundTiles(tile, _thd.size.x / TILE_SIZE, _thd.size.y / TILE_SIZE, rad).first;
+			cargoes = GetAcceptanceAroundTiles(tile, width, height, rad).first;
 		}
 
 		/* Convert cargo counts to a set of cargo bits, and draw the result. */

@@ -35,6 +35,8 @@ class OrbitalCheck extends GSController {
             }
             if (site != GSMap.TILE_INVALID && !GSAirport.BuildAirport(site, airport_type, GSStation.STATION_NEW)) site = GSMap.TILE_INVALID;
             if (site == GSMap.TILE_INVALID) { GSLog.Error("ORBIT no launch site: " + GSError.GetLastErrorString()); return; }
+            local spaceport_name = GSStation.GetName(GSStation.GetStationID(site));
+            if (spaceport_name.find("Spaceport") == null) { GSLog.Error("ORBIT wrong station name: " + spaceport_name); return; }
             local depot = GSAirport.GetHangarOfAirport(site);
             local ship = GSVehicle.BuildVehicle(depot, engine);
             if (!GSVehicle.IsValidVehicle(ship)) { GSLog.Error("ORBIT build failed: " + GSError.GetLastErrorString()); return; }
@@ -47,7 +49,7 @@ class OrbitalCheck extends GSController {
             company_mode = null;
             GSTown.ExpandTown(town, 4000);
             this.ready = true;
-            GSLog.Info("ORBIT fixture ready home=" + depot + " town=" + town + " production=" + best_production);
+            GSLog.Info("ORBIT fixture ready home=" + depot + " town=" + town + " production=" + best_production + " station=" + spaceport_name);
         }
         while (true) this.Sleep(100);
     }
