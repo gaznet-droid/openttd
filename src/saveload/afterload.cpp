@@ -7,8 +7,8 @@
 
 /** @file afterload.cpp Code updating data after game load. */
 
-#include "../future_logistics/hyperloop.h"
 #include "../stdafx.h"
+#include "../future_logistics/hyperloop.h"
 #include "../void_map.h"
 #include "../signs_base.h"
 #include "../depot_base.h"

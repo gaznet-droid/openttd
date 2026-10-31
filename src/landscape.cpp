@@ -9,8 +9,8 @@
 
 /** @defgroup SnowLineGroup Snowline functions and data structures */
 
-#include "future_logistics/hyperloop.h"
 #include "stdafx.h"
+#include "future_logistics/hyperloop.h"
 #include "bridge_map.h"
 #include "heightmap.h"
 #include "clear_map.h"
