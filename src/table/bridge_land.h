@@ -712,6 +712,7 @@ static const std::span<const PalSpriteID> _bridge_sprite_table_tubular_silicon[]
 	_bridge_sprite_table_generic_concrete_heads,
 };
 
+/** Sprites for drawing each bridge spec, including the Hyperloop viaduct, unless a NewGRF supplies its own. */
 static const std::span<const std::span<const PalSpriteID>> _bridge_sprite_table[NUM_BRIDGE_SPECS] = {
 	_bridge_sprite_table_wood,
 	_bridge_sprite_table_concrete,
