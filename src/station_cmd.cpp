@@ -8,6 +8,7 @@
 /** @file station_cmd.cpp Handling of station tiles. */
 
 #include "stdafx.h"
+#include "future_logistics/hyperloop.h"
 #include "future_logistics/tag_index.h"
 #include "future_logistics/tech_library.h"
 #include "object_base.h"
@@ -75,6 +76,7 @@
 #include "timer/timer_game_tick.h"
 #include "cheat_type.h"
 #include "road_func.h"
+#include "road_cmd.h"
 #include "station_layout_type.h"
 #include "tilearea_airport.h"
 #include "tilearea_airportlayout.h"
@@ -1452,6 +1454,17 @@ CommandCost CmdBuildRailStation(DoCommandFlags flags, TileIndex tile_org, RailTy
 
 	/* Check if the given station class is valid */
 	if (spec_class.base() >= StationClass::GetClassCount()) return CMD_ERROR;
+	/* Every Hyperloop station is a Hyperloop terminal, and the terminal is only for Hyperloop track. */
+	if (IsHyperloopRailType(rt)) {
+		StationClassID terminal_class;
+		uint16_t terminal_index;
+		if (FindHyperloopTerminal(terminal_class, terminal_index)) {
+			spec_class = terminal_class;
+			spec_index = terminal_index;
+		}
+	} else if (IsHyperloopTerminalClass(spec_class)) {
+		return CommandCost(STR_HYPERLOOP_TERMINAL_ONLY);
+	}
 	const StationClass *cls = StationClass::Get(spec_class);
 	if (IsWaypointClass(*cls)) return CMD_ERROR;
 	if (spec_index >= cls->GetSpecCount()) return CMD_ERROR;
@@ -2272,7 +2285,22 @@ static CommandCost BuildDistributionHub(DoCommandFlags flags, TileIndex tile, Ro
 		if (cost.Failed()) return cost;
 		total.AddCost(std::move(cost));
 	}
-	if (!flags.Test(DoCommandFlag::Execute)) return total;
+	/* Each bay opens to the south-west. Where a road already runs along that side, join it to the bays, so
+	 * trucks can drive in without the player drawing a stub into every bay. Priced the same in the test run. */
+	auto link_bays = [&](DoCommandFlags link_flags) {
+		for (uint i = 0; i < 4; i++) {
+			const TileIndex front = TileAddWrap(tile, 4, i);
+			if (front == INVALID_TILE || !IsNormalRoadTile(front)) continue;
+			const RoadType front_rt = GetRoadTypeRoad(front);
+			if (front_rt == INVALID_ROADTYPE || GetRoadBits(front, RoadTramType::Road).Test(RoadBit::NE)) continue;
+			CommandCost link = Command<Commands::BuildRoad>::Do(link_flags, front, RoadBits{RoadBit::NE}, front_rt, {}, TownID::Invalid());
+			if (link.Succeeded()) total.AddCost(std::move(link));
+		}
+	};
+	if (!flags.Test(DoCommandFlag::Execute)) {
+		link_bays(test_flags);
+		return total;
+	}
 	std::vector<TileIndex> built;
 	auto rollback = [&]() {
 		for (TileIndex part : built) {
@@ -2286,13 +2314,37 @@ static CommandCost BuildDistributionHub(DoCommandFlags flags, TileIndex tile, Ro
 		if (cost.Failed()) { rollback(); return cost; }
 		built.push_back(bay);
 		join = GetStationIndex(bay);
+		/* Number the bays 0-3 so each draws its own piece of the Distribution Centre picture. */
+		Station::GetByTile(bay)->SetRoadStopAnimationFrame(bay, i);
 		/* Match the four painted bays with four active positions. */
 		RoadStop::GetByTile(bay, RoadStopType::Truck)->status.Reset(RoadStop::RoadStopStatusFlag::Bay1Free);
 	}
 	CommandCost object = Command<Commands::BuildObject>::Do(flags, tile, *warehouse, 0);
 	if (object.Failed()) { rollback(); return object; }
+	link_bays(flags);
 	Debug(Facility::Misc, Severity::Notice, "FL distribution hub company={} town={} station={} tile={} bays=4", _current_company, town->index, join, tile);
 	return total;
+}
+
+/**
+ * Number the bays of Distribution Centres built before the bays were numbered: each bay counts the hub bays of
+ * its station directly north-west of it. The number picks the bay's piece of the Distribution Centre picture.
+ */
+void NumberDistributionHubBays()
+{
+	for (Station *st : Station::Iterate()) {
+		for (RoadStop *rs = st->truck_stops; rs != nullptr; rs = rs->next) {
+			const RoadStopSpec *spec = GetRoadStopSpec(rs->xy);
+			if (spec == nullptr || ReadItemTags(spec->badges).id != "distribution_centre") continue;
+			uint8_t index = 0;
+			for (TileIndex t = rs->xy; index < 3; index++) {
+				const TileIndex prev = TileAddWrap(t, 0, -1);
+				if (prev == INVALID_TILE || !IsStationRoadStopTile(prev) || GetStationIndex(prev) != st->index || GetRoadStopSpec(prev) != spec) break;
+				t = prev;
+			}
+			st->SetRoadStopAnimationFrame(rs->xy, index);
+		}
+	}
 }
 
 /**

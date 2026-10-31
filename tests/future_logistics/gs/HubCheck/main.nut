@@ -18,19 +18,10 @@ class HubCheck extends GSController {
     }
     function Traffic() {
         GSRoad.SetCurrentRoadType(GSRoad.ROADTYPE_ROAD);
-        if (!GSRoad.BuildRoad(this.Tile(4, 0), this.Tile(4, 4)) ||
-            !GSRoad.BuildRoad(this.Tile(4, 4), this.Tile(5, 4)) ||
+        if (!GSRoad.BuildRoad(this.Tile(4, 4), this.Tile(5, 4)) ||
             !GSRoad.BuildRoadDepot(this.Tile(6, 4), this.Tile(5, 4)) ||
             !GSRoad.BuildRoadStation(this.Tile(5, 5), this.Tile(5, 4), GSRoad.ROADVEHTYPE_TRUCK, GSStation.STATION_NEW)) {
             GSLog.Error("HUB traffic infrastructure: " + GSError.GetLastErrorString()); return false;
-        }
-        /* A road alongside a bay does not include the branch into its entrance.
-         * BuildRoad adds the missing approach bit; the existing entrance bit on
-         * the bay/depot endpoint is already built and is left unchanged. */
-        for (local i = 0; i < 4; i++) {
-            if (!GSRoad.BuildRoad(this.Tile(3, i), this.Tile(4, i))) {
-                GSLog.Error("HUB bay approach " + i + ": " + GSError.GetLastErrorString()); return false;
-            }
         }
         if (!GSRoad.BuildRoad(this.Tile(5, 4), this.Tile(6, 4)) ||
             !GSRoad.BuildRoad(this.Tile(5, 4), this.Tile(5, 5))) {
@@ -42,6 +33,7 @@ class HubCheck extends GSController {
                 GSLog.Error("HUB disconnected bay approach " + i); return false;
             }
         }
+        GSLog.Info("HUB bay approaches connected automatically");
         if (!GSRoad.AreRoadTilesConnected(this.Tile(6, 4), this.Tile(5, 4)) ||
             !GSRoad.AreRoadTilesConnected(this.Tile(5, 4), this.Tile(6, 4)) ||
             !GSRoad.AreRoadTilesConnected(this.Tile(5, 4), this.Tile(5, 5)) ||
@@ -99,6 +91,11 @@ class HubCheck extends GSController {
             }
             this.probe_station = GSStation.GetStationID(this.Tile(-1, 0));
             GSLog.Info("HUB join probe station=" + this.probe_station + " side=west");
+            /* A road already runs along the bay side, as a town road often does, with no stubs into the bays:
+             * building the hub must join the bays to it by itself. */
+            if (!GSRoad.BuildRoad(this.Tile(4, 0), this.Tile(4, 4))) {
+                GSLog.Error("HUB bay-side road: " + GSError.GetLastErrorString()); return;
+            }
         }
         if (this.vehicle != -1) {
             GSLog.Info("HUB traffic restored vehicle=" + this.vehicle + " hub_visits=" + this.hub_visits + " return_visits=" + this.return_visits);

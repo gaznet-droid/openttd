@@ -6093,7 +6093,9 @@ STR_CONFIG_SETTING_CURSOR_SIZE_LARGE                           :Large
 STR_CONFIG_SETTING_CURSOR_SIZE_EXTRA_LARGE                     :Extra large
 
 STR_ORBITAL_NOT_BOARDING                                         :Shuttle must be boarding at an open spaceport
-STR_ORBITAL_PASSENGERS_ONLY                                      :Orbital shuttles carry passengers
+STR_ORBITAL_PASSENGERS_ONLY                                      :Orbital shuttles carry passengers or mail
+STR_ORBITAL_WAIT_PAD_HANGAR                                      :Waiting in the hangar for the launch pad
+STR_ORBITAL_WAIT_PAD_ORBIT                                       :In orbit; waiting for the launch pad to clear
 STR_ORBITAL_NO_ACCEPTANCE                                        :The originating spaceport must accept passengers
 STR_ORBITAL_MINIMUM_LOAD                                         :At least 500 passengers are required for early dispatch
 STR_ORBITAL_MONTHLY_LIMIT                                        :This spaceport has already launched this calendar month
@@ -6114,6 +6116,7 @@ STR_DISTRIBUTION_REQUIRES_CITY                                  :A Distribution 
 STR_DISTRIBUTION_ONE_PER_TOWN                                   :This town already has a Distribution Centre
 STR_DISTRIBUTION_CLEAR_SITE                                     :A Distribution Centre needs a clear, flat 4x4 site
 STR_HYPERLOOP_USE_HYPERLOOP_TOOLS                               :Build Hyperloop routes with the viaduct or underground tube tool; surface track is limited to terminal approaches
+STR_HYPERLOOP_TERMINAL_ONLY                                     :The Hyperloop terminal can only be built on Hyperloop track
 STR_HYPERLOOP_VIADUCT_ONLY                                      :The Hyperloop viaduct carries only Hyperloop track
 STR_HYPERLOOP_BUILD_TUBE_TOOLTIP                                :{BLACK}Drag between two aligned, flat access shafts at the same height to build an underground Hyperloop tube, for routes that hills or buildings would block
 STR_HYPERLOOP_BUILD_VIADUCT_TOOLTIP                             :{BLACK}Drag between two ramps on the same row or column and at the same height to build an elevated Hyperloop viaduct

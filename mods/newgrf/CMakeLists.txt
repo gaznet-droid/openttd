@@ -4,7 +4,6 @@
 set(NEWGRF_SOURCE_FILES
 	${CMAKE_CURRENT_SOURCE_DIR}/future_logistics/future_logistics.grf
 	${CMAKE_CURRENT_SOURCE_DIR}/starship/starship.grf
-	${CMAKE_CURRENT_SOURCE_DIR}/corporate_infrastructure/CorporateInfrastructure.grf
 )
 
 foreach(NEWGRF_SOURCE_FILE IN LISTS NEWGRF_SOURCE_FILES)

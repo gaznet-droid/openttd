@@ -281,33 +281,29 @@ tilelayout data_centre_footprint {
     3, 3: data_centre_3_3_tile;
 }
 
-spriteset(orbital_rocket_body, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/rocket_idle_1x.png") {
-    [0, 0, 19, 125, -9, -123]
-    [0, 0, 19, 125, -9, -123]
-    [0, 0, 19, 125, -9, -123]
-    [0, 0, 19, 125, -9, -123]
-    [0, 0, 19, 125, -9, -123]
-    [0, 0, 19, 125, -9, -123]
-    [0, 0, 19, 125, -9, -123]
-    [0, 0, 19, 125, -9, -123]
+/* The Reusable Rocket uses the same Starship sprites as the Starship NewGRF (copied by
+ * tools/make_functional_sprites.py), so every rocket looks the same lifting off the shared launch pad. */
+spriteset(orbital_rocket_body, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/starship_idle_1x.png") {
+    [0, 0, 23, 139, -11, -137]
+    [0, 0, 23, 139, -11, -137]
+    [0, 0, 23, 139, -11, -137]
+    [0, 0, 23, 139, -11, -137]
+    [0, 0, 23, 139, -11, -137]
+    [0, 0, 23, 139, -11, -137]
+    [0, 0, 23, 139, -11, -137]
+    [0, 0, 23, 139, -11, -137]
 }
-alternative_sprites(orbital_rocket_body, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/rocket_idle_2x.png") {
-    [0, 0, 38, 250, -19, -246]
-    [0, 0, 38, 250, -19, -246]
-    [0, 0, 38, 250, -19, -246]
-    [0, 0, 38, 250, -19, -246]
-    [0, 0, 38, 250, -19, -246]
-    [0, 0, 38, 250, -19, -246]
-    [0, 0, 38, 250, -19, -246]
-    [0, 0, 38, 250, -19, -246]
+alternative_sprites(orbital_rocket_body, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/starship_idle_2x.png") {
+    [0, 0, 47, 277, -23, -273]
+    [0, 0, 47, 277, -23, -273]
+    [0, 0, 47, 277, -23, -273]
+    [0, 0, 47, 277, -23, -273]
+    [0, 0, 47, 277, -23, -273]
+    [0, 0, 47, 277, -23, -273]
+    [0, 0, 47, 277, -23, -273]
+    [0, 0, 47, 277, -23, -273]
 }
-
-/* On the map the body is never drawn: the whole rocket is drawn as the rotor (below), which the game redraws every
- * tick while the engine runs, whereas the body is only redrawn when it moves. So Starship is seen while its engines
- * run on the launch mount, in the air and landing: it appears on the mount for take-off and is gone once it has
- * landed, rather than drifting between the mount, stands and hangar. The depot, vehicle windows and purchase list
- * (the low byte of extra_callback_info1 is not 0) show the rocket. */
-spriteset(orbital_rocket_hidden, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/flame_strip_1x.png") {
+spriteset(orbital_rocket_hidden, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/starship_lit_1x.png") {
     [0, 0, 1, 1, 0, 0]
     [0, 0, 1, 1, 0, 0]
     [0, 0, 1, 1, 0, 0]
@@ -322,152 +318,221 @@ switch (FEAT_AIRCRAFT, SELF, orbital_rocket_graphics, extra_callback_info1 & 0xF
     orbital_rocket_body;
 }
 
-/* Launch and landing: the rocket over its flame and an exhaust plume. */
-spriteset(orbital_rocket_plume, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/plume_strip_1x.png") {
+/* The rotor: blank for a stopped rotor, then three flame frames that cycle while the engines run. */
+spriteset(orbital_rocket_lit, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/starship_lit_1x.png") {
     [0, 0, 1, 1, 0, 0]
-    [2, 0, 74, 211, -7, -130]
-    [77, 0, 74, 220, -7, -130]
-    [152, 0, 74, 231, -7, -130]
+    [0, 0, 28, 192, -12, -133]
+    [29, 0, 28, 199, -12, -133]
+    [58, 0, 28, 186, -12, -133]
 }
-alternative_sprites(orbital_rocket_plume, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/plume_strip_2x.png") {
+alternative_sprites(orbital_rocket_lit, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/starship_lit_2x.png") {
     [0, 0, 1, 1, 0, 0]
-    [2, 0, 148, 422, -14, -260]
-    [151, 0, 148, 440, -14, -260]
-    [300, 0, 148, 462, -14, -260]
+    [0, 0, 57, 384, -26, -266]
+    [58, 0, 57, 398, -26, -266]
+    [116, 0, 57, 372, -26, -266]
 }
-
-/* Flight: the rocket over its flame. */
-spriteset(orbital_rocket_flame, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/flame_strip_1x.png") {
+spriteset(orbital_rocket_rotor_hidden, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/starship_lit_1x.png") {
     [0, 0, 1, 1, 0, 0]
-    [2, 0, 33, 160, 14, -130]
-    [36, 0, 33, 169, 14, -130]
-    [70, 0, 33, 180, 14, -130]
-}
-alternative_sprites(orbital_rocket_flame, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/flame_strip_2x.png") {
     [0, 0, 1, 1, 0, 0]
-    [2, 0, 66, 320, 27, -260]
-    [69, 0, 66, 338, 27, -260]
-    [136, 0, 66, 360, 27, -260]
-}
-
-/* Separate idle vehicle body, also visible while servicing on its pad. */
-spriteset(orbital_rocket_no_flame, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/rocket_idle_1x.png") {
-    [0, 0, 19, 125, 21, -130]
-    [0, 0, 19, 125, 21, -130]
-    [0, 0, 19, 125, 21, -130]
-    [0, 0, 19, 125, 21, -130]
-}
-alternative_sprites(orbital_rocket_no_flame, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/rocket_idle_2x.png") {
-    [0, 0, 38, 250, 41, -260]
-    [0, 0, 38, 250, 41, -260]
-    [0, 0, 38, 250, 41, -260]
-    [0, 0, 38, 250, 41, -260]
+    [0, 0, 1, 1, 0, 0]
+    [0, 0, 1, 1, 0, 0]
 }
 
 /* The rotor by flight phase (var 0xE2, the TTDPatch movement states the game reports): launching (23 at an airport,
- * 26 at a heliport) and landing (25, 28) show the rocket with flame and plume, landing being the launch in reverse;
- * climbing and flying (15 to 21) show it with its flame; anything else, on the ground, shows nothing. Each set is
- * blank for a stopped rotor, then three frames that cycle. */
+ * 26 at a heliport), landing (25, 28), climbing and flying (15 to 21) show the powered rocket; on the ground nothing,
+ * as the pad draws the docked rocket itself. */
 switch (FEAT_AIRCRAFT, SELF, orbital_rocket_rotor, flight_state) {
-    23: orbital_rocket_plume;
-    25: orbital_rocket_plume;
-    26: orbital_rocket_plume;
-    28: orbital_rocket_plume;
-    15..21: orbital_rocket_flame;
-    orbital_rocket_no_flame;
+    23: orbital_rocket_lit;
+    25: orbital_rocket_lit;
+    26: orbital_rocket_lit;
+    28: orbital_rocket_lit;
+    15..21: orbital_rocket_lit;
+    orbital_rocket_rotor_hidden;
 }
 
-spriteset(orbital_pad_sprite_0_0, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_0_0_1x.png") { [0, 0, 91, 129, -60, -97] }
-alternative_sprites(orbital_pad_sprite_0_0, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_0_0_2x.png") { [0, 0, 184, 259, -121, -195] }
-spritelayout orbital_pad_layout_0_0 { ground { sprite: orbital_pad_sprite_0_0(0); } }
-item(FEAT_AIRPORTTILES, orbital_pad_tile_0_0, 16) { property { substitute: 0; } graphics { default: orbital_pad_layout_0_0; } }
-spriteset(orbital_pad_sprite_1_0, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_1_0_1x.png") { [0, 0, 82, 45, -51, -13] }
-alternative_sprites(orbital_pad_sprite_1_0, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_1_0_2x.png") { [0, 0, 166, 91, -103, -27] }
-spritelayout orbital_pad_layout_1_0 { ground { sprite: orbital_pad_sprite_1_0(0); } }
-item(FEAT_AIRPORTTILES, orbital_pad_tile_1_0, 17) { property { substitute: 0; } graphics { default: orbital_pad_layout_1_0; } }
-spriteset(orbital_pad_sprite_2_0, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_2_0_1x.png") { [0, 0, 96, 45, -65, -13] }
-alternative_sprites(orbital_pad_sprite_2_0, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_2_0_2x.png") { [0, 0, 194, 90, -131, -26] }
-spritelayout orbital_pad_layout_2_0 { ground { sprite: orbital_pad_sprite_2_0(0); } }
-item(FEAT_AIRPORTTILES, orbital_pad_tile_2_0, 18) { property { substitute: 0; } graphics { default: orbital_pad_layout_2_0; } }
-spriteset(orbital_pad_sprite_3_0, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_3_0_1x.png") { [0, 0, 86, 52, -55, -16] }
-alternative_sprites(orbital_pad_sprite_3_0, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_3_0_2x.png") { [0, 0, 174, 106, -111, -34] }
-spritelayout orbital_pad_layout_3_0 { ground { sprite: orbital_pad_sprite_3_0(0); } }
-item(FEAT_AIRPORTTILES, orbital_pad_tile_3_0, 19) { property { substitute: 0; } graphics { default: orbital_pad_layout_3_0; } }
-spriteset(orbital_pad_sprite_0_1, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_0_1_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(orbital_pad_sprite_0_1, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_0_1_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout orbital_pad_layout_0_1 { ground { sprite: orbital_pad_sprite_0_1(0); } }
-item(FEAT_AIRPORTTILES, orbital_pad_tile_0_1, 20) { property { substitute: 0; } graphics { default: orbital_pad_layout_0_1; } }
-spriteset(orbital_pad_sprite_1_1, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_1_1_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(orbital_pad_sprite_1_1, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_1_1_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout orbital_pad_layout_1_1 { ground { sprite: orbital_pad_sprite_1_1(0); } }
-item(FEAT_AIRPORTTILES, orbital_pad_tile_1_1, 21) { property { substitute: 0; } graphics { default: orbital_pad_layout_1_1; } }
-spriteset(orbital_pad_sprite_2_1, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_2_1_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(orbital_pad_sprite_2_1, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_2_1_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout orbital_pad_layout_2_1 { ground { sprite: orbital_pad_sprite_2_1(0); } }
-item(FEAT_AIRPORTTILES, orbital_pad_tile_2_1, 22) { property { substitute: 0; } graphics { default: orbital_pad_layout_2_1; } }
-spriteset(orbital_pad_sprite_3_1, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_3_1_1x.png") { [0, 0, 72, 36, -41, 0] }
-alternative_sprites(orbital_pad_sprite_3_1, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_3_1_2x.png") { [0, 0, 144, 72, -81, 0] }
-spritelayout orbital_pad_layout_3_1 { ground { sprite: orbital_pad_sprite_3_1(0); } }
-item(FEAT_AIRPORTTILES, orbital_pad_tile_3_1, 23) { property { substitute: 0; } graphics { default: orbital_pad_layout_3_1; } }
-spriteset(orbital_pad_sprite_0_2, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_0_2_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(orbital_pad_sprite_0_2, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_0_2_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout orbital_pad_layout_0_2 { ground { sprite: orbital_pad_sprite_0_2(0); } }
-item(FEAT_AIRPORTTILES, orbital_pad_tile_0_2, 24) { property { substitute: 0; } graphics { default: orbital_pad_layout_0_2; } }
-spriteset(orbital_pad_sprite_1_2, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_1_2_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(orbital_pad_sprite_1_2, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_1_2_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout orbital_pad_layout_1_2 { ground { sprite: orbital_pad_sprite_1_2(0); } }
-item(FEAT_AIRPORTTILES, orbital_pad_tile_1_2, 25) { property { substitute: 0; } graphics { default: orbital_pad_layout_1_2; } }
-spriteset(orbital_pad_sprite_2_2, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_2_2_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(orbital_pad_sprite_2_2, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_2_2_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout orbital_pad_layout_2_2 { ground { sprite: orbital_pad_sprite_2_2(0); } }
-item(FEAT_AIRPORTTILES, orbital_pad_tile_2_2, 26) { property { substitute: 0; } graphics { default: orbital_pad_layout_2_2; } }
-spriteset(orbital_pad_sprite_3_2, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_3_2_1x.png") { [0, 0, 72, 36, -41, 0] }
-alternative_sprites(orbital_pad_sprite_3_2, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_3_2_2x.png") { [0, 0, 144, 72, -81, 0] }
-spritelayout orbital_pad_layout_3_2 { ground { sprite: orbital_pad_sprite_3_2(0); } }
-item(FEAT_AIRPORTTILES, orbital_pad_tile_3_2, 27) { property { substitute: 0; } graphics { default: orbital_pad_layout_3_2; } }
-spriteset(orbital_pad_sprite_0_3, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_0_3_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(orbital_pad_sprite_0_3, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_0_3_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout orbital_pad_layout_0_3 { ground { sprite: orbital_pad_sprite_0_3(0); } }
-item(FEAT_AIRPORTTILES, orbital_pad_tile_0_3, 28) { property { substitute: 0; } graphics { default: orbital_pad_layout_0_3; } }
-spriteset(orbital_pad_sprite_1_3, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_1_3_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(orbital_pad_sprite_1_3, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_1_3_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout orbital_pad_layout_1_3 { ground { sprite: orbital_pad_sprite_1_3(0); } }
-item(FEAT_AIRPORTTILES, orbital_pad_tile_1_3, 29) { property { substitute: 0; } graphics { default: orbital_pad_layout_1_3; } }
-spriteset(orbital_pad_sprite_2_3, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_2_3_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(orbital_pad_sprite_2_3, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_2_3_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout orbital_pad_layout_2_3 { ground { sprite: orbital_pad_sprite_2_3(0); } }
-item(FEAT_AIRPORTTILES, orbital_pad_tile_2_3, 30) { property { substitute: 0; } graphics { default: orbital_pad_layout_2_3; } }
-spriteset(orbital_pad_sprite_3_3, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_3_3_1x.png") { [0, 0, 72, 32, -41, 0] }
-alternative_sprites(orbital_pad_sprite_3_3, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_3_3_2x.png") { [0, 0, 144, 64, -81, 0] }
-spritelayout orbital_pad_layout_3_3 { ground { sprite: orbital_pad_sprite_3_3(0); } }
-item(FEAT_AIRPORTTILES, orbital_pad_tile_3_3, 31) { property { substitute: 0; } graphics { default: orbital_pad_layout_3_3; } }
-tilelayout orbital_spaceport_layout { rotation: DIRECTION_NORTH;
+/* BEGIN generated spaceport pad (tools/make_spaceport_art.py) */
+/* The launch pad, 3x4 tiles, from the Corporate Infrastructure spaceport art in the base game's pixel density.
+ * Each tile draws its piece of the picture as a building with a tall box, so no tile draws over another and the
+ * tall parts sort correctly against neighbouring buildings. The pad shows Starship
+ * docked on its launch mount (animation frame 1, set by the orbital controller while a shuttle boards or is
+ * serviced) or empty with the tower arms swung open (frame 0). The layout turns the country airport, whose
+ * movement the spaceport uses, a quarter turn to fit the art's 3x4 footprint. */
+spriteset(orbital_pad_e_0_0, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_0_0_1x.png") { [0, 0, 140, 126, -92, -94] }
+alternative_sprites(orbital_pad_e_0_0, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_0_0_2x.png") { [0, 0, 280, 252, -184, -188] }
+spritelayout orbital_pad_e_0_0_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_e_0_0(0); xextent: 16; yextent: 16; zextent: 160; } }
+spriteset(orbital_pad_d_0_0, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_0_0_1x.png") { [0, 0, 136, 126, -92, -94] }
+alternative_sprites(orbital_pad_d_0_0, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_0_0_2x.png") { [0, 0, 271, 252, -184, -188] }
+spritelayout orbital_pad_d_0_0_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_d_0_0(0); xextent: 16; yextent: 16; zextent: 160; } }
+switch (FEAT_AIRPORTTILES, SELF, orbital_pad_switch_0_0, animation_frame) { 1: orbital_pad_d_0_0_layout; orbital_pad_e_0_0_layout; }
+item(FEAT_AIRPORTTILES, orbital_pad_tile_0_0, 16) { property { substitute: 0; } graphics { default: orbital_pad_switch_0_0; } }
+spriteset(orbital_pad_e_1_0, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_1_0_1x.png") { [0, 0, 91, 62, -60, -30] }
+alternative_sprites(orbital_pad_e_1_0, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_1_0_2x.png") { [0, 0, 183, 124, -120, -60] }
+spritelayout orbital_pad_e_1_0_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_e_1_0(0); xextent: 16; yextent: 16; zextent: 160; } }
+spriteset(orbital_pad_d_1_0, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_1_0_1x.png") { [0, 0, 91, 62, -60, -30] }
+alternative_sprites(orbital_pad_d_1_0, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_1_0_2x.png") { [0, 0, 183, 124, -120, -60] }
+spritelayout orbital_pad_d_1_0_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_d_1_0(0); xextent: 16; yextent: 16; zextent: 160; } }
+switch (FEAT_AIRPORTTILES, SELF, orbital_pad_switch_1_0, animation_frame) { 1: orbital_pad_d_1_0_layout; orbital_pad_e_1_0_layout; }
+item(FEAT_AIRPORTTILES, orbital_pad_tile_1_0, 17) { property { substitute: 0; } graphics { default: orbital_pad_switch_1_0; } }
+spriteset(orbital_pad_e_2_0, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_2_0_1x.png") { [0, 0, 62, 49, -31, -14] }
+alternative_sprites(orbital_pad_e_2_0, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_2_0_2x.png") { [0, 0, 126, 98, -63, -28] }
+spritelayout orbital_pad_e_2_0_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_e_2_0(0); xextent: 16; yextent: 16; zextent: 160; } }
+spriteset(orbital_pad_d_2_0, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_2_0_1x.png") { [0, 0, 62, 49, -31, -14] }
+alternative_sprites(orbital_pad_d_2_0, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_2_0_2x.png") { [0, 0, 126, 97, -63, -28] }
+spritelayout orbital_pad_d_2_0_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_d_2_0(0); xextent: 16; yextent: 16; zextent: 160; } }
+switch (FEAT_AIRPORTTILES, SELF, orbital_pad_switch_2_0, animation_frame) { 1: orbital_pad_d_2_0_layout; orbital_pad_e_2_0_layout; }
+item(FEAT_AIRPORTTILES, orbital_pad_tile_2_0, 18) { property { substitute: 0; } graphics { default: orbital_pad_switch_2_0; } }
+spriteset(orbital_pad_e_0_1, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_0_1_1x.png") { [0, 0, 78, 32, -31, 0] }
+alternative_sprites(orbital_pad_e_0_1, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_0_1_2x.png") { [0, 0, 160, 65, -63, -1] }
+spritelayout orbital_pad_e_0_1_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_e_0_1(0); xextent: 16; yextent: 16; zextent: 160; } }
+spriteset(orbital_pad_d_0_1, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_0_1_1x.png") { [0, 0, 78, 36, -31, -4] }
+alternative_sprites(orbital_pad_d_0_1, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_0_1_2x.png") { [0, 0, 160, 71, -63, -7] }
+spritelayout orbital_pad_d_0_1_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_d_0_1(0); xextent: 16; yextent: 16; zextent: 160; } }
+switch (FEAT_AIRPORTTILES, SELF, orbital_pad_switch_0_1, animation_frame) { 1: orbital_pad_d_0_1_layout; orbital_pad_e_0_1_layout; }
+item(FEAT_AIRPORTTILES, orbital_pad_tile_0_1, 19) { property { substitute: 0; } graphics { default: orbital_pad_switch_0_1; } }
+spriteset(orbital_pad_e_1_1, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_1_1_1x.png") { [0, 0, 62, 32, -31, 0] }
+alternative_sprites(orbital_pad_e_1_1, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_1_1_2x.png") { [0, 0, 126, 64, -63, 0] }
+spritelayout orbital_pad_e_1_1_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_e_1_1(0); xextent: 16; yextent: 16; zextent: 160; } }
+spriteset(orbital_pad_d_1_1, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_1_1_1x.png") { [0, 0, 62, 32, -31, 0] }
+alternative_sprites(orbital_pad_d_1_1, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_1_1_2x.png") { [0, 0, 126, 64, -63, 0] }
+spritelayout orbital_pad_d_1_1_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_d_1_1(0); xextent: 16; yextent: 16; zextent: 160; } }
+switch (FEAT_AIRPORTTILES, SELF, orbital_pad_switch_1_1, animation_frame) { 1: orbital_pad_d_1_1_layout; orbital_pad_e_1_1_layout; }
+item(FEAT_AIRPORTTILES, orbital_pad_tile_1_1, 20) { property { substitute: 0; } graphics { default: orbital_pad_switch_1_1; } }
+spriteset(orbital_pad_e_2_1, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_2_1_1x.png") { [0, 0, 68, 34, -37, 0] }
+alternative_sprites(orbital_pad_e_2_1, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_2_1_2x.png") { [0, 0, 138, 69, -75, 0] }
+spritelayout orbital_pad_e_2_1_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_e_2_1(0); xextent: 16; yextent: 16; zextent: 160; } }
+spriteset(orbital_pad_d_2_1, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_2_1_1x.png") { [0, 0, 68, 34, -37, 0] }
+alternative_sprites(orbital_pad_d_2_1, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_2_1_2x.png") { [0, 0, 136, 69, -73, 0] }
+spritelayout orbital_pad_d_2_1_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_d_2_1(0); xextent: 16; yextent: 16; zextent: 160; } }
+switch (FEAT_AIRPORTTILES, SELF, orbital_pad_switch_2_1, animation_frame) { 1: orbital_pad_d_2_1_layout; orbital_pad_e_2_1_layout; }
+item(FEAT_AIRPORTTILES, orbital_pad_tile_2_1, 21) { property { substitute: 0; } graphics { default: orbital_pad_switch_2_1; } }
+spriteset(orbital_pad_e_0_2, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_0_2_1x.png") { [0, 0, 63, 40, -31, -8] }
+alternative_sprites(orbital_pad_e_0_2, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_0_2_2x.png") { [0, 0, 127, 80, -63, -16] }
+spritelayout orbital_pad_e_0_2_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_e_0_2(0); xextent: 16; yextent: 16; zextent: 160; } }
+spriteset(orbital_pad_d_0_2, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_0_2_1x.png") { [0, 0, 63, 40, -31, -8] }
+alternative_sprites(orbital_pad_d_0_2, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_0_2_2x.png") { [0, 0, 127, 80, -63, -16] }
+spritelayout orbital_pad_d_0_2_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_d_0_2(0); xextent: 16; yextent: 16; zextent: 160; } }
+switch (FEAT_AIRPORTTILES, SELF, orbital_pad_switch_0_2, animation_frame) { 1: orbital_pad_d_0_2_layout; orbital_pad_e_0_2_layout; }
+item(FEAT_AIRPORTTILES, orbital_pad_tile_0_2, 22) { property { substitute: 0; } graphics { default: orbital_pad_switch_0_2; } }
+spriteset(orbital_pad_e_1_2, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_1_2_1x.png") { [0, 0, 62, 32, -31, 0] }
+alternative_sprites(orbital_pad_e_1_2, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_1_2_2x.png") { [0, 0, 126, 64, -63, 0] }
+spritelayout orbital_pad_e_1_2_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_e_1_2(0); xextent: 16; yextent: 16; zextent: 160; } }
+spriteset(orbital_pad_d_1_2, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_1_2_1x.png") { [0, 0, 62, 32, -31, 0] }
+alternative_sprites(orbital_pad_d_1_2, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_1_2_2x.png") { [0, 0, 126, 64, -63, 0] }
+spritelayout orbital_pad_d_1_2_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_d_1_2(0); xextent: 16; yextent: 16; zextent: 160; } }
+switch (FEAT_AIRPORTTILES, SELF, orbital_pad_switch_1_2, animation_frame) { 1: orbital_pad_d_1_2_layout; orbital_pad_e_1_2_layout; }
+item(FEAT_AIRPORTTILES, orbital_pad_tile_1_2, 23) { property { substitute: 0; } graphics { default: orbital_pad_switch_1_2; } }
+spriteset(orbital_pad_e_2_2, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_2_2_1x.png") { [0, 0, 68, 34, -37, 0] }
+alternative_sprites(orbital_pad_e_2_2, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_2_2_2x.png") { [0, 0, 138, 68, -75, 0] }
+spritelayout orbital_pad_e_2_2_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_e_2_2(0); xextent: 16; yextent: 16; zextent: 160; } }
+spriteset(orbital_pad_d_2_2, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_2_2_1x.png") { [0, 0, 68, 34, -37, 0] }
+alternative_sprites(orbital_pad_d_2_2, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_2_2_2x.png") { [0, 0, 138, 68, -75, 0] }
+spritelayout orbital_pad_d_2_2_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_d_2_2(0); xextent: 16; yextent: 16; zextent: 160; } }
+switch (FEAT_AIRPORTTILES, SELF, orbital_pad_switch_2_2, animation_frame) { 1: orbital_pad_d_2_2_layout; orbital_pad_e_2_2_layout; }
+item(FEAT_AIRPORTTILES, orbital_pad_tile_2_2, 24) { property { substitute: 0; } graphics { default: orbital_pad_switch_2_2; } }
+spriteset(orbital_pad_e_0_3, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_0_3_1x.png") { [0, 0, 64, 35, -31, 0] }
+alternative_sprites(orbital_pad_e_0_3, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_0_3_2x.png") { [0, 0, 128, 70, -63, 0] }
+spritelayout orbital_pad_e_0_3_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_e_0_3(0); xextent: 16; yextent: 16; zextent: 160; } }
+spriteset(orbital_pad_d_0_3, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_0_3_1x.png") { [0, 0, 64, 35, -31, 0] }
+alternative_sprites(orbital_pad_d_0_3, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_0_3_2x.png") { [0, 0, 128, 70, -63, 0] }
+spritelayout orbital_pad_d_0_3_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_d_0_3(0); xextent: 16; yextent: 16; zextent: 160; } }
+switch (FEAT_AIRPORTTILES, SELF, orbital_pad_switch_0_3, animation_frame) { 1: orbital_pad_d_0_3_layout; orbital_pad_e_0_3_layout; }
+item(FEAT_AIRPORTTILES, orbital_pad_tile_0_3, 25) { property { substitute: 0; } graphics { default: orbital_pad_switch_0_3; } }
+spriteset(orbital_pad_e_1_3, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_1_3_1x.png") { [0, 0, 69, 35, -31, 0] }
+alternative_sprites(orbital_pad_e_1_3, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_1_3_2x.png") { [0, 0, 138, 69, -63, 0] }
+spritelayout orbital_pad_e_1_3_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_e_1_3(0); xextent: 16; yextent: 16; zextent: 160; } }
+spriteset(orbital_pad_d_1_3, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_1_3_1x.png") { [0, 0, 69, 35, -31, 0] }
+alternative_sprites(orbital_pad_d_1_3, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_1_3_2x.png") { [0, 0, 138, 69, -63, 0] }
+spritelayout orbital_pad_d_1_3_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_d_1_3(0); xextent: 16; yextent: 16; zextent: 160; } }
+switch (FEAT_AIRPORTTILES, SELF, orbital_pad_switch_1_3, animation_frame) { 1: orbital_pad_d_1_3_layout; orbital_pad_e_1_3_layout; }
+item(FEAT_AIRPORTTILES, orbital_pad_tile_1_3, 26) { property { substitute: 0; } graphics { default: orbital_pad_switch_1_3; } }
+spriteset(orbital_pad_e_2_3, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_2_3_1x.png") { [0, 0, 73, 36, -36, 0] }
+alternative_sprites(orbital_pad_e_2_3, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_e_2_3_2x.png") { [0, 0, 145, 71, -72, 0] }
+spritelayout orbital_pad_e_2_3_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_e_2_3(0); xextent: 16; yextent: 16; zextent: 160; } }
+spriteset(orbital_pad_d_2_3, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_2_3_1x.png") { [0, 0, 74, 36, -37, 0] }
+alternative_sprites(orbital_pad_d_2_3, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_d_2_3_2x.png") { [0, 0, 145, 71, -72, 0] }
+spritelayout orbital_pad_d_2_3_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: orbital_pad_d_2_3(0); xextent: 16; yextent: 16; zextent: 160; } }
+switch (FEAT_AIRPORTTILES, SELF, orbital_pad_switch_2_3, animation_frame) { 1: orbital_pad_d_2_3_layout; orbital_pad_e_2_3_layout; }
+item(FEAT_AIRPORTTILES, orbital_pad_tile_2_3, 27) { property { substitute: 0; } graphics { default: orbital_pad_switch_2_3; } }
+tilelayout orbital_spaceport_layout { rotation: DIRECTION_EAST;
     0, 0: orbital_pad_tile_0_0;
     1, 0: orbital_pad_tile_1_0;
     2, 0: orbital_pad_tile_2_0;
-    3, 0: orbital_pad_tile_3_0;
     0, 1: orbital_pad_tile_0_1;
     1, 1: orbital_pad_tile_1_1;
     2, 1: orbital_pad_tile_2_1;
-    3, 1: orbital_pad_tile_3_1;
     0, 2: orbital_pad_tile_0_2;
     1, 2: orbital_pad_tile_1_2;
     2, 2: orbital_pad_tile_2_2;
-    3, 2: orbital_pad_tile_3_2;
     0, 3: orbital_pad_tile_0_3;
     1, 3: orbital_pad_tile_1_3;
     2, 3: orbital_pad_tile_2_3;
-    3, 3: orbital_pad_tile_3_3;
 }
+spriteset(orbital_pad_preview, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/orbital_pad_preview_1x.png") { [0, 0, 96, 104, -48, -52] }
+alternative_sprites(orbital_pad_preview, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/orbital_pad_preview_2x.png") { [0, 0, 192, 209, -96, -105] }
+/* END generated spaceport pad */
 
 
 spriteset(distribution_hub_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/distribution_hub_1x.png") { [0, 0, 256, 186, -128, -58] }
 alternative_sprites(distribution_hub_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/distribution_hub_2x.png") { [0, 0, 512, 373, -256, -117] }
 spritelayout distribution_hub_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_sprite(0); xextent: 48; yextent: 64; zextent: 56; } }
-spritelayout distribution_hub_ground { ground { sprite: GROUNDSPRITE_CONCRETE; } }
-switch(FEAT_OBJECTS, SELF, distribution_hub_object_graphics, relative_pos) { 0: distribution_hub_layout; distribution_hub_ground; }
+/* BEGIN generated Distribution Centre tiles (tools/slice_distribution_hub.py) */
+spriteset(distribution_hub_tiles, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/distribution_hub_tiles_1x.png") {
+    [0, 0, 183, 90, -92, -58]
+    [184, 0, 99, 62, -68, -30]
+    [284, 0, 69, 50, -38, -18]
+    [354, 0, 63, 36, -32, -3]
+    [418, 0, 123, 62, -31, -30]
+    [542, 0, 62, 32, -31, 0]
+    [605, 0, 62, 32, -31, 0]
+    [668, 0, 65, 33, -34, 0]
+    [734, 0, 95, 62, -31, -30]
+    [830, 0, 62, 32, -31, 0]
+    [893, 0, 62, 32, -31, 0]
+    [956, 0, 65, 33, -34, 0]
+    [1022, 0, 63, 49, -31, -16]
+    [1086, 0, 64, 33, -31, 0]
+    [1151, 0, 64, 33, -31, 0]
+    [1216, 0, 68, 32, -34, 0]
+}
+alternative_sprites(distribution_hub_tiles, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/distribution_hub_tiles_2x.png") {
+    [0, 0, 365, 181, -183, -117]
+    [366, 0, 194, 123, -131, -59]
+    [561, 0, 136, 97, -73, -33]
+    [698, 0, 127, 68, -64, -4]
+    [826, 0, 245, 123, -63, -59]
+    [1072, 0, 126, 64, -63, 0]
+    [1199, 0, 126, 64, -63, 0]
+    [1326, 0, 129, 65, -66, 0]
+    [1456, 0, 191, 123, -63, -59]
+    [1648, 0, 126, 64, -63, 0]
+    [1775, 0, 126, 64, -63, 0]
+    [1902, 0, 128, 65, -65, 0]
+    [2031, 0, 127, 96, -63, -32]
+    [2159, 0, 129, 65, -63, 0]
+    [2289, 0, 128, 65, -63, 0]
+    [2418, 0, 131, 64, -65, 0]
+}
+spritelayout distribution_hub_tile_0_0 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_1_0 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(1); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_2_0 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(2); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_3_0 { ground { sprite: GROUNDSPRITE_CONCRETE; } childsprite { sprite: distribution_hub_tiles(3); } }
+spritelayout distribution_hub_tile_0_1 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(4); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_1_1 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(5); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_2_1 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(6); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_3_1 { ground { sprite: GROUNDSPRITE_CONCRETE; } childsprite { sprite: distribution_hub_tiles(7); } }
+spritelayout distribution_hub_tile_0_2 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(8); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_1_2 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(9); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_2_2 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(10); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_3_2 { ground { sprite: GROUNDSPRITE_CONCRETE; } childsprite { sprite: distribution_hub_tiles(11); } }
+spritelayout distribution_hub_tile_0_3 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(12); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_1_3 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(13); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_2_3 { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_tiles(14); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 56; } }
+spritelayout distribution_hub_tile_3_3 { ground { sprite: GROUNDSPRITE_CONCRETE; } childsprite { sprite: distribution_hub_tiles(15); } }
+switch(FEAT_OBJECTS, SELF, distribution_hub_object_graphics, relative_pos) { 0x0000: distribution_hub_tile_0_0; 0x0001: distribution_hub_tile_1_0; 0x0002: distribution_hub_tile_2_0; 0x0100: distribution_hub_tile_0_1; 0x0101: distribution_hub_tile_1_1; 0x0102: distribution_hub_tile_2_1; 0x0200: distribution_hub_tile_0_2; 0x0201: distribution_hub_tile_1_2; 0x0202: distribution_hub_tile_2_2; 0x0300: distribution_hub_tile_0_3; 0x0301: distribution_hub_tile_1_3; 0x0302: distribution_hub_tile_2_3; distribution_hub_tile_0_0; }
+switch(FEAT_ROADSTOPS, SELF, distribution_hub_bay_graphics, animation_frame) { 0: distribution_hub_tile_3_0; 1: distribution_hub_tile_3_1; 2: distribution_hub_tile_3_2; 3: distribution_hub_tile_3_3; distribution_hub_tile_3_0; }
+/* END generated Distribution Centre tiles */
 item(FEAT_OBJECTS, distribution_warehouse, 0) { property { class: "FLHB"; name: string(STR_DISTRIBUTION_WAREHOUSE); climates_available: ALL_CLIMATES; size: [3, 4]; build_cost_multiplier: 4; remove_cost_multiplier: 3; introduction_date: date(2022, 1, 1); end_of_life_date: 0xFFFFFFFF; object_flags: bitmask(OBJ_FLAG_NO_FOUNDATIONS); height: 56; num_views: 1; badges: ["fl_format/2", "fl_id/distribution_warehouse"]; } graphics { default: distribution_hub_object_graphics; purchase: distribution_hub_layout; tile_check: ((extra_callback_info1 & bitmask(0,1,2,3,4)) == 0) ? CB_RESULT_LOCATION_ALLOW : CB_RESULT_LOCATION_DISALLOW; } }
-item(FEAT_ROADSTOPS, distribution_centre, 0) { property { class: "FLHB"; classname: string(STR_DISTRIBUTION_CENTRE); name: string(STR_DISTRIBUTION_CENTRE); availability_type: 1; draw_mode: 0; general_flags: bitmask(2,4,5); badges: ["fl_format/2", "fl_id/distribution_centre"]; } graphics { default: distribution_hub_ground; purchase: distribution_hub_layout; } }
+item(FEAT_ROADSTOPS, distribution_centre, 0) { property { class: "FLHB"; classname: string(STR_DISTRIBUTION_CENTRE); name: string(STR_DISTRIBUTION_CENTRE); availability_type: 1; draw_mode: 0; general_flags: bitmask(2,4,5); badges: ["fl_format/2", "fl_id/distribution_centre"]; } graphics { default: distribution_hub_bay_graphics; purchase: distribution_hub_layout; } }
 /* END GENERATED FUNCTIONAL SPRITES */
 
 /* Cargo drone uses the supplied multirotor art, with fixed yaw during translation. */
@@ -524,8 +589,295 @@ item(FEAT_AIRPORTS, drone_port, 1) {
     }
 }
 
-/* Hyperloop track. A track type of its own, with no fallback: nothing else runs in the tube.
- * Placeholder graphics: plain rail, until the tube art exists. */
+/* BEGIN generated Hyperloop sprites (tools/hyperloop/make_hyperloop_art.py) */
+spriteset(hyperloop_track_underlay_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/track_underlay_1x.png") {
+    [0, 0, 56, 29, -28, 1]
+    [57, 0, 56, 29, -28, 1]
+    [114, 0, 32, 17, -16, -1]
+    [147, 0, 32, 17, -16, 15]
+    [180, 0, 34, 19, -1, 5]
+    [215, 0, 34, 19, -33, 5]
+    [250, 0, 56, 37, -28, -7]
+    [307, 0, 56, 21, -28, 1]
+    [364, 0, 56, 21, -28, 1]
+    [421, 0, 56, 37, -28, -7]
+    [478, 0, 54, 29, -27, 1]
+    [533, 0, 54, 28, -27, 2]
+    [588, 0, 54, 28, -27, 2]
+    [643, 0, 54, 28, -27, 2]
+    [698, 0, 54, 28, -27, 2]
+    [753, 0, 54, 28, -27, 2]
+}
+alternative_sprites(hyperloop_track_underlay_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/track_underlay_2x.png") {
+    [0, 0, 112, 58, -56, 2]
+    [113, 0, 112, 58, -56, 2]
+    [226, 0, 64, 36, -32, -3]
+    [291, 0, 64, 36, -32, 29]
+    [356, 0, 68, 39, -2, 9]
+    [425, 0, 68, 39, -66, 9]
+    [494, 0, 112, 74, -56, -14]
+    [607, 0, 112, 42, -56, 2]
+    [720, 0, 112, 42, -56, 2]
+    [833, 0, 112, 74, -56, -14]
+    [946, 0, 110, 58, -55, 2]
+    [1057, 0, 110, 56, -55, 4]
+    [1168, 0, 110, 56, -55, 4]
+    [1279, 0, 110, 56, -55, 4]
+    [1390, 0, 110, 56, -55, 4]
+    [1501, 0, 110, 56, -55, 4]
+}
+spriteset(hyperloop_track_overlay_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/track_overlay_1x.png") {
+    [0, 0, 48, 26, -24, 1]
+    [49, 0, 48, 26, -24, 1]
+    [98, 0, 32, 14, -16, -1]
+    [131, 0, 32, 14, -16, 15]
+    [164, 0, 22, 18, 5, 5]
+    [187, 0, 22, 18, -27, 5]
+    [210, 0, 48, 34, -24, -7]
+    [259, 0, 48, 18, -24, 1]
+    [308, 0, 48, 18, -24, 1]
+    [357, 0, 48, 34, -24, -7]
+    [406, 0, 1, 1, 0, 0]
+    [408, 0, 1, 1, 0, 0]
+    [410, 0, 1, 1, 0, 0]
+    [412, 0, 1, 1, 0, 0]
+    [414, 0, 1, 1, 0, 0]
+    [416, 0, 1, 1, 0, 0]
+}
+alternative_sprites(hyperloop_track_overlay_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/track_overlay_2x.png") {
+    [0, 0, 96, 52, -48, 2]
+    [97, 0, 96, 52, -48, 2]
+    [194, 0, 64, 26, -32, -1]
+    [259, 0, 64, 26, -32, 31]
+    [324, 0, 46, 37, 9, 9]
+    [371, 0, 46, 37, -55, 9]
+    [418, 0, 96, 68, -48, -14]
+    [515, 0, 96, 36, -48, 2]
+    [612, 0, 96, 36, -48, 2]
+    [709, 0, 96, 68, -48, -14]
+    [806, 0, 1, 1, 0, 0]
+    [808, 0, 1, 1, 0, 0]
+    [810, 0, 1, 1, 0, 0]
+    [812, 0, 1, 1, 0, 0]
+    [814, 0, 1, 1, 0, 0]
+    [816, 0, 1, 1, 0, 0]
+}
+spriteset(hyperloop_bridge_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/bridge_1x.png") {
+    [0, 0, 48, 26, -24, 1]
+    [49, 0, 48, 26, -24, 1]
+    [98, 0, 48, 34, -24, -7]
+    [147, 0, 48, 18, -24, 1]
+    [196, 0, 48, 18, -24, 1]
+    [245, 0, 48, 34, -24, -7]
+    [294, 0, 52, 33, -26, -6]
+    [347, 0, 37, 26, -36, -14]
+    [385, 0, 7, 11, -18, -1]
+    [393, 0, 52, 33, -26, -6]
+    [446, 0, 37, 26, -1, -14]
+    [484, 0, 7, 11, 11, -1]
+    [492, 0, 56, 36, -28, -6]
+    [549, 0, 56, 36, -28, -6]
+    [606, 0, 56, 36, -28, -6]
+    [663, 0, 56, 36, -28, -6]
+    [720, 0, 55, 28, -28, 2]
+    [776, 0, 55, 28, -27, 2]
+    [832, 0, 55, 36, -27, -6]
+    [888, 0, 55, 36, -28, -6]
+}
+alternative_sprites(hyperloop_bridge_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/bridge_2x.png") {
+    [0, 0, 96, 52, -48, 2]
+    [97, 0, 96, 52, -48, 2]
+    [194, 0, 96, 68, -48, -14]
+    [291, 0, 96, 36, -48, 2]
+    [388, 0, 96, 36, -48, 2]
+    [485, 0, 96, 68, -48, -14]
+    [582, 0, 106, 66, -53, -11]
+    [689, 0, 74, 52, -72, -28]
+    [764, 0, 14, 23, -36, -2]
+    [779, 0, 106, 66, -53, -11]
+    [886, 0, 74, 52, -2, -28]
+    [961, 0, 14, 23, 22, -2]
+    [976, 0, 112, 72, -56, -12]
+    [1089, 0, 112, 72, -56, -12]
+    [1202, 0, 112, 72, -56, -12]
+    [1315, 0, 112, 72, -56, -12]
+    [1428, 0, 111, 56, -56, 4]
+    [1540, 0, 111, 56, -55, 4]
+    [1652, 0, 111, 72, -55, -12]
+    [1764, 0, 111, 72, -56, -12]
+}
+spriteset(hyperloop_tunnel_ground_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/tunnel_ground_1x.png") {
+    [0, 0, 62, 32, -31, 0]
+    [63, 0, 62, 32, -31, 0]
+    [126, 0, 62, 32, -31, 0]
+    [189, 0, 62, 32, -31, 0]
+}
+alternative_sprites(hyperloop_tunnel_ground_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/tunnel_ground_2x.png") {
+    [0, 0, 126, 64, -63, 0]
+    [127, 0, 126, 64, -63, 0]
+    [254, 0, 126, 64, -63, 0]
+    [381, 0, 126, 64, -63, 0]
+}
+spriteset(hyperloop_tunnel_portal_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/tunnel_portal_1x.png", "gfx/hyperloop/tunnel_portal_1x_mask.png") {
+    [0, 0, 46, 23, -21, -27]
+    [47, 0, 47, 31, -21, -33]
+    [95, 0, 47, 31, -26, -33]
+    [143, 0, 46, 23, -25, -27]
+}
+alternative_sprites(hyperloop_tunnel_portal_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/tunnel_portal_2x.png", "gfx/hyperloop/tunnel_portal_2x_mask.png") {
+    [0, 0, 93, 47, -42, -55]
+    [94, 0, 93, 62, -42, -65]
+    [188, 0, 93, 62, -51, -65]
+    [282, 0, 93, 47, -51, -55]
+}
+spriteset(hyperloop_depots_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/depots_1x.png", "gfx/hyperloop/depots_1x_mask.png") {
+    [0, 0, 1, 1, 0, 0]
+    [2, 0, 56, 38, -6, -23]
+    [59, 0, 1, 1, 0, 0]
+    [61, 0, 56, 38, -50, -23]
+    [118, 0, 56, 38, -50, -23]
+    [175, 0, 56, 38, -6, -23]
+}
+alternative_sprites(hyperloop_depots_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/depots_2x.png", "gfx/hyperloop/depots_2x_mask.png") {
+    [0, 0, 1, 1, 0, 0]
+    [2, 0, 112, 76, -12, -46]
+    [115, 0, 1, 1, 0, 0]
+    [117, 0, 112, 76, -100, -46]
+    [230, 0, 112, 75, -100, -45]
+    [343, 0, 112, 75, -12, -45]
+}
+spriteset(hyperloop_fences_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/fences_1x.png") {
+    [0, 0, 1, 1, 0, 0]
+    [2, 0, 1, 1, 0, 0]
+    [4, 0, 1, 1, 0, 0]
+    [6, 0, 1, 1, 0, 0]
+    [8, 0, 1, 1, 0, 0]
+    [10, 0, 1, 1, 0, 0]
+    [12, 0, 1, 1, 0, 0]
+    [14, 0, 1, 1, 0, 0]
+    [16, 0, 1, 1, 0, 0]
+    [18, 0, 1, 1, 0, 0]
+    [20, 0, 1, 1, 0, 0]
+    [22, 0, 1, 1, 0, 0]
+    [24, 0, 1, 1, 0, 0]
+    [26, 0, 1, 1, 0, 0]
+    [28, 0, 1, 1, 0, 0]
+    [30, 0, 1, 1, 0, 0]
+}
+alternative_sprites(hyperloop_fences_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/fences_2x.png") {
+    [0, 0, 1, 1, 0, 0]
+    [2, 0, 1, 1, 0, 0]
+    [4, 0, 1, 1, 0, 0]
+    [6, 0, 1, 1, 0, 0]
+    [8, 0, 1, 1, 0, 0]
+    [10, 0, 1, 1, 0, 0]
+    [12, 0, 1, 1, 0, 0]
+    [14, 0, 1, 1, 0, 0]
+    [16, 0, 1, 1, 0, 0]
+    [18, 0, 1, 1, 0, 0]
+    [20, 0, 1, 1, 0, 0]
+    [22, 0, 1, 1, 0, 0]
+    [24, 0, 1, 1, 0, 0]
+    [26, 0, 1, 1, 0, 0]
+    [28, 0, 1, 1, 0, 0]
+    [30, 0, 1, 1, 0, 0]
+}
+spriteset(hyperloop_terminal_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/terminal_1x.png", "gfx/hyperloop/terminal_1x_mask.png") {
+    [0, 0, 39, 30, -32, -11]
+    [40, 0, 66, 45, -55, -24]
+    [107, 0, 39, 30, -7, -11]
+    [147, 0, 66, 45, -11, -24]
+}
+alternative_sprites(hyperloop_terminal_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/terminal_2x.png", "gfx/hyperloop/terminal_2x_mask.png") {
+    [0, 0, 78, 61, -64, -22]
+    [79, 0, 132, 90, -110, -48]
+    [212, 0, 78, 61, -14, -22]
+    [291, 0, 132, 90, -22, -48]
+}
+spriteset(hyperloop_pod_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/pod_1x.png", "gfx/hyperloop/pod_1x_mask.png") {
+    [0, 0, 14, 15, -7, -13]
+    [15, 0, 23, 14, -12, -12]
+    [39, 0, 26, 11, -13, -11]
+    [66, 0, 22, 15, -12, -13]
+    [89, 0, 14, 15, -7, -14]
+    [104, 0, 22, 15, -10, -13]
+    [127, 0, 26, 11, -13, -11]
+    [154, 0, 23, 14, -11, -12]
+}
+alternative_sprites(hyperloop_pod_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/pod_2x.png", "gfx/hyperloop/pod_2x_mask.png") {
+    [0, 0, 30, 30, -15, -27]
+    [31, 0, 47, 30, -24, -25]
+    [79, 0, 52, 19, -26, -22]
+    [132, 0, 47, 32, -24, -27]
+    [180, 0, 30, 30, -15, -29]
+    [211, 0, 47, 32, -23, -27]
+    [259, 0, 52, 19, -26, -22]
+    [312, 0, 47, 30, -23, -25]
+}
+spriteset(hyperloop_passenger_capsule_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/passenger_capsule_1x.png", "gfx/hyperloop/passenger_capsule_1x_mask.png") {
+    [0, 0, 14, 17, -7, -15]
+    [15, 0, 24, 16, -12, -14]
+    [40, 0, 26, 11, -13, -11]
+    [67, 0, 24, 16, -12, -14]
+    [92, 0, 14, 17, -7, -15]
+    [107, 0, 24, 16, -12, -14]
+    [132, 0, 26, 11, -13, -11]
+    [159, 0, 24, 16, -12, -14]
+}
+alternative_sprites(hyperloop_passenger_capsule_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/passenger_capsule_2x.png", "gfx/hyperloop/passenger_capsule_2x_mask.png") {
+    [0, 0, 30, 33, -15, -29]
+    [31, 0, 50, 32, -25, -27]
+    [82, 0, 52, 19, -26, -22]
+    [135, 0, 50, 32, -25, -27]
+    [186, 0, 30, 33, -15, -29]
+    [217, 0, 50, 32, -25, -27]
+    [268, 0, 52, 19, -26, -22]
+    [321, 0, 50, 32, -25, -27]
+}
+spriteset(hyperloop_mail_capsule_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/mail_capsule_1x.png", "gfx/hyperloop/mail_capsule_1x_mask.png") {
+    [0, 0, 14, 17, -7, -15]
+    [15, 0, 24, 16, -12, -14]
+    [40, 0, 26, 11, -13, -11]
+    [67, 0, 24, 16, -12, -14]
+    [92, 0, 14, 17, -7, -15]
+    [107, 0, 24, 16, -12, -14]
+    [132, 0, 26, 11, -13, -11]
+    [159, 0, 24, 16, -12, -14]
+}
+alternative_sprites(hyperloop_mail_capsule_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/mail_capsule_2x.png", "gfx/hyperloop/mail_capsule_2x_mask.png") {
+    [0, 0, 30, 33, -15, -29]
+    [31, 0, 50, 32, -25, -27]
+    [82, 0, 52, 19, -26, -22]
+    [135, 0, 50, 32, -25, -27]
+    [186, 0, 30, 33, -15, -29]
+    [217, 0, 50, 32, -25, -27]
+    [268, 0, 52, 19, -26, -22]
+    [321, 0, 50, 32, -25, -27]
+}
+spriteset(hyperloop_gui_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/gui_1x.png") {
+    [0, 0, 20, 20, 0, 0]
+    [21, 0, 20, 20, 0, 0]
+    [42, 0, 20, 20, 0, 0]
+    [63, 0, 20, 20, 0, 0]
+    [84, 0, 20, 20, 0, 0]
+    [105, 0, 20, 20, 0, 0]
+    [126, 0, 20, 20, 0, 0]
+    [147, 0, 20, 20, 0, 0]
+    [168, 0, 32, 32, 0, 0]
+    [201, 0, 32, 32, 0, 0]
+    [234, 0, 32, 32, 0, 0]
+    [267, 0, 32, 32, 0, 0]
+    [300, 0, 32, 32, 0, 0]
+    [333, 0, 32, 32, 0, 0]
+    [366, 0, 32, 32, 0, 0]
+    [399, 0, 32, 32, 0, 0]
+}
+/* END generated Hyperloop sprites */
+
+/* Hyperloop track. A track type of its own, with no fallback: nothing else runs in the Hyperloop.
+ * All its graphics are drawn in code by tools/hyperloop/make_hyperloop_art.py: the guideway, the viaduct
+ * (its deck surface and, read by the game for the dedicated viaduct bridge, its structure), the tube portals,
+ * the depot, and the toolbar icons and cursors. */
 item(FEAT_RAILTYPES, hyperloop_track) {
     property {
         label:                    "HYPL";
@@ -546,9 +898,49 @@ item(FEAT_RAILTYPES, hyperloop_track) {
         sort_order:               0x50;
         badges: ["fl_format/2", "fl_id/hyperloop_track", "fl_tech/hyperloop"];
     }
+    graphics {
+        gui:             hyperloop_gui_sprites;
+        underlay:        hyperloop_track_underlay_sprites;
+        track_overlay:   hyperloop_track_overlay_sprites;
+        tunnels:         hyperloop_tunnel_ground_sprites;
+        tunnel_overlay:  hyperloop_tunnel_portal_sprites;
+        bridge_surfaces: hyperloop_bridge_sprites;
+        depots:          hyperloop_depots_sprites;
+        fences:          hyperloop_fences_sprites;
+    }
 }
 
-/* Propulsion pod: pulls the capsules. Placeholder graphics: the base-game Lev4 'Chimaera' maglev. */
+/* Hyperloop terminal. A glass-roofed platform hall over the guideway, with company-colour fascias along the eaves
+ * and glowing platform edges; pods stay visible under the translucent roof. The game builds it for every Hyperloop
+ * station, whichever station type was chosen, and only on Hyperloop track (src/future_logistics/hyperloop.cpp). */
+spritelayout hyperloop_terminal_x {
+    ground { sprite: 1012; }
+    building { sprite: hyperloop_terminal_sprites(0); xoffset: 0; yoffset: 0;  zoffset: 0; xextent: 16; yextent: 5; zextent: 18;
+               recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; }
+    building { sprite: hyperloop_terminal_sprites(1); xoffset: 0; yoffset: 11; zoffset: 0; xextent: 16; yextent: 5; zextent: 18;
+               recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; }
+}
+spritelayout hyperloop_terminal_y {
+    ground { sprite: 1011; }
+    building { sprite: hyperloop_terminal_sprites(2); xoffset: 0;  yoffset: 0; zoffset: 0; xextent: 5; yextent: 16; zextent: 18;
+               recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; }
+    building { sprite: hyperloop_terminal_sprites(3); xoffset: 11; yoffset: 0; zoffset: 0; xextent: 5; yextent: 16; zextent: 18;
+               recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; }
+}
+item(FEAT_STATIONS, hyperloop_terminal_station, 0) {
+    property {
+        class:     "HYPL";
+        classname: string(STR_HYPERLOOP_TERMINAL_CLASS);
+        name:      string(STR_HYPERLOOP_TERMINAL);
+        badges:    ["fl_format/2", "fl_tech/hyperloop"];
+    }
+    graphics {
+        sprite_layouts: [hyperloop_terminal_x, hyperloop_terminal_y];
+        default: hyperloop_terminal_sprites;
+    }
+}
+
+/* Propulsion pod: pulls the capsules. Drawn by tools/hyperloop/make_hyperloop_art.py, in company colours. */
 item(FEAT_TRAINS, hyperloop_pod, 120) {
     property {
         name:                string(STR_HYPERLOOP_POD);
@@ -558,7 +950,7 @@ item(FEAT_TRAINS, hyperloop_pod, 120) {
         vehicle_life:        30;
         reliability_decay:   10;
         track_type:          HYPL;
-        sprite_id:           31;
+        sprite_id:           SPRITE_ID_NEW_TRAIN;
         engine_class:        ENGINE_CLASS_MAGLEV;
         speed:               3219 km/h;
         power:               12000 kW;
@@ -570,9 +962,10 @@ item(FEAT_TRAINS, hyperloop_pod, 120) {
         cargo_capacity:      0;
         badges: ["fl_format/2", "fl_id/hyperloop_pod", "fl_tech/hyperloop", "role/express", "power/electric"];
     }
+    graphics { default: hyperloop_pod_sprites; }
 }
 
-/* Passenger capsule. Placeholder graphics: the base-game maglev passenger carriage. */
+/* Passenger capsule. Drawn by tools/hyperloop/make_hyperloop_art.py, in company colours. */
 item(FEAT_TRAINS, hyperloop_passenger_capsule, 121) {
     property {
         name:                string(STR_HYPERLOOP_PASSENGER_CAPSULE);
@@ -581,7 +974,7 @@ item(FEAT_TRAINS, hyperloop_passenger_capsule, 121) {
         model_life:          40;
         vehicle_life:        30;
         track_type:          HYPL;
-        sprite_id:           60;
+        sprite_id:           SPRITE_ID_NEW_TRAIN;
         power:               0;
         weight:              12 ton;
         cost_factor:         60;
@@ -590,9 +983,10 @@ item(FEAT_TRAINS, hyperloop_passenger_capsule, 121) {
         refittable_cargo_classes: bitmask(CC_PASSENGERS);
         badges: ["fl_format/2", "fl_id/hyperloop_passenger_capsule", "fl_tech/hyperloop", "role/passenger"];
     }
+    graphics { default: hyperloop_passenger_capsule_sprites; }
 }
 
-/* Mail capsule. Placeholder graphics: the base-game maglev mail van. */
+/* Mail capsule. Drawn by tools/hyperloop/make_hyperloop_art.py, in company colours. */
 item(FEAT_TRAINS, hyperloop_mail_capsule, 122) {
     property {
         name:                string(STR_HYPERLOOP_MAIL_CAPSULE);
@@ -601,7 +995,7 @@ item(FEAT_TRAINS, hyperloop_mail_capsule, 122) {
         model_life:          40;
         vehicle_life:        30;
         track_type:          HYPL;
-        sprite_id:           62;
+        sprite_id:           SPRITE_ID_NEW_TRAIN;
         power:               0;
         weight:              10 ton;
         cost_factor:         50;
@@ -610,6 +1004,7 @@ item(FEAT_TRAINS, hyperloop_mail_capsule, 122) {
         refittable_cargo_classes: bitmask(CC_MAIL, CC_EXPRESS);
         badges: ["fl_format/2", "fl_id/hyperloop_mail_capsule", "fl_tech/hyperloop", "role/mail"];
     }
+    graphics { default: hyperloop_mail_capsule_sprites; }
 }
 
 /* Reusable rocket: dedicated orbital controller and supplied vertical rocket artwork. */
@@ -630,7 +1025,7 @@ item(FEAT_AIRCRAFT, rocket, 65) {
         acceleration:                 40;
         passenger_capacity:           200;
         mail_capacity:                40;
-        refittable_cargo_classes:     bitmask(CC_PASSENGERS);
+        refittable_cargo_classes:     bitmask(CC_PASSENGERS, CC_MAIL);
         range:                        0;
         sound_effect:                 SOUND_TAKEOFF_JET_FAST;
         badges: ["fl_format/2", "fl_id/rocket", "fl_tech/rocket", "fl_needs/launchpad",
@@ -654,16 +1049,23 @@ item(FEAT_AIRPORTS, city_airport_unchanged, 2) {
 if (!(grf_current_status("FL\01\02") || grf_future_status("FL\01\02"))) {
     item(FEAT_AIRPORTS, country_airport_unchanged, 4) { property { override: 0; } }
 }
-item(FEAT_AIRPORTS, spaceport, 5) {
-    property {
-        override: 0;
-        name: string(STR_SPACEPORT);
-        layouts: [orbital_spaceport_layout];
-        years_available: [2050, 65535];
-        catchment_area: 6;
-        noise_level: 20;
-        maintenance_cost: 60;
-        badges: ["fl_format/2", "fl_id/spaceport", "fl_tech/rocket", "fl_provides/launchpad"];
+/* The spaceport. The Starship NewGRF defines the same launch pad as its launch site, so when both packs are
+ * enabled only that one is offered and players never see two identical spaceports. */
+if (!(grf_current_status("FL\01\02") || grf_future_status("FL\01\02"))) {
+    item(FEAT_AIRPORTS, spaceport, 5) {
+        property {
+            override: 0;
+            name: string(STR_SPACEPORT);
+            layouts: [orbital_spaceport_layout];
+            years_available: [2050, 65535];
+            catchment_area: 12;
+            noise_level: 20;
+            maintenance_cost: 60;
+            badges: ["fl_format/2", "fl_id/spaceport", "fl_tech/rocket", "fl_provides/launchpad"];
+        }
+        graphics {
+            default: orbital_pad_preview;
+        }
     }
 }
 

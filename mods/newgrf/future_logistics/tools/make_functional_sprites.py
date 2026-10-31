@@ -91,21 +91,18 @@ def drone():
 
 
 def orbital_assets():
-    """Use exactly the same supplied launch scenery and vehicle in both GRFs."""
+    """Use exactly the same Starship sprites in both GRFs. The launch pad itself is written into both GRFs by
+    ../tools/make_spaceport_art.py."""
     import re
     import shutil
     source = ROOT.parent / 'starship'
     nml = (source / 'starship.nml').read_text()
-    body = nml[nml.index('spriteset(starship_'):nml.index('item(FEAT_AIRCRAFT, starship,')]
-    body = body.replace('starship_', 'orbital_rocket_')
-    pad = nml[nml.index('spriteset(pad_sprite_0_0,'):nml.index('/* The first NewGRF airport')]
-    pad = pad.replace('pad_', 'orbital_pad_').replace('starship_orbital_pad_layout', 'orbital_spaceport_layout')
-    pad = re.sub(r'(item\(FEAT_AIRPORTTILES, [^,]+, )(\d+)', lambda m: m[1] + str(int(m[2]) + 16), pad)
-    for name in re.findall(r'"gfx/([^"]+)"', body):
+    body = nml[nml.index('spriteset(starship_body'):nml.index('item(FEAT_AIRCRAFT, starship,')]
+    body = body.replace('starship_', 'orbital_rocket_').replace('gfx/orbital_rocket_idle', 'gfx/starship_idle')
+    body = body.replace('gfx/orbital_rocket_lit', 'gfx/starship_lit')
+    for name in set(re.findall(r'"gfx/([^"]+)"', body)):
         shutil.copy(source / 'gfx' / name, GFX / name)
-    for original in (source / 'gfx').glob('pad_[0-3]_[0-3]_[12]x.png'):
-        shutil.copy(original, GFX / original.name.replace('pad_', 'orbital_pad_'))
-    (GFX / 'orbital_rocket.nml').write_text(body + pad)
+    (GFX / 'orbital_rocket.nml').write_text(body)
 
 
 def distribution_hub():

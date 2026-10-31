@@ -297,6 +297,9 @@ ConstructionResult TryAirPairs(const TechLibrary &library, const ServiceSpec &sp
 			const auto origins = FindAirportSites(pair.a, airport_spec, cargo, false);
 			const auto vehicle_id = ReadItemTags(Engine::Get(record->engine)->badges).id;
 			const bool orbital = vehicle_id == "starship" || vehicle_id == "rocket";
+			/* Rivals fly orbital shuttles with passengers only: a shuttle launches when full, and a town's mail
+			 * would take months to fill one. Players may still refit theirs to mail. */
+			if (orbital && !IsCargoInClass(cargo, CargoClass::Passengers)) continue;
 			const auto destinations = orbital ? std::vector<TileIndex>{pair.b.Centre()} : FindAirportSites(pair.b, airport_spec, cargo, true);
 			for (TileIndex a : origins) {
 				for (TileIndex b : destinations) {

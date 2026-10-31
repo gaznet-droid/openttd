@@ -22,6 +22,7 @@ void ModifyStationRatingAround(TileIndex tile, Owner owner, int amount, uint rad
 
 void ShowStationViewWindow(StationID station);
 void UpdateAllStationVirtCoords();
+void NumberDistributionHubBays();
 void ClearAllStationCachedNames();
 
 CommandCost CheckStationSpread(TileArea area, const TileArea &new_area);

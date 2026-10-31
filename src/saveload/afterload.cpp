@@ -3459,6 +3459,9 @@ bool AfterLoadGame()
 		}
 	}
 
+	/* Distribution Centres built before their bays were numbered. */
+	NumberDistributionHubBays();
+
 	return true;
 }
 

@@ -1701,6 +1701,9 @@ void CheckOrders(const Vehicle *v)
 	/* Ignore crashed vehicles. */
 	if (v->vehstatus.Test(VehState::Crashed)) return;
 
+	/* Orbital shuttles fly a fixed mission from their home spaceport; a single order is all they need. */
+	if (v->type == VehicleType::Aircraft && Aircraft::From(v)->acache.orbital_shuttle) return;
+
 	/* Maybe ignore stopped vehicles. */
 	if (_settings_client.gui.order_review_system == OrderReviewSystem::ExcludeStopped && v->vehstatus.Test(VehState::Stopped)) return;
 
