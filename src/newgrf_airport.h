@@ -166,6 +166,9 @@ struct AirportResolverObject : public ResolverObject {
 	uint32_t GetDebugID() const override;
 };
 
+struct Airport;
+struct Station;
+Airport &AirportOfScope(Station *st, TileIndex tile);
 StringID GetAirportTextCallback(const AirportSpec *as, uint8_t layout, uint16_t callback);
 
 #endif /* NEWGRF_AIRPORT_H */

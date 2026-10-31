@@ -610,7 +610,9 @@ CommandCost CmdStartStopVehicle(DoCommandFlags flags, VehicleID veh_id, bool eva
 			Aircraft *a = Aircraft::From(v);
 			if (v->vehstatus.Test(VehState::Stopped)) {
 				const Station *st = Station::GetIfValid(a->targetairport);
-				if (st != nullptr && !AircraftMeetsAirportRequirements(v->GetEngine(), st->airport.GetSpec())) {
+				/* The station's airport, or for orbital shuttles one of its spaceport pads, must take the aircraft. */
+				if (st != nullptr && !AircraftMeetsAirportRequirements(v->GetEngine(), st->airport.GetSpec()) &&
+						std::ranges::none_of(st->spaceports, [v](const Airport &pad) { return AircraftMeetsAirportRequirements(v->GetEngine(), pad.GetSpec()); })) {
 					return CommandCost(STR_ERROR_AIRPORT_MISSING_REQUIRED_FACILITIES);
 				}
 			}

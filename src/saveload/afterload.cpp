@@ -1461,6 +1461,17 @@ bool AfterLoadGame()
 		c->avail_roadtypes = GetCompanyRoadTypes(c->index);
 	}
 
+	if (IsSavegameVersionBefore(SaveLoadVersion::FutureLogisticsSpaceportPads)) {
+		/* A spaceport used to be its station's airport; it is now the station's first spaceport pad, beside which an
+		 * ordinary airport and more pads can be built. */
+		for (Station *st : Station::Iterate()) {
+			if (st->airport.IsEmpty() || !IsSpaceportType(st->airport.type)) continue;
+			Airport &pad = st->spaceports.emplace_back(st->airport);
+			pad.last_orbital_launch_month = st->last_orbital_launch_month;
+			st->airport = Airport();
+		}
+	}
+
 	AfterLoadStations();
 
 	/* Time starts at 0 instead of 1920.

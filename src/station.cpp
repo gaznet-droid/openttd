@@ -135,6 +135,7 @@ Station::~Station()
 
 	/* Clear the persistent storage. */
 	delete this->airport.psa;
+	for (Airport &pad : this->spaceports) delete pad.psa;
 
 	if (this->owner == OWNER_NONE) {
 		/* Invalidate all in case of oil rigs. */
@@ -319,7 +320,7 @@ static uint GetTileCatchmentRadius(TileIndex tile, const Station *st)
 		switch (GetStationType(tile)) {
 			case StationType::Rail:    return CA_TRAIN;
 			case StationType::Oilrig:  return CA_UNMODIFIED;
-			case StationType::Airport: return st->airport.GetSpec()->catchment;
+			case StationType::Airport: return st->GetAirportByTile(tile).GetSpec()->catchment;
 			case StationType::Truck:   return CA_TRUCK;
 			case StationType::Bus:     return CA_BUS;
 			case StationType::Dock:    return CA_DOCK;
@@ -353,8 +354,9 @@ uint Station::GetCatchmentRadius() const
 		if (!this->train_station.IsEmpty()) ret = std::max<uint>(ret, CA_TRAIN);
 		if (!this->ship_station.IsEmpty()) ret = std::max<uint>(ret, CA_DOCK);
 		if (!this->airport.IsEmpty()) ret = std::max<uint>(ret, this->airport.GetSpec()->catchment);
+		for (const Airport &pad : this->spaceports) ret = std::max<uint>(ret, pad.GetSpec()->catchment);
 	} else {
-		if (this->bus_stops != nullptr || this->truck_stops != nullptr || !this->train_station.IsEmpty() || !this->ship_station.IsEmpty() || !this->airport.IsEmpty()) {
+		if (this->bus_stops != nullptr || this->truck_stops != nullptr || !this->train_station.IsEmpty() || !this->ship_station.IsEmpty() || this->HasAnyAirport()) {
 			ret = CA_UNMODIFIED;
 		}
 	}
@@ -521,9 +523,10 @@ void Station::RecomputeCatchment(bool no_clear_nearby_lists)
  * Check if adding a new area to a station will exceed the maximum station spread.
  * @param area The existing station spread area.
  * @param new_area The new area to add.
+ * @param extra Extra width and length allowed beyond the station spread setting.
  * @return CommandCost
  */
-CommandCost CheckStationSpread(TileArea area, const TileArea &new_area)
+CommandCost CheckStationSpread(TileArea area, const TileArea &new_area, uint extra)
 {
 	/* Check for incorrect width / length. */
 	if (new_area.w == 0 || new_area.h == 0) return CMD_ERROR;
@@ -533,7 +536,7 @@ CommandCost CheckStationSpread(TileArea area, const TileArea &new_area)
 
 	area.Add(new_area);
 
-	if (area.w > _settings_game.station.station_spread || area.h > _settings_game.station.station_spread) {
+	if (area.w > _settings_game.station.station_spread + extra || area.h > _settings_game.station.station_spread + extra) {
 		return CommandCost(STR_ERROR_STATION_TOO_SPREAD_OUT);
 	}
 
@@ -551,7 +554,8 @@ Money AirportMaintenanceCost(Owner owner)
 
 	for (const Station *st : Station::Iterate()) {
 		if (st->owner == owner && st->facilities.Test(StationFacility::Airport)) {
-			total_cost += _price[Price::InfrastructureAirport] * st->airport.GetSpec()->maintenance_cost;
+			if (!st->airport.IsEmpty()) total_cost += _price[Price::InfrastructureAirport] * st->airport.GetSpec()->maintenance_cost;
+			for (const Airport &pad : st->spaceports) total_cost += _price[Price::InfrastructureAirport] * pad.GetSpec()->maintenance_cost;
 		}
 	}
 	/* 3 bits fraction for the maintenance cost factor. */

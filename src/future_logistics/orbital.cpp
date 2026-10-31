@@ -34,6 +34,19 @@ int32_t Month()
 }
 
 /**
+ * Find the spaceport pad of a station whose hangar a shuttle stands in.
+ * @param st Station.
+ * @param tile Tile the shuttle is on.
+ * @return The pad, or nullptr when the tile is not on one of the station's pads.
+ */
+Airport *PadAt(Station *st, TileIndex tile)
+{
+	if (st == nullptr || !IsTileType(tile, TileType::Station) || !st->TileBelongsToAirport(tile)) return nullptr;
+	Airport &pad = st->GetAirportByTile(tile);
+	return &pad == &st->airport ? nullptr : &pad;
+}
+
+/**
  * Find the original spaceport.
  * @param v Shuttle to inspect.
  * @return Home station, or nullptr.
@@ -41,8 +54,20 @@ int32_t Month()
 Station *Origin(const Aircraft *v)
 {
 	Station *st = Station::GetIfValid(v->orbital.origin);
-	return st != nullptr && !st->airport.IsEmpty() && st->airport.tile == v->orbital.origin_tile &&
-		AircraftMeetsAirportRequirements(v->GetEngine(), AirportSpec::Get(st->airport.type)) ? st : nullptr;
+	if (st == nullptr) return nullptr;
+	const Airport *pad = st->GetSpaceport(v->orbital.origin_tile);
+	return pad != nullptr && AircraftMeetsAirportRequirements(v->GetEngine(), pad->GetSpec()) ? st : nullptr;
+}
+
+/**
+ * Find the home pad of a shuttle on a mission.
+ * @param v Shuttle to inspect.
+ * @return Home pad, or nullptr.
+ */
+Airport *HomePad(const Aircraft *v)
+{
+	Station *st = Origin(v);
+	return st == nullptr ? nullptr : st->GetSpaceport(v->orbital.origin_tile);
 }
 
 /**
@@ -60,17 +85,30 @@ void Visible(Aircraft *v, bool visible)
 }
 
 /**
- * Check whether another shuttle is on the spaceport's single launch pad: boarding or being serviced on the mount,
- * or lifting off from or landing on it. Only one shuttle uses the pad at a time; the others wait in the hangar or,
- * on their way back, in orbit.
- * @param st Spaceport.
+ * Check whether a shuttle belongs to a spaceport pad.
+ * @param other Aircraft to check.
+ * @param st Station of the pad.
+ * @param pad North tile of the pad.
+ * @return Whether it is an orbital shuttle with that home pad.
+ */
+bool OnPad(const Aircraft *other, const Station *st, TileIndex pad)
+{
+	return other->IsNormalAircraft() && other->acache.orbital_shuttle && other->orbital.origin == st->index && other->orbital.origin_tile == pad;
+}
+
+/**
+ * Check whether another shuttle is on a spaceport pad's launch mount: boarding or being serviced on the mount,
+ * or lifting off from or landing on it. Only one shuttle uses a pad at a time; the others wait in its hangar or,
+ * on their way back, in orbit. Each pad of a station has its own mount.
+ * @param st Station.
+ * @param pad North tile of the pad.
  * @param v Asking shuttle, which is not counted.
  * @return Whether the pad is taken.
  */
-bool PadOccupied(const Station *st, const Aircraft *v)
+bool PadOccupied(const Station *st, TileIndex pad, const Aircraft *v)
 {
 	for (const Aircraft *other : Aircraft::Iterate()) {
-		if (other == v || !other->IsNormalAircraft() || !other->acache.orbital_shuttle || other->orbital.origin != st->index) continue;
+		if (other == v || !OnPad(other, st, pad)) continue;
 		switch (other->orbital.phase) {
 			case OrbitalPhase::Boarding: case OrbitalPhase::Launching: case OrbitalPhase::Returning: case OrbitalPhase::Servicing: return true;
 			default: break;
@@ -80,23 +118,23 @@ bool PadOccupied(const Station *st, const Aircraft *v)
 }
 
 /**
- * Show the docked or empty launch pad: while a shuttle of this spaceport is boarding or being serviced it stands
+ * Show the docked or empty launch pad: while a shuttle of this pad is boarding or being serviced it stands
  * on the launch mount, and the pad's tiles draw it there (animation frame 1); otherwise they draw the empty pad.
  * While another shuttle is lifting off from or landing on the mount, the pad is drawn empty so the two never overlap.
- * @param st Spaceport to update.
+ * @param st Station.
+ * @param pad The spaceport pad to update.
  */
-void UpdatePadDocked(Station *st)
+void UpdatePadDocked(Station *st, const Airport &pad)
 {
-	if (st == nullptr || st->airport.IsEmpty()) return;
 	bool waiting = false, moving = false;
 	for (const Aircraft *a : Aircraft::Iterate()) {
-		if (!a->IsNormalAircraft() || !a->acache.orbital_shuttle || a->orbital.origin != st->index) continue;
+		if (!OnPad(a, st, pad.tile)) continue;
 		if (a->orbital.phase == OrbitalPhase::Boarding || a->orbital.phase == OrbitalPhase::Servicing) waiting = true;
 		if (a->orbital.phase == OrbitalPhase::Launching || a->orbital.phase == OrbitalPhase::Returning) moving = true;
 	}
 	const bool docked = waiting && !moving;
-	for (TileIndex t : st->airport) {
-		if (!st->TileBelongsToAirport(t) || GetAnimationFrame(t) == (docked ? 1 : 0)) continue;
+	for (TileIndex t : pad) {
+		if (!st->TileBelongsToAirport(t, pad) || GetAnimationFrame(t) == (docked ? 1 : 0)) continue;
 		SetAnimationFrame(t, docked ? 1 : 0);
 		MarkTileDirtyByTile(t);
 	}
@@ -116,11 +154,12 @@ void Pay(Aircraft *v, Money profit)
 /**
  * Begin loading in the home service bay.
  * @param v Shuttle to load.
- * @param st Home spaceport.
+ * @param st Home station; the shuttle boards at its home pad.
  */
 void Board(Aircraft *v, Station *st)
 {
-	v->tile = st->airport.GetHangarTile(0);
+	const Airport &pad = *st->GetSpaceport(v->orbital.origin_tile);
+	v->tile = pad.GetHangarTile(0);
 	v->state = HANGAR;
 	Visible(v, false);
 	SetAircraftPosition(v, TileX(v->tile) * TILE_SIZE + 5, TileY(v->tile) * TILE_SIZE + 3, v->orbital.ground_z);
@@ -131,7 +170,7 @@ void Board(Aircraft *v, Station *st)
 	v->BeginLoading();
 	v->orbital.phase = OrbitalPhase::Boarding;
 	v->orbital.manual_dispatch = false;
-	UpdatePadDocked(st);
+	UpdatePadDocked(st, pad);
 }
 } // namespace
 
@@ -144,11 +183,12 @@ StringID OrbitalDispatchError(const Aircraft *v)
 {
 	if (!v->acache.orbital_shuttle || v->orbital.phase != OrbitalPhase::Boarding || v->vehstatus.Test(VehState::Stopped)) return STR_ORBITAL_NOT_BOARDING;
 	const Station *st = Origin(v);
-	if (st == nullptr || st->airport.blocks.Test(AirportBlock::AirportClosed)) return STR_ORBITAL_NOT_BOARDING;
+	const Airport *pad = HomePad(v);
+	if (st == nullptr || pad->blocks.Test(AirportBlock::AirportClosed)) return STR_ORBITAL_NOT_BOARDING;
 	if (const CargoLabel label = CargoSpec::Get(v->cargo_type)->label; label != CargoLabel{"PASS"} && label != CargoLabel{"MAIL"}) return STR_ORBITAL_PASSENGERS_ONLY;
 	if (!st->goods[v->cargo_type].status.Test(GoodsEntry::State::Acceptance)) return STR_ORBITAL_NO_ACCEPTANCE;
-	if (!OrbitalMonthAvailable(st->last_orbital_launch_month, Month())) return STR_ORBITAL_MONTHLY_LIMIT;
-	if (PadOccupied(st, v)) return STR_ORBITAL_PAD_BUSY;
+	if (!OrbitalMonthAvailable(pad->last_orbital_launch_month, Month())) return STR_ORBITAL_MONTHLY_LIMIT;
+	if (PadOccupied(st, pad->tile, v)) return STR_ORBITAL_PAD_BUSY;
 	if (v->cargo.StoredCount() < std::min<uint>(v->cargo_cap, 500)) return STR_ORBITAL_MINIMUM_LOAD;
 	return STR_NULL;
 }
@@ -166,19 +206,22 @@ bool TickOrbitalAircraft(Aircraft *v)
 	if (mission.phase == OrbitalPhase::None) {
 		/* Existing aircraft in flight finish their current approach before adopting orbital service. */
 		Station *st = Station::GetIfValid(v->targetairport);
-		if (st == nullptr || st->airport.IsEmpty() || v->state != HANGAR || !v->IsInDepot()) return false;
-		if (!AircraftMeetsAirportRequirements(v->GetEngine(), AirportSpec::Get(st->airport.type))) return false;
+		if (st == nullptr || v->state != HANGAR || !v->IsInDepot()) return false;
+		/* The shuttle belongs to the pad whose hangar it stands in. */
+		const Airport *pad = PadAt(st, v->tile);
+		if (pad == nullptr || !AircraftMeetsAirportRequirements(v->GetEngine(), pad->GetSpec())) return false;
 		/* A new shuttle waits in the hangar until the pad is free. */
-		if (PadOccupied(st, v)) return true;
+		if (PadOccupied(st, pad->tile, v)) return true;
 		mission.origin = st->index;
-		mission.origin_tile = st->airport.tile;
-		mission.ground_z = GetSlopePixelZ(TileX(st->airport.tile) * TILE_SIZE + ORBITAL_MOUNT_X, TileY(st->airport.tile) * TILE_SIZE + ORBITAL_MOUNT_Y) + 1;
+		mission.origin_tile = pad->tile;
+		mission.ground_z = GetSlopePixelZ(TileX(pad->tile) * TILE_SIZE + ORBITAL_MOUNT_X, TileY(pad->tile) * TILE_SIZE + ORBITAL_MOUNT_Y) + 1;
 		Board(v, st);
 	}
 	Station *st = Origin(v);
 	if (st == nullptr) return true; // Never silently reroute an off-world mission.
-	const int x = TileX(st->airport.tile) * TILE_SIZE + ORBITAL_MOUNT_X;
-	const int y = TileY(st->airport.tile) * TILE_SIZE + ORBITAL_MOUNT_Y;
+	Airport &pad = *st->GetSpaceport(mission.origin_tile);
+	const int x = TileX(pad.tile) * TILE_SIZE + ORBITAL_MOUNT_X;
+	const int y = TileY(pad.tile) * TILE_SIZE + ORBITAL_MOUNT_Y;
 	const int32_t today = TimerGameCalendar::date.base();
 	const OrbitalPhase before = mission.phase;
 	switch (mission.phase) {
@@ -187,7 +230,7 @@ bool TickOrbitalAircraft(Aircraft *v)
 			 * oldest (or one being serviced) step back into the hangar and queue, keeping what they have loaded. */
 			bool yield = false;
 			for (const Aircraft *other : Aircraft::Iterate()) {
-				if (other == v || !other->IsNormalAircraft() || !other->acache.orbital_shuttle || other->orbital.origin != st->index) continue;
+				if (other == v || !OnPad(other, st, pad.tile)) continue;
 				if (other->orbital.phase == OrbitalPhase::Servicing || other->orbital.phase == OrbitalPhase::Launching ||
 						other->orbital.phase == OrbitalPhase::Returning || (other->orbital.phase == OrbitalPhase::Boarding && other->index < v->index)) {
 					yield = true;
@@ -197,7 +240,7 @@ bool TickOrbitalAircraft(Aircraft *v)
 			if (yield) {
 				if (v->current_order.IsType(OT_LOADING)) v->LeaveStation();
 				v->current_order.MakeDummy();
-				v->tile = st->airport.GetHangarTile(0);
+				v->tile = pad.GetHangarTile(0);
 				v->state = HANGAR;
 				v->targetairport = st->index;
 				mission.phase = OrbitalPhase::None;
@@ -217,20 +260,20 @@ bool TickOrbitalAircraft(Aircraft *v)
 			if (!load_ready || OrbitalDispatchError(v) != STR_NULL) break;
 			/* A ready ship that has waited longer gets first use of the shared monthly slot. */
 			for (const Aircraft *other : Aircraft::Iterate()) {
-				if (other != v && other->IsNormalAircraft() && other->acache.orbital_shuttle && other->orbital.origin == st->index &&
+				if (other != v && OnPad(other, st, pad.tile) &&
 					other->orbital.phase == OrbitalPhase::Boarding && other->cargo.StoredCount() >= other->cargo_cap &&
 					other->orbital.last_launch_month < mission.last_launch_month && OrbitalDispatchError(other) == STR_NULL) return true;
 			}
 			v->LeaveStation();
 			v->current_order.MakeDummy();
-			st->last_orbital_launch_month = Month();
+			pad.last_orbital_launch_month = Month();
 			mission.last_launch_month = Month();
 			mission.phase = OrbitalPhase::Launching;
 			v->state = HELITAKEOFF;
 			v->tile = TileVirtXY(x, y);
 			Visible(v, true);
 			SetAircraftPosition(v, x, y, mission.ground_z);
-			Debug(Facility::Misc, Severity::Notice, "FL orbital launch vehicle={} origin={} month={} passengers={} manual={}", v->index, st->index, Month(), v->cargo.StoredCount(), mission.manual_dispatch);
+			Debug(Facility::Misc, Severity::Notice, "FL orbital launch vehicle={} origin={} month={} passengers={} manual={} pad={}", v->index, st->index, Month(), v->cargo.StoredCount(), mission.manual_dispatch, pad.tile);
 			break;
 		}
 		case OrbitalPhase::Launching:
@@ -250,7 +293,7 @@ bool TickOrbitalAircraft(Aircraft *v)
 			break;
 		case OrbitalPhase::Space:
 			/* A returning shuttle stays in orbit until the pad is free. */
-			if (today < mission.due_date || PadOccupied(st, v) || !CargoPacket::CanAllocateItem()) break;
+			if (today < mission.due_date || PadOccupied(st, pad.tile, v) || !CargoPacket::CanAllocateItem()) break;
 			{
 				CargoPacket *packet = CargoPacket::Create(StationID::Invalid(), v->cargo_cap, Source{Source::Invalid, SourceType::Industry});
 				packet->UpdateLoadingTile(v->tile);
@@ -278,7 +321,7 @@ bool TickOrbitalAircraft(Aircraft *v)
 			break;
 		case OrbitalPhase::None: NOT_REACHED();
 	}
-	if (mission.phase != before) UpdatePadDocked(st);
+	if (mission.phase != before && Origin(v) != nullptr) UpdatePadDocked(st, pad);
 	v->cur_speed = 0;
 	SetWindowDirty(WindowClass::VehicleView, v->index);
 	return true;
@@ -310,16 +353,18 @@ std::string OrbitalStatus(const Aircraft *v)
 {
 	switch (v->orbital.phase) {
 		case OrbitalPhase::Boarding:
-			if (const Station *st = Origin(v); st != nullptr && st->last_orbital_launch_month == Month()) return GetString(STR_ORBITAL_WAIT_MONTH);
+			if (const Airport *pad = HomePad(v); pad != nullptr && pad->last_orbital_launch_month == Month()) return GetString(STR_ORBITAL_WAIT_MONTH);
 			return GetString(STR_ORBITAL_BOARDING, v->cargo.StoredCount(), v->cargo_cap);
 		case OrbitalPhase::Launching: return GetString(STR_ORBITAL_LAUNCHING);
 		case OrbitalPhase::Space:
-			if (const Station *st = Origin(v); st != nullptr && TimerGameCalendar::date.base() >= v->orbital.due_date && PadOccupied(st, v)) return GetString(STR_ORBITAL_WAIT_PAD_ORBIT);
+			if (const Station *st = Origin(v); st != nullptr && TimerGameCalendar::date.base() >= v->orbital.due_date && PadOccupied(st, v->orbital.origin_tile, v)) return GetString(STR_ORBITAL_WAIT_PAD_ORBIT);
 			return GetString(STR_ORBITAL_SPACE, v->orbital.due_date);
 		case OrbitalPhase::Returning: return GetString(STR_ORBITAL_RETURNING, v->cargo.StoredCount());
 		case OrbitalPhase::Servicing: return GetString(STR_ORBITAL_SERVICING);
 		default:
-			if (const Station *st = Station::GetIfValid(v->targetairport); st != nullptr && v->IsInDepot() && PadOccupied(st, v)) return GetString(STR_ORBITAL_WAIT_PAD_HANGAR);
+			if (Station *st = Station::GetIfValid(v->targetairport); st != nullptr && v->IsInDepot()) {
+				if (const Airport *pad = PadAt(st, v->tile); pad != nullptr && PadOccupied(st, pad->tile, v)) return GetString(STR_ORBITAL_WAIT_PAD_HANGAR);
+			}
 			return GetString(STR_ORBITAL_READY);
 	}
 }

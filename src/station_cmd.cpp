@@ -111,10 +111,11 @@ bool IsHangar(Tile t)
 	if (!IsAirport(t)) return false;
 
 	const Station *st = Station::GetByTile(t);
-	const AirportSpec *as = st->airport.GetSpec();
+	const Airport &airport = st->GetAirportByTile(t);
+	const AirportSpec *as = airport.GetSpec();
 
 	for (const auto &depot : as->depots) {
-		if (st->airport.GetRotatedTileFromOffset(depot.ti) == TileIndex(t)) return true;
+		if (airport.GetRotatedTileFromOffset(depot.ti) == TileIndex(t)) return true;
 	}
 
 	return false;
@@ -452,7 +453,12 @@ TileArea Station::GetTileArea(StationType type) const
 {
 	switch (type) {
 		case StationType::Rail: return this->train_station;
-		case StationType::Airport: return this->airport;
+		case StationType::Airport: {
+			/* The airport together with any spaceport pads. */
+			TileArea area = this->airport;
+			for (const Airport &pad : this->spaceports) area.Add(pad);
+			return area;
+		}
 		case StationType::Truck: return this->truck_station;
 		case StationType::Bus: return this->bus_station;
 		case StationType::Dock:
@@ -733,7 +739,9 @@ static CommandCost BuildStationPart(Station **st, DoCommandFlags flags, bool reu
 			return CommandCost(CMD_ERROR);
 		}
 
-		CommandCost ret = CheckStationSpread((*st)->spread, area);
+		/* A row of spaceport pads may stretch a station by up to three pads' width beyond the usual spread. */
+		const uint extra = name_class == StationNaming::Spaceport || !(*st)->spaceports.empty() ? MAX_SPACEPORT_PADS * 4 : 0;
+		CommandCost ret = CheckStationSpread((*st)->spread, area, extra);
 		if (ret.Failed()) return ret;
 	} else {
 		/* allocate and initialize new station */
@@ -2751,12 +2759,13 @@ Town *AirportGetNearestTown(const AirportSpec *as, Direction rotation, TileIndex
  * Finds the town nearest to given existing airport. Based on minimal manhattan distance to any airport's tile.
  * If two towns have the same distance, town with lower index is returned.
  * @param st Existing station with airport.
+ * @param airport The station's airport or one of its spaceport pads.
  * @param[out] mindist Minimum distance to town
  * @return nearest town to airport
  */
-static Town *AirportGetNearestTown(const Station *st, uint &mindist)
+static Town *AirportGetNearestTown(const Station *st, const Airport &airport, uint &mindist)
 {
-	return AirportGetNearestTown(st->airport.GetSpec(), st->airport.rotation, st->airport.tile, AirportTileIterator(st), mindist);
+	return AirportGetNearestTown(airport.GetSpec(), airport.rotation, airport.tile, AirportTileIterator(st, airport), mindist);
 }
 
 
@@ -2768,8 +2777,13 @@ void UpdateAirportsNoise()
 	for (const Station *st : Station::Iterate()) {
 		if (!st->airport.IsEmpty() && st->airport.type != AT_OILRIG) {
 			uint dist;
-			Town *nearest = AirportGetNearestTown(st, dist);
+			Town *nearest = AirportGetNearestTown(st, st->airport, dist);
 			nearest->noise_reached += GetAirportNoiseLevelForDistance(st->airport.GetSpec(), dist);
+		}
+		for (const Airport &pad : st->spaceports) {
+			uint dist;
+			Town *nearest = AirportGetNearestTown(st, pad, dist);
+			nearest->noise_reached += GetAirportNoiseLevelForDistance(pad.GetSpec(), dist);
 		}
 	}
 }
@@ -2857,7 +2871,12 @@ CommandCost CmdBuildAirport(DoCommandFlags flags, TileIndex tile, uint8_t airpor
 	ret = BuildStationPart(&st, flags, reuse, airport_area, name_class);
 	if (ret.Failed()) return ret;
 
-	if (st != nullptr && !st->airport.IsEmpty()) {
+	/* A station holds one ordinary airport and, beside it, up to three spaceport pads. */
+	const bool spaceport = IsSpaceportType(airport_type);
+	if (st != nullptr && spaceport && st->spaceports.size() >= MAX_SPACEPORT_PADS) {
+		return CommandCost(STR_ERROR_SPACEPORT_PAD_LIMIT);
+	}
+	if (st != nullptr && !spaceport && !st->airport.IsEmpty()) {
 		return CommandCost(STR_ERROR_TOO_CLOSE_TO_ANOTHER_AIRPORT);
 	}
 
@@ -2869,11 +2888,15 @@ CommandCost CmdBuildAirport(DoCommandFlags flags, TileIndex tile, uint8_t airpor
 		/* Always add the noise, so there will be no need to recalculate when option toggles */
 		nearest->noise_reached += newnoise_level;
 
+		/* A new airport or pad opens and closes along with the rest of the station. */
+		const bool closed = st->airport.blocks.Test(AirportBlock::AirportClosed);
 		st->AddFacility(StationFacility::Airport, tile);
-		st->airport.type = airport_type;
-		st->airport.layout = layout;
-		st->airport.blocks = {};
-		st->airport.rotation = rotation;
+		Airport &airport = spaceport ? st->spaceports.emplace_back() : st->airport;
+		airport.type = airport_type;
+		airport.layout = layout;
+		airport.blocks = {};
+		if (closed) airport.blocks.Set(AirportBlock::AirportClosed);
+		airport.rotation = rotation;
 
 		st->spread.Add(airport_area);
 
@@ -2882,7 +2905,7 @@ CommandCost CmdBuildAirport(DoCommandFlags flags, TileIndex tile, uint8_t airpor
 
 			MakeAirport(*iter, st->owner, st->index, gfx, WaterClass::Invalid);
 			SetStationTileRandomBits(*iter, GB(Random(), 0, 4));
-			st->airport.Add(*iter);
+			airport.Add(*iter);
 
 			if (AirportTileSpec::Get(GetTranslatedAirportTileID(gfx))->animation.status != AnimationStatus::NoAnimation) AddAnimatedTile(*iter);
 		}
@@ -2892,7 +2915,7 @@ CommandCost CmdBuildAirport(DoCommandFlags flags, TileIndex tile, uint8_t airpor
 			TriggerAirportTileAnimation(st, *iter, AirportAnimationTrigger::Built);
 		}
 
-		UpdateAirplanesOnNewStation(st);
+		if (!spaceport) UpdateAirplanesOnNewStation(st);
 
 		Company::Get(st->owner)->infrastructure.airport++;
 
@@ -2922,20 +2945,31 @@ static CommandCost RemoveAirport(TileIndex tile, DoCommandFlags flags)
 		if (ret.Failed()) return ret;
 	}
 
-	tile = st->airport.tile;
+	/* Clearing any tile removes the whole airport, or the whole spaceport pad the tile belongs to. */
+	Airport &airport = st->GetAirportByTile(tile);
+	const bool spaceport = &airport != &st->airport;
+	tile = airport.tile;
 
 	CommandCost cost(ExpensesType::Construction);
 
 	for (const Aircraft *a : Aircraft::Iterate()) {
 		if (!a->IsNormalAircraft()) continue;
-		if (a->targetairport == st->index && a->state != FLYING) {
+		if (a->acache.orbital_shuttle && a->orbital.origin == st->index && a->orbital.phase != OrbitalPhase::None) {
+			/* A shuttle on a mission from this pad, even off-world, must come home first. */
+			if (spaceport && a->orbital.origin_tile == tile) return CommandCost(STR_ERROR_AIRCRAFT_IN_THE_WAY);
+			continue;
+		}
+		if (a->targetairport == st->index && a->state != FLYING && st->TileBelongsToAirport(a->tile, airport)) {
+			return CommandCost(STR_ERROR_AIRCRAFT_IN_THE_WAY);
+		}
+		if (!spaceport && !a->acache.orbital_shuttle && a->targetairport == st->index && a->state != FLYING) {
 			return CommandCost(STR_ERROR_AIRCRAFT_IN_THE_WAY);
 		}
 	}
 
 	if (flags.Test(DoCommandFlag::Execute)) {
-		for (uint i = 0; i < st->airport.GetNumHangars(); ++i) {
-			TileIndex tile_cur = st->airport.GetHangarTile(i);
+		for (uint i = 0; i < airport.GetNumHangars(); ++i) {
+			TileIndex tile_cur = airport.GetHangarTile(i);
 			OrderBackup::Reset(tile_cur, false);
 			CloseWindowById(WindowClass::VehicleDepot, tile_cur);
 		}
@@ -2944,17 +2978,19 @@ static CommandCost RemoveAirport(TileIndex tile, DoCommandFlags flags)
 		 * And as for construction, always remove it, even if the setting is not set, in order to avoid the
 		 * need of recalculation */
 		uint dist;
-		Town *nearest = AirportGetNearestTown(st, dist);
-		nearest->noise_reached -= GetAirportNoiseLevelForDistance(st->airport.GetSpec(), dist);
+		Town *nearest = AirportGetNearestTown(st, airport, dist);
+		nearest->noise_reached -= GetAirportNoiseLevelForDistance(airport.GetSpec(), dist);
 
 		if (_settings_game.economy.station_noise_level) {
 			SetWindowDirty(WindowClass::TownView, nearest->index);
 		}
 	}
 
-	for (TileIndex tile_cur : st->airport) {
-		if (!st->TileBelongsToAirport(tile_cur)) continue;
-
+	std::vector<TileIndex> tiles;
+	for (TileIndex tile_cur : airport) {
+		if (st->TileBelongsToAirport(tile_cur, airport)) tiles.push_back(tile_cur);
+	}
+	for (TileIndex tile_cur : tiles) {
 		CommandCost ret = EnsureNoVehicleOnGround(tile_cur);
 		if (ret.Failed()) return ret;
 
@@ -2968,12 +3004,16 @@ static CommandCost RemoveAirport(TileIndex tile, DoCommandFlags flags)
 
 	if (flags.Test(DoCommandFlag::Execute)) {
 		/* Clear the persistent storage. */
-		delete st->airport.psa;
+		delete airport.psa;
+		airport.psa = nullptr;
 
+		if (spaceport) {
+			st->spaceports.erase(st->spaceports.begin() + (&airport - st->spaceports.data()));
+		} else {
+			st->airport.Clear();
+		}
 		MakeStationSpreadAreaSmaller(st);
-
-		st->airport.Clear();
-		st->facilities.Reset(StationFacility::Airport);
+		if (!st->HasAnyAirport()) st->facilities.Reset(StationFacility::Airport);
 		SetWindowClassesDirty(WindowClass::VehicleOrders);
 
 		InvalidateWindowData(WindowClass::StationView, st->index, -1);
@@ -3006,6 +3046,8 @@ CommandCost CmdOpenCloseAirport(DoCommandFlags flags, StationID station_id)
 
 	if (flags.Test(DoCommandFlag::Execute)) {
 		st->airport.blocks.Flip(AirportBlock::AirportClosed);
+		/* Spaceport pads open and close with the station. */
+		for (Airport &pad : st->spaceports) pad.blocks.Set(AirportBlock::AirportClosed, st->airport.blocks.Test(AirportBlock::AirportClosed));
 		SetWindowWidgetDirty(WindowClass::StationView, st->index, WID_SV_CLOSE_AIRPORT);
 	}
 	return CommandCost();
@@ -3785,7 +3827,7 @@ void FillTileDescRailStation(TileIndex tile, TileDesc &td)
 
 void FillTileDescAirport(TileIndex tile, TileDesc &td)
 {
-	const AirportSpec *as = Station::GetByTile(tile)->airport.GetSpec();
+	const AirportSpec *as = Station::GetByTile(tile)->GetAirportByTile(tile).GetSpec();
 	td.airport_class = AirportClass::Get(as->class_index)->name;
 	td.airport_name = as->name;
 
@@ -3985,7 +4027,8 @@ static bool ClickTile_Station(TileIndex tile)
 		ShowWaypointWindow(Waypoint::From(bst));
 	} else if (IsHangar(tile)) {
 		const Station *st = Station::From(bst);
-		ShowDepotWindow(st->airport.GetHangarTile(st->airport.GetHangarNum(tile)), VehicleType::Aircraft);
+		const Airport &airport = st->GetAirportByTile(tile);
+		ShowDepotWindow(airport.GetHangarTile(airport.GetHangarNum(tile)), VehicleType::Aircraft);
 	} else {
 		ShowStationViewWindow(bst->index);
 	}

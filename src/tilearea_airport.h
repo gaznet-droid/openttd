@@ -17,6 +17,7 @@
 class AirportTileIterator {
 private:
 	const Station *st = nullptr; ///< The station the airport is a part of.
+	const Airport *airport = nullptr; ///< The airport or spaceport pad iterated over.
 	OrthogonalTileArea::iterator iter; ///< The underlying tile area iterator.
 
 public:
@@ -30,9 +31,16 @@ public:
 	 * Construct the iterator.
 	 * @param st Station the airport is part of.
 	 */
-	AirportTileIterator(const Station *st) : st(st), iter(st->airport)
+	AirportTileIterator(const Station *st) : AirportTileIterator(st, st->airport) {}
+
+	/**
+	 * Construct the iterator over one airport or spaceport pad of a station.
+	 * @param st Station the airport is part of.
+	 * @param airport The station's airport or one of its spaceport pads.
+	 */
+	AirportTileIterator(const Station *st, const Airport &airport) : st(st), airport(&airport), iter(airport)
 	{
-		if (*this->iter != INVALID_TILE && !st->TileBelongsToAirport(*this->iter)) ++this->iter;
+		if (*this->iter != INVALID_TILE && !st->TileBelongsToAirport(*this->iter, airport)) ++this->iter;
 	}
 
 	/**
@@ -71,7 +79,7 @@ public:
 	{
 		do {
 			++this->iter;
-		} while (*this->iter != INVALID_TILE && !st->TileBelongsToAirport(*this->iter));
+		} while (*this->iter != INVALID_TILE && !st->TileBelongsToAirport(*this->iter, *this->airport));
 		return *this;
 	}
 };

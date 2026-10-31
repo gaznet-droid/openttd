@@ -133,7 +133,8 @@ void AfterLoadCompanyStats()
 	/* Collect airport count. */
 	for (const Station *st : Station::Iterate()) {
 		if (st->facilities.Test(StationFacility::Airport) && Company::IsValidID(st->owner)) {
-			Company::Get(st->owner)->infrastructure.airport++;
+			/* The airport and each spaceport pad count as one. */
+			Company::Get(st->owner)->infrastructure.airport += (st->airport.IsEmpty() ? 0 : 1) + static_cast<uint32_t>(st->spaceports.size());
 		}
 	}
 

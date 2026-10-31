@@ -208,10 +208,11 @@ ConstructionResult BuildAirline(uint8_t type, TileIndex a, TileIndex b, const En
 		if (Command<Commands::BuildAirport>::Do(EXEC | CONSTRUCT, corner, type, 0, join, true).Failed()) return fail("airport");
 		built.push_back(corner);
 	}
-	const Station *origin = Station::GetByTile(a);
-	if (origin->airport.GetNumHangars() == 0) return fail("hangar");
+	/* The hangar of the airport or spaceport pad just built at the first corner. */
+	const Airport &origin = Station::GetByTile(a)->GetAirportByTile(a);
+	if (origin.GetNumHangars() == 0) return fail("hangar");
 	for (uint n = 0; n < fleet; n++) {
-		auto result = Command<Commands::BuildVehicle>::Do(EXEC, origin->airport.GetHangarTile(0), aircraft->index, false, cargo, ClientID::Invalid);
+		auto result = Command<Commands::BuildVehicle>::Do(EXEC, origin.GetHangarTile(0), aircraft->index, false, cargo, ClientID::Invalid);
 		if (ExtractCommandCost(result).Failed()) return fail("vehicle");
 		const VehicleID vehicle = std::get<1>(result);
 		vehicles.push_back(vehicle);

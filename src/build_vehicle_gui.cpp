@@ -41,6 +41,7 @@
 #include "stringfilter_type.h"
 #include "hotkeys.h"
 
+#include "future_logistics/tech_library.h"
 #include "widgets/build_vehicle_widget.h"
 
 #include "table/strings.h"
@@ -1591,6 +1592,8 @@ struct BuildVehicleWindow : Window {
 			if (!IsEngineBuildable(eid, VehicleType::Aircraft, _local_company)) continue;
 			/* First VEH_END window_numbers are fake to allow a window open for all different types at once */
 			if (!this->listview_mode && !CanVehicleUseStation(eid, st)) continue;
+			/* A hangar builds only what its own airport or spaceport pad takes: Starships at a pad, planes at the airport. */
+			if (!this->listview_mode && !AircraftMeetsAirportRequirements(e, st->GetAirportByTile(TileIndex(this->window_number)).GetSpec())) continue;
 			if (!bdf.Filter(e->badges)) continue;
 
 			/* Filter by name or NewGRF extra text */

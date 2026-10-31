@@ -256,8 +256,7 @@ static ScriptOrder::OrderPosition RealOrderPositionToScriptOrderPosition(Vehicle
 			if (v->type != VehicleType::Aircraft) return ::Depot::Get(order->GetDestination().ToDepotID())->xy;
 			/* Aircraft's hangars are referenced by StationID, not DepotID */
 			const Station *st = ::Station::Get(order->GetDestination().ToStationID());
-			if (!st->airport.HasHangar()) return INVALID_TILE;
-			return st->airport.GetHangarTile(0);
+			return st->GetFirstHangarTile();
 		}
 
 		case OT_GOTO_STATION: {
@@ -274,8 +273,8 @@ static ScriptOrder::OrderPosition RealOrderPositionToScriptOrderPosition(Vehicle
 				return st->bus_stops->xy;
 			} else if (st->truck_stops != nullptr) {
 				return st->truck_stops->xy;
-			} else if (!st->airport.IsEmpty()) {
-				for (TileIndex tile : st->airport) {
+			} else if (st->HasAnyAirport()) {
+				for (TileIndex tile : st->GetTileArea(::StationType::Airport)) {
 					if (st->TileBelongsToAirport(tile) && !::IsHangar(tile)) return tile;
 				}
 			}

@@ -100,7 +100,7 @@
 	if (st->owner != ScriptObject::GetCompany() && ScriptCompanyMode::IsValid()) return -1;
 	if (!st->facilities.Test(StationFacility::Airport)) return -1;
 
-	return st->airport.GetNumHangars();
+	return st->GetAirportByTile(tile).GetNumHangars();
 }
 
 /* static */ TileIndex ScriptAirport::GetHangarOfAirport(TileIndex tile)
@@ -114,7 +114,7 @@
 	if (st->owner != ScriptObject::GetCompany() && ScriptCompanyMode::IsValid()) return INVALID_TILE;
 	if (!st->facilities.Test(StationFacility::Airport)) return INVALID_TILE;
 
-	return st->airport.GetHangarTile(0);
+	return st->GetAirportByTile(tile).GetHangarTile(0);
 }
 
 /* static */ ScriptAirport::AirportType ScriptAirport::GetAirportType(TileIndex tile)
@@ -125,7 +125,7 @@
 
 	if (!ScriptStation::HasStationType(station_id, ScriptStation::STATION_AIRPORT)) return AT_INVALID;
 
-	return (AirportType)::Station::Get(station_id)->airport.type;
+	return (AirportType)::Station::Get(station_id)->GetAirportByTile(tile).type;
 }
 
 

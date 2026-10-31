@@ -30,7 +30,7 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT / "work/integration")
     parser.add_argument("--update-snapshots", action="store_true",
                         help="rewrite the Tech Library snapshots instead of comparing against them")
-    parser.add_argument("--only", choices=["data-centre", "orbital", "hyperloop", "hub", "airports"], help="run a focused gameplay regression")
+    parser.add_argument("--only", choices=["data-centre", "orbital", "hyperloop", "hub", "airports", "pads"], help="run a focused gameplay regression")
     args = parser.parse_args()
     binary, baseset, output = args.binary.resolve(), args.baseset.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -183,7 +183,7 @@ DayZeroMonopolies =
         require(len({v for v, *_ in launches}) >= 2, "waiting fleet did not share the launch slot")
         require(all(int(p) == 1000 and m == "false" for _, _, _, p, m in launches), "automatic launch must have 1000 real passengers")
         slots = [(origin, month) for _, origin, month, _, _ in launches]
-        require(len(slots) == len(set(slots)), "more than one launch per spaceport per calendar month")
+        require(len(slots) == len(set(slots)), "more than one launch per spaceport pad per calendar month")
         landed = re.findall(r"FL orbital landed vehicle=(\d+) origin=(\d+) inbound=(\d+) trips=(\d+)", text)
         require(landed and all(int(n) == 1000 for _, _, n, _ in landed), "orbital return manifest was not delivered")
         homes = {v: home for v, home, *_ in launches}
@@ -196,6 +196,33 @@ DayZeroMonopolies =
         require("ORBIT fixture ready" not in resumed, "reload recreated the test fleet")
         require("FL orbital landed" in resumed, "off-world mission did not return after reload")
         print("Orbital launch, return, shared slots and off-world reload passed", flush=True)
+
+    def check_spaceport_pads():
+        grf = ROOT / "mods/newgrf/starship/starship.grf"
+        script = ROOT / "tests/future_logistics/gs/SpaceportCheck"
+        _, seed = run("pads-seed", enabled=False, limit=1, year=2050, towns=32, map_bits=9,
+                      grfs=[grf], town_cargo_scale=300, game_script=script)
+        text, save = run("pads", load=seed, enabled=False, limit=1, year=2050, towns=32, map_bits=9,
+                         grfs=[grf], service=True, months=8, town_cargo_scale=300, game_script=script)
+        ready = re.search(r"PADS fixture ready station=(\d+) pads=(\d+),(\d+),(\d+) airport=(\d+)", text)
+        require(ready, "spaceport pad fixture failed: three pads and an airport in one station")
+        require("PADS fourth_pad_refused=true" in text, "a fourth spaceport pad was allowed")
+        station, *pads = ready.group(1, 2, 3, 4)
+        launches = re.findall(r"FL orbital launch vehicle=(\d+) origin=(\d+) month=(\d+) passengers=\d+ manual=\w+ pad=(\d+)", text)
+        mine = [(v, month, pad) for v, origin, month, pad in launches if origin == station]
+        require({pad for *_, pad in mine} == set(pads), "not every spaceport pad launched its own Starship")
+        slots = [(month, pad) for _, month, pad in mine]
+        require(len(slots) == len(set(slots)), "a pad launched more than once in a month")
+        months = {}
+        for _, month, pad in mine:
+            months.setdefault(month, set()).add(pad)
+        require(any(len(p) >= 2 for p in months.values()), "pads of one station never launched in the same month")
+        resumed, _ = run("pads-reloaded", load=save, enabled=False, limit=1, year=2050, grfs=[grf], service=True, months=3,
+                         town_cargo_scale=300, game_script=script)
+        require("PADS fixture ready" not in resumed, "reload recreated the pads fixture")
+        relaunch = re.findall(r"FL orbital launch vehicle=\d+ origin=(\d+) month=\d+ passengers=\d+ manual=\w+ pad=(\d+)", resumed)
+        require(any(origin == station for origin, _ in relaunch), "pads did not keep launching after reload")
+        print("Three spaceport pads and an airport in one station, a pad per Starship, pad limit and reload passed", flush=True)
 
     def check_hyperloop():
         grf = ROOT / "mods/newgrf/future_logistics/future_logistics.grf"
@@ -278,6 +305,9 @@ DayZeroMonopolies =
         check_hyperloop()
         return
 
+    if args.only == "pads":
+        check_spaceport_pads()
+        return
     if args.only == "orbital":
         check_orbital()
         return
@@ -500,6 +530,7 @@ DayZeroMonopolies =
 
     check_data_centres()
     check_orbital()
+    check_spaceport_pads()
     check_hyperloop()
     check_hub()
 
@@ -595,7 +626,7 @@ DayZeroMonopolies =
                     f"{climate}: Tech Library differs from {snapshot_file.relative_to(ROOT)}; "
                     "rerun with --update-snapshots if the change is intended")
 
-    summary = "PASS: mail trains and trucks; Starship on its own and with Future Logistics; railways over hills, through them and over rivers; ferries in a coastal world; freight routes in two legs with a transfer (ship then train through a port); NewGRF tech family, rival, cargo meaning and validation; drones, hyperloop and rockets from the Future Logistics NewGRF adopted by the rivals; data centres fundable on open land, one per town; headstart scaled to world population and town size; rivals that grow after day zero through AIFutureLogistics; four distinct company profiles with an airline, passenger and freight rail, feeder buses into railway stations, trucks continuing rail cargo chains, and tier-sized fleets; Tech Library bus choice, console query and per-climate snapshots; company ownership/count; funding/loan accounting; four connected starter networks with controlled, default-world and 2026 settings; reserved cleanup capacity; fixed-seed reproducibility; station visits after simulation; network save/reload; no bootstrap on ordinary save load; disabled setting; competitor limit/custom capital; one-town/no-bus fallback and construction rollback; late-start milestone catch-up and persistence; dedicated multiplayer exclusion.\n"
+    summary = "PASS: mail trains and trucks; Starship on its own and with Future Logistics; three spaceport pads and an airport in one station; railways over hills, through them and over rivers; ferries in a coastal world; freight routes in two legs with a transfer (ship then train through a port); NewGRF tech family, rival, cargo meaning and validation; drones, hyperloop and rockets from the Future Logistics NewGRF adopted by the rivals; data centres fundable on open land, one per town; headstart scaled to world population and town size; rivals that grow after day zero through AIFutureLogistics; four distinct company profiles with an airline, passenger and freight rail, feeder buses into railway stations, trucks continuing rail cargo chains, and tier-sized fleets; Tech Library bus choice, console query and per-climate snapshots; company ownership/count; funding/loan accounting; four connected starter networks with controlled, default-world and 2026 settings; reserved cleanup capacity; fixed-seed reproducibility; station visits after simulation; network save/reload; no bootstrap on ordinary save load; disabled setting; competitor limit/custom capital; one-town/no-bus fallback and construction rollback; late-start milestone catch-up and persistence; dedicated multiplayer exclusion.\n"
     (output / "results.txt").write_text(summary)
     print(summary)
 

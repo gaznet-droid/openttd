@@ -5239,6 +5239,7 @@ STR_ERROR_TOO_MANY_BUS_STOPS                                    :too many bus st
 STR_ERROR_TOO_MANY_TRUCK_STOPS                                  :too many lorry stations
 STR_ERROR_TOO_CLOSE_TO_ANOTHER_DOCK                             :too close to another dock
 STR_ERROR_TOO_CLOSE_TO_ANOTHER_AIRPORT                          :too close to another airport
+STR_ERROR_SPACEPORT_PAD_LIMIT                                   :a station can have at most three spaceport pads
 STR_ERROR_CAN_T_RENAME_STATION                                  :Can't rename station...
 STR_ERROR_CAN_T_MOVE_STATION_NAME                               :Can't move station sign...
 STR_ERROR_DRIVE_THROUGH_ON_TOWN_ROAD                            :road owned by a town
