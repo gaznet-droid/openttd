@@ -8,6 +8,7 @@
 /** @file station_cmd.cpp Handling of station tiles. */
 
 #include "stdafx.h"
+#include "future_logistics/hyperloop.h"
 #include "future_logistics/tag_index.h"
 #include "future_logistics/tech_library.h"
 #include "object_base.h"
@@ -1452,6 +1453,17 @@ CommandCost CmdBuildRailStation(DoCommandFlags flags, TileIndex tile_org, RailTy
 
 	/* Check if the given station class is valid */
 	if (spec_class.base() >= StationClass::GetClassCount()) return CMD_ERROR;
+	/* Every Hyperloop station is a Hyperloop terminal, and the terminal is only for Hyperloop track. */
+	if (IsHyperloopRailType(rt)) {
+		StationClassID terminal_class;
+		uint16_t terminal_index;
+		if (FindHyperloopTerminal(terminal_class, terminal_index)) {
+			spec_class = terminal_class;
+			spec_index = terminal_index;
+		}
+	} else if (IsHyperloopTerminalClass(spec_class)) {
+		return CommandCost(STR_HYPERLOOP_TERMINAL_ONLY);
+	}
 	const StationClass *cls = StationClass::Get(spec_class);
 	if (IsWaypointClass(*cls)) return CMD_ERROR;
 	if (spec_index >= cls->GetSpecCount()) return CMD_ERROR;

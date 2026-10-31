@@ -524,8 +524,295 @@ item(FEAT_AIRPORTS, drone_port, 1) {
     }
 }
 
-/* Hyperloop track. A track type of its own, with no fallback: nothing else runs in the tube.
- * Placeholder graphics: plain rail, until the tube art exists. */
+/* BEGIN generated Hyperloop sprites (tools/hyperloop/make_hyperloop_art.py) */
+spriteset(hyperloop_track_underlay_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/track_underlay_1x.png") {
+    [0, 0, 56, 29, -28, 1]
+    [57, 0, 56, 29, -28, 1]
+    [114, 0, 32, 17, -16, -1]
+    [147, 0, 32, 17, -16, 15]
+    [180, 0, 34, 19, -1, 5]
+    [215, 0, 34, 19, -33, 5]
+    [250, 0, 56, 37, -28, -7]
+    [307, 0, 56, 21, -28, 1]
+    [364, 0, 56, 21, -28, 1]
+    [421, 0, 56, 37, -28, -7]
+    [478, 0, 54, 29, -27, 1]
+    [533, 0, 54, 28, -27, 2]
+    [588, 0, 54, 28, -27, 2]
+    [643, 0, 54, 28, -27, 2]
+    [698, 0, 54, 28, -27, 2]
+    [753, 0, 54, 28, -27, 2]
+}
+alternative_sprites(hyperloop_track_underlay_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/track_underlay_2x.png") {
+    [0, 0, 112, 58, -56, 2]
+    [113, 0, 112, 58, -56, 2]
+    [226, 0, 64, 36, -32, -3]
+    [291, 0, 64, 36, -32, 29]
+    [356, 0, 68, 39, -2, 9]
+    [425, 0, 68, 39, -66, 9]
+    [494, 0, 112, 74, -56, -14]
+    [607, 0, 112, 42, -56, 2]
+    [720, 0, 112, 42, -56, 2]
+    [833, 0, 112, 74, -56, -14]
+    [946, 0, 110, 58, -55, 2]
+    [1057, 0, 110, 56, -55, 4]
+    [1168, 0, 110, 56, -55, 4]
+    [1279, 0, 110, 56, -55, 4]
+    [1390, 0, 110, 56, -55, 4]
+    [1501, 0, 110, 56, -55, 4]
+}
+spriteset(hyperloop_track_overlay_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/track_overlay_1x.png") {
+    [0, 0, 48, 26, -24, 1]
+    [49, 0, 48, 26, -24, 1]
+    [98, 0, 32, 14, -16, -1]
+    [131, 0, 32, 14, -16, 15]
+    [164, 0, 22, 18, 5, 5]
+    [187, 0, 22, 18, -27, 5]
+    [210, 0, 48, 34, -24, -7]
+    [259, 0, 48, 18, -24, 1]
+    [308, 0, 48, 18, -24, 1]
+    [357, 0, 48, 34, -24, -7]
+    [406, 0, 1, 1, 0, 0]
+    [408, 0, 1, 1, 0, 0]
+    [410, 0, 1, 1, 0, 0]
+    [412, 0, 1, 1, 0, 0]
+    [414, 0, 1, 1, 0, 0]
+    [416, 0, 1, 1, 0, 0]
+}
+alternative_sprites(hyperloop_track_overlay_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/track_overlay_2x.png") {
+    [0, 0, 96, 52, -48, 2]
+    [97, 0, 96, 52, -48, 2]
+    [194, 0, 64, 26, -32, -1]
+    [259, 0, 64, 26, -32, 31]
+    [324, 0, 46, 37, 9, 9]
+    [371, 0, 46, 37, -55, 9]
+    [418, 0, 96, 68, -48, -14]
+    [515, 0, 96, 36, -48, 2]
+    [612, 0, 96, 36, -48, 2]
+    [709, 0, 96, 68, -48, -14]
+    [806, 0, 1, 1, 0, 0]
+    [808, 0, 1, 1, 0, 0]
+    [810, 0, 1, 1, 0, 0]
+    [812, 0, 1, 1, 0, 0]
+    [814, 0, 1, 1, 0, 0]
+    [816, 0, 1, 1, 0, 0]
+}
+spriteset(hyperloop_bridge_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/bridge_1x.png") {
+    [0, 0, 48, 26, -24, 1]
+    [49, 0, 48, 26, -24, 1]
+    [98, 0, 48, 34, -24, -7]
+    [147, 0, 48, 18, -24, 1]
+    [196, 0, 48, 18, -24, 1]
+    [245, 0, 48, 34, -24, -7]
+    [294, 0, 52, 33, -26, -6]
+    [347, 0, 37, 26, -36, -14]
+    [385, 0, 7, 11, -18, -1]
+    [393, 0, 52, 33, -26, -6]
+    [446, 0, 37, 26, -1, -14]
+    [484, 0, 7, 11, 11, -1]
+    [492, 0, 56, 36, -28, -6]
+    [549, 0, 56, 36, -28, -6]
+    [606, 0, 56, 36, -28, -6]
+    [663, 0, 56, 36, -28, -6]
+    [720, 0, 55, 28, -28, 2]
+    [776, 0, 55, 28, -27, 2]
+    [832, 0, 55, 36, -27, -6]
+    [888, 0, 55, 36, -28, -6]
+}
+alternative_sprites(hyperloop_bridge_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/bridge_2x.png") {
+    [0, 0, 96, 52, -48, 2]
+    [97, 0, 96, 52, -48, 2]
+    [194, 0, 96, 68, -48, -14]
+    [291, 0, 96, 36, -48, 2]
+    [388, 0, 96, 36, -48, 2]
+    [485, 0, 96, 68, -48, -14]
+    [582, 0, 106, 66, -53, -11]
+    [689, 0, 74, 52, -72, -28]
+    [764, 0, 14, 23, -36, -2]
+    [779, 0, 106, 66, -53, -11]
+    [886, 0, 74, 52, -2, -28]
+    [961, 0, 14, 23, 22, -2]
+    [976, 0, 112, 72, -56, -12]
+    [1089, 0, 112, 72, -56, -12]
+    [1202, 0, 112, 72, -56, -12]
+    [1315, 0, 112, 72, -56, -12]
+    [1428, 0, 111, 56, -56, 4]
+    [1540, 0, 111, 56, -55, 4]
+    [1652, 0, 111, 72, -55, -12]
+    [1764, 0, 111, 72, -56, -12]
+}
+spriteset(hyperloop_tunnel_ground_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/tunnel_ground_1x.png") {
+    [0, 0, 62, 32, -31, 0]
+    [63, 0, 62, 32, -31, 0]
+    [126, 0, 62, 32, -31, 0]
+    [189, 0, 62, 32, -31, 0]
+}
+alternative_sprites(hyperloop_tunnel_ground_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/tunnel_ground_2x.png") {
+    [0, 0, 126, 64, -63, 0]
+    [127, 0, 126, 64, -63, 0]
+    [254, 0, 126, 64, -63, 0]
+    [381, 0, 126, 64, -63, 0]
+}
+spriteset(hyperloop_tunnel_portal_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/tunnel_portal_1x.png", "gfx/hyperloop/tunnel_portal_1x_mask.png") {
+    [0, 0, 46, 23, -21, -27]
+    [47, 0, 47, 31, -21, -33]
+    [95, 0, 47, 31, -26, -33]
+    [143, 0, 46, 23, -25, -27]
+}
+alternative_sprites(hyperloop_tunnel_portal_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/tunnel_portal_2x.png", "gfx/hyperloop/tunnel_portal_2x_mask.png") {
+    [0, 0, 93, 47, -42, -55]
+    [94, 0, 93, 62, -42, -65]
+    [188, 0, 93, 62, -51, -65]
+    [282, 0, 93, 47, -51, -55]
+}
+spriteset(hyperloop_depots_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/depots_1x.png", "gfx/hyperloop/depots_1x_mask.png") {
+    [0, 0, 1, 1, 0, 0]
+    [2, 0, 56, 38, -6, -23]
+    [59, 0, 1, 1, 0, 0]
+    [61, 0, 56, 38, -50, -23]
+    [118, 0, 56, 38, -50, -23]
+    [175, 0, 56, 38, -6, -23]
+}
+alternative_sprites(hyperloop_depots_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/depots_2x.png", "gfx/hyperloop/depots_2x_mask.png") {
+    [0, 0, 1, 1, 0, 0]
+    [2, 0, 112, 76, -12, -46]
+    [115, 0, 1, 1, 0, 0]
+    [117, 0, 112, 76, -100, -46]
+    [230, 0, 112, 75, -100, -45]
+    [343, 0, 112, 75, -12, -45]
+}
+spriteset(hyperloop_fences_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/fences_1x.png") {
+    [0, 0, 1, 1, 0, 0]
+    [2, 0, 1, 1, 0, 0]
+    [4, 0, 1, 1, 0, 0]
+    [6, 0, 1, 1, 0, 0]
+    [8, 0, 1, 1, 0, 0]
+    [10, 0, 1, 1, 0, 0]
+    [12, 0, 1, 1, 0, 0]
+    [14, 0, 1, 1, 0, 0]
+    [16, 0, 1, 1, 0, 0]
+    [18, 0, 1, 1, 0, 0]
+    [20, 0, 1, 1, 0, 0]
+    [22, 0, 1, 1, 0, 0]
+    [24, 0, 1, 1, 0, 0]
+    [26, 0, 1, 1, 0, 0]
+    [28, 0, 1, 1, 0, 0]
+    [30, 0, 1, 1, 0, 0]
+}
+alternative_sprites(hyperloop_fences_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/fences_2x.png") {
+    [0, 0, 1, 1, 0, 0]
+    [2, 0, 1, 1, 0, 0]
+    [4, 0, 1, 1, 0, 0]
+    [6, 0, 1, 1, 0, 0]
+    [8, 0, 1, 1, 0, 0]
+    [10, 0, 1, 1, 0, 0]
+    [12, 0, 1, 1, 0, 0]
+    [14, 0, 1, 1, 0, 0]
+    [16, 0, 1, 1, 0, 0]
+    [18, 0, 1, 1, 0, 0]
+    [20, 0, 1, 1, 0, 0]
+    [22, 0, 1, 1, 0, 0]
+    [24, 0, 1, 1, 0, 0]
+    [26, 0, 1, 1, 0, 0]
+    [28, 0, 1, 1, 0, 0]
+    [30, 0, 1, 1, 0, 0]
+}
+spriteset(hyperloop_terminal_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/terminal_1x.png", "gfx/hyperloop/terminal_1x_mask.png") {
+    [0, 0, 39, 30, -32, -11]
+    [40, 0, 66, 45, -55, -24]
+    [107, 0, 39, 30, -7, -11]
+    [147, 0, 66, 45, -11, -24]
+}
+alternative_sprites(hyperloop_terminal_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/terminal_2x.png", "gfx/hyperloop/terminal_2x_mask.png") {
+    [0, 0, 78, 61, -64, -22]
+    [79, 0, 132, 90, -110, -48]
+    [212, 0, 78, 61, -14, -22]
+    [291, 0, 132, 90, -22, -48]
+}
+spriteset(hyperloop_pod_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/pod_1x.png", "gfx/hyperloop/pod_1x_mask.png") {
+    [0, 0, 14, 15, -7, -13]
+    [15, 0, 23, 14, -12, -12]
+    [39, 0, 26, 11, -13, -11]
+    [66, 0, 22, 15, -12, -13]
+    [89, 0, 14, 15, -7, -14]
+    [104, 0, 22, 15, -10, -13]
+    [127, 0, 26, 11, -13, -11]
+    [154, 0, 23, 14, -11, -12]
+}
+alternative_sprites(hyperloop_pod_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/pod_2x.png", "gfx/hyperloop/pod_2x_mask.png") {
+    [0, 0, 30, 30, -15, -27]
+    [31, 0, 47, 30, -24, -25]
+    [79, 0, 52, 19, -26, -22]
+    [132, 0, 47, 32, -24, -27]
+    [180, 0, 30, 30, -15, -29]
+    [211, 0, 47, 32, -23, -27]
+    [259, 0, 52, 19, -26, -22]
+    [312, 0, 47, 30, -23, -25]
+}
+spriteset(hyperloop_passenger_capsule_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/passenger_capsule_1x.png", "gfx/hyperloop/passenger_capsule_1x_mask.png") {
+    [0, 0, 14, 17, -7, -15]
+    [15, 0, 24, 16, -12, -14]
+    [40, 0, 26, 11, -13, -11]
+    [67, 0, 24, 16, -12, -14]
+    [92, 0, 14, 17, -7, -15]
+    [107, 0, 24, 16, -12, -14]
+    [132, 0, 26, 11, -13, -11]
+    [159, 0, 24, 16, -12, -14]
+}
+alternative_sprites(hyperloop_passenger_capsule_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/passenger_capsule_2x.png", "gfx/hyperloop/passenger_capsule_2x_mask.png") {
+    [0, 0, 30, 33, -15, -29]
+    [31, 0, 50, 32, -25, -27]
+    [82, 0, 52, 19, -26, -22]
+    [135, 0, 50, 32, -25, -27]
+    [186, 0, 30, 33, -15, -29]
+    [217, 0, 50, 32, -25, -27]
+    [268, 0, 52, 19, -26, -22]
+    [321, 0, 50, 32, -25, -27]
+}
+spriteset(hyperloop_mail_capsule_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/mail_capsule_1x.png", "gfx/hyperloop/mail_capsule_1x_mask.png") {
+    [0, 0, 14, 17, -7, -15]
+    [15, 0, 24, 16, -12, -14]
+    [40, 0, 26, 11, -13, -11]
+    [67, 0, 24, 16, -12, -14]
+    [92, 0, 14, 17, -7, -15]
+    [107, 0, 24, 16, -12, -14]
+    [132, 0, 26, 11, -13, -11]
+    [159, 0, 24, 16, -12, -14]
+}
+alternative_sprites(hyperloop_mail_capsule_sprites, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/hyperloop/mail_capsule_2x.png", "gfx/hyperloop/mail_capsule_2x_mask.png") {
+    [0, 0, 30, 33, -15, -29]
+    [31, 0, 50, 32, -25, -27]
+    [82, 0, 52, 19, -26, -22]
+    [135, 0, 50, 32, -25, -27]
+    [186, 0, 30, 33, -15, -29]
+    [217, 0, 50, 32, -25, -27]
+    [268, 0, 52, 19, -26, -22]
+    [321, 0, 50, 32, -25, -27]
+}
+spriteset(hyperloop_gui_sprites, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/hyperloop/gui_1x.png") {
+    [0, 0, 20, 20, 0, 0]
+    [21, 0, 20, 20, 0, 0]
+    [42, 0, 20, 20, 0, 0]
+    [63, 0, 20, 20, 0, 0]
+    [84, 0, 20, 20, 0, 0]
+    [105, 0, 20, 20, 0, 0]
+    [126, 0, 20, 20, 0, 0]
+    [147, 0, 20, 20, 0, 0]
+    [168, 0, 32, 32, 0, 0]
+    [201, 0, 32, 32, 0, 0]
+    [234, 0, 32, 32, 0, 0]
+    [267, 0, 32, 32, 0, 0]
+    [300, 0, 32, 32, 0, 0]
+    [333, 0, 32, 32, 0, 0]
+    [366, 0, 32, 32, 0, 0]
+    [399, 0, 32, 32, 0, 0]
+}
+/* END generated Hyperloop sprites */
+
+/* Hyperloop track. A track type of its own, with no fallback: nothing else runs in the Hyperloop.
+ * All its graphics are drawn in code by tools/hyperloop/make_hyperloop_art.py: the guideway, the viaduct
+ * (its deck surface and, read by the game for the dedicated viaduct bridge, its structure), the tube portals,
+ * the depot, and the toolbar icons and cursors. */
 item(FEAT_RAILTYPES, hyperloop_track) {
     property {
         label:                    "HYPL";
@@ -546,9 +833,49 @@ item(FEAT_RAILTYPES, hyperloop_track) {
         sort_order:               0x50;
         badges: ["fl_format/2", "fl_id/hyperloop_track", "fl_tech/hyperloop"];
     }
+    graphics {
+        gui:             hyperloop_gui;
+        underlay:        hyperloop_track_underlay;
+        track_overlay:   hyperloop_track_overlay;
+        tunnels:         hyperloop_tunnel_ground;
+        tunnel_overlay:  hyperloop_tunnel_portal;
+        bridge_surfaces: hyperloop_bridge;
+        depots:          hyperloop_depots;
+        fences:          hyperloop_fences;
+    }
 }
 
-/* Propulsion pod: pulls the capsules. Placeholder graphics: the base-game Lev4 'Chimaera' maglev. */
+/* Hyperloop terminal. A glass-roofed platform hall over the guideway, with company-colour fascias along the eaves
+ * and glowing platform edges; pods stay visible under the translucent roof. The game builds it for every Hyperloop
+ * station, whichever station type was chosen, and only on Hyperloop track (src/future_logistics/hyperloop.cpp). */
+spritelayout hyperloop_terminal_x {
+    ground { sprite: 1012; }
+    building { sprite: hyperloop_terminal(0); xoffset: 0; yoffset: 0;  zoffset: 0; xextent: 16; yextent: 5; zextent: 18;
+               recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; }
+    building { sprite: hyperloop_terminal(1); xoffset: 0; yoffset: 11; zoffset: 0; xextent: 16; yextent: 5; zextent: 18;
+               recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; }
+}
+spritelayout hyperloop_terminal_y {
+    ground { sprite: 1011; }
+    building { sprite: hyperloop_terminal(2); xoffset: 0;  yoffset: 0; zoffset: 0; xextent: 5; yextent: 16; zextent: 18;
+               recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; }
+    building { sprite: hyperloop_terminal(3); xoffset: 11; yoffset: 0; zoffset: 0; xextent: 5; yextent: 16; zextent: 18;
+               recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; }
+}
+item(FEAT_STATIONS, hyperloop_terminal_station, 0) {
+    property {
+        class:     "HYPL";
+        classname: string(STR_HYPERLOOP_TERMINAL_CLASS);
+        name:      string(STR_HYPERLOOP_TERMINAL);
+        badges:    ["fl_format/2", "fl_tech/hyperloop"];
+    }
+    graphics {
+        sprite_layouts: [hyperloop_terminal_x, hyperloop_terminal_y];
+        default: hyperloop_terminal;
+    }
+}
+
+/* Propulsion pod: pulls the capsules. Drawn by tools/hyperloop/make_hyperloop_art.py, in company colours. */
 item(FEAT_TRAINS, hyperloop_pod, 120) {
     property {
         name:                string(STR_HYPERLOOP_POD);
@@ -558,7 +885,7 @@ item(FEAT_TRAINS, hyperloop_pod, 120) {
         vehicle_life:        30;
         reliability_decay:   10;
         track_type:          HYPL;
-        sprite_id:           31;
+        sprite_id:           SPRITE_ID_NEW_TRAIN;
         engine_class:        ENGINE_CLASS_MAGLEV;
         speed:               3219 km/h;
         power:               12000 kW;
@@ -570,9 +897,10 @@ item(FEAT_TRAINS, hyperloop_pod, 120) {
         cargo_capacity:      0;
         badges: ["fl_format/2", "fl_id/hyperloop_pod", "fl_tech/hyperloop", "role/express", "power/electric"];
     }
+    graphics { default: hyperloop_pod; }
 }
 
-/* Passenger capsule. Placeholder graphics: the base-game maglev passenger carriage. */
+/* Passenger capsule. Drawn by tools/hyperloop/make_hyperloop_art.py, in company colours. */
 item(FEAT_TRAINS, hyperloop_passenger_capsule, 121) {
     property {
         name:                string(STR_HYPERLOOP_PASSENGER_CAPSULE);
@@ -581,7 +909,7 @@ item(FEAT_TRAINS, hyperloop_passenger_capsule, 121) {
         model_life:          40;
         vehicle_life:        30;
         track_type:          HYPL;
-        sprite_id:           60;
+        sprite_id:           SPRITE_ID_NEW_TRAIN;
         power:               0;
         weight:              12 ton;
         cost_factor:         60;
@@ -590,9 +918,10 @@ item(FEAT_TRAINS, hyperloop_passenger_capsule, 121) {
         refittable_cargo_classes: bitmask(CC_PASSENGERS);
         badges: ["fl_format/2", "fl_id/hyperloop_passenger_capsule", "fl_tech/hyperloop", "role/passenger"];
     }
+    graphics { default: hyperloop_passenger_capsule; }
 }
 
-/* Mail capsule. Placeholder graphics: the base-game maglev mail van. */
+/* Mail capsule. Drawn by tools/hyperloop/make_hyperloop_art.py, in company colours. */
 item(FEAT_TRAINS, hyperloop_mail_capsule, 122) {
     property {
         name:                string(STR_HYPERLOOP_MAIL_CAPSULE);
@@ -601,7 +930,7 @@ item(FEAT_TRAINS, hyperloop_mail_capsule, 122) {
         model_life:          40;
         vehicle_life:        30;
         track_type:          HYPL;
-        sprite_id:           62;
+        sprite_id:           SPRITE_ID_NEW_TRAIN;
         power:               0;
         weight:              10 ton;
         cost_factor:         50;
@@ -610,6 +939,7 @@ item(FEAT_TRAINS, hyperloop_mail_capsule, 122) {
         refittable_cargo_classes: bitmask(CC_MAIL, CC_EXPRESS);
         badges: ["fl_format/2", "fl_id/hyperloop_mail_capsule", "fl_tech/hyperloop", "role/mail"];
     }
+    graphics { default: hyperloop_mail_capsule; }
 }
 
 /* Reusable rocket: dedicated orbital controller and supplied vertical rocket artwork. */

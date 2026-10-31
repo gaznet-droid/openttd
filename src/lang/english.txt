@@ -6114,6 +6114,7 @@ STR_DISTRIBUTION_REQUIRES_CITY                                  :A Distribution 
 STR_DISTRIBUTION_ONE_PER_TOWN                                   :This town already has a Distribution Centre
 STR_DISTRIBUTION_CLEAR_SITE                                     :A Distribution Centre needs a clear, flat 4x4 site
 STR_HYPERLOOP_USE_HYPERLOOP_TOOLS                               :Build Hyperloop routes with the viaduct or underground tube tool; surface track is limited to terminal approaches
+STR_HYPERLOOP_TERMINAL_ONLY                                     :The Hyperloop terminal can only be built on Hyperloop track
 STR_HYPERLOOP_VIADUCT_ONLY                                      :The Hyperloop viaduct carries only Hyperloop track
 STR_HYPERLOOP_BUILD_TUBE_TOOLTIP                                :{BLACK}Drag between two aligned, flat access shafts at the same height to build an underground Hyperloop tube, for routes that hills or buildings would block
 STR_HYPERLOOP_BUILD_VIADUCT_TOOLTIP                             :{BLACK}Drag between two ramps on the same row or column and at the same height to build an elevated Hyperloop viaduct

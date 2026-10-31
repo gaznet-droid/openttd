@@ -140,6 +140,7 @@ void InitRailTypes()
 		_sorted_railtypes.push_back(rt);
 	}
 	std::sort(_sorted_railtypes.begin(), _sorted_railtypes.end(), CompareRailTypes);
+	InitHyperloopViaductSprites();
 }
 
 /**

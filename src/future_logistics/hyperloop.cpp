@@ -7,6 +7,7 @@
 #include "../bridge.h"
 #include "../bridge_map.h"
 #include "../landscape.h"
+#include "../newgrf_railtype.h"
 #include "../safeguards.h"
 
 namespace {
@@ -103,4 +104,66 @@ bool HyperloopTubeUnder(TileIndex tile, int z)
 bool HyperloopTubeUnder(TileIndex tile)
 {
 	return std::ranges::any_of(Tubes(), [&](const Tube &tube) { return Contains(tube, tile); });
+}
+
+/**
+ * Give the Hyperloop viaduct its own structure, drawn by the NewGRF that defines the HYPL rail type. The rail type's
+ * bridge surface set holds the six usual deck surfaces followed by the viaduct: floor, roof and pillar for the X and
+ * then Y axis, then eight heads in the game's head order. Without them the viaduct keeps its default sprites.
+ * Called after NewGRFs are loaded and rail type sprites are resolved.
+ */
+void InitHyperloopViaductSprites()
+{
+	BridgeSpec &spec = _bridge[BRIDGE_HYPERLOOP];
+	spec.sprite_table.clear();
+	for (RailType rt : EnumRange(RAILTYPE_END)) {
+		if (!IsHyperloopRailType(rt)) continue;
+		const RailTypeInfo *rti = GetRailTypeInfo(rt);
+		uint num = 0;
+		const SpriteID base = GetCustomRailSprite(rti, INVALID_TILE, RailSpriteType::Bridge, TileContext::Normal, &num);
+		static constexpr uint SURFACES = 6, MIDDLE = 6, HEADS = 8;
+		if (base == 0 || num < SURFACES + MIDDLE + HEADS) return;
+		/* Bridge tables are indexed from the rail type's bridge offset. */
+		const uint offset = rti->bridge_offset;
+		const SpriteID mid = base + SURFACES;
+		std::vector<PalSpriteID> middle(offset + 8, PalSpriteID{0, PAL_NONE});
+		for (uint axis = 0; axis < 2; axis++) {
+			for (uint part = 0; part < 3; part++) middle[offset + axis * 4 + part] = {mid + axis * 3 + part, PAL_NONE};
+		}
+		std::vector<PalSpriteID> heads(offset + 8, PalSpriteID{0, PAL_NONE});
+		for (uint i = 0; i < HEADS; i++) heads[offset + i] = {mid + MIDDLE + i, PAL_NONE};
+		spec.sprite_table.assign(NUM_BRIDGE_PIECES, middle);
+		spec.sprite_table[BRIDGE_PIECE_HEAD] = heads;
+		return;
+	}
+}
+
+/** Class label of the Hyperloop terminal station. */
+static const StationClass::GlobalID HYPERLOOP_TERMINAL_CLASS{"HYPL"};
+
+/**
+ * Check for the Hyperloop terminal's station class.
+ * @param cls Station class.
+ * @return Whether it is the Hyperloop terminal class.
+ */
+bool IsHyperloopTerminalClass(StationClassID cls)
+{
+	return cls.base() < StationClass::GetClassCount() && StationClass::Get(cls)->global_id == HYPERLOOP_TERMINAL_CLASS;
+}
+
+/**
+ * Find the Hyperloop terminal, which every Hyperloop station is built as.
+ * @param[out] cls Its station class.
+ * @param[out] index Its index in the class.
+ * @return Whether a NewGRF provides it.
+ */
+bool FindHyperloopTerminal(StationClassID &cls, uint16_t &index)
+{
+	for (const auto &c : StationClass::Classes()) {
+		if (c.global_id != HYPERLOOP_TERMINAL_CLASS || c.GetSpecCount() == 0) continue;
+		cls = c.Index();
+		index = 0;
+		return true;
+	}
+	return false;
 }

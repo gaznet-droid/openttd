@@ -1513,7 +1513,13 @@ static void DrawTile_TunnelBridge(TileInfo *ti)
 
 		AddSortableSpriteToDraw(image + 1, PAL_NONE, *ti, roof_bounds[tunnelbridge_direction], false);
 		/* Draw railtype tunnel portal overlay if defined. */
-		if (railtype_overlay != 0) AddSortableSpriteToDraw(railtype_overlay + to_underlying(tunnelbridge_direction), PAL_NONE, *ti, roof_bounds[tunnelbridge_direction], false);
+		if (railtype_overlay != 0) {
+			/* Hyperloop tube portals carry the owner's company colour. */
+			const bool hyperloop = IsHyperloopRailType(GetRailType(ti->tile));
+			SpriteID portal = railtype_overlay + to_underlying(tunnelbridge_direction);
+			if (hyperloop) SetBit(portal, PALETTE_MODIFIER_COLOUR);
+			AddSortableSpriteToDraw(portal, hyperloop ? GetCompanyPalette(GetTileOwner(ti->tile)) : PAL_NONE, *ti, roof_bounds[tunnelbridge_direction], false);
+		}
 
 		if (catenary || railtype_overlay != 0) EndSpriteCombine();
 

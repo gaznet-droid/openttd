@@ -75,6 +75,30 @@ class Scene:
             self.tri((x + prof[0][0], y + prof[0][1], z1), (x + prof[i][0], y + prof[i][1], z1),
                      (x + prof[i + 1][0], y + prof[i + 1][1], z1), m)
 
+    def subset(self, keep):
+        """A new scene with only the triangles whose centroid satisfies keep(x, y, z)."""
+        out = Scene()
+        out.tris = [t for t in self.tris if keep(*((t[0] + t[1] + t[2]) / 3))]
+        return out
+
+    def beam(self, p0, p1, half_w, z0, z1, m, top=None, z_at=None):
+        """A box along the ground segment p0 -> p1 (x, y), half_w either side, from z0 to z1.
+
+        z_at(x, y) adds a height offset, for pieces on slopes."""
+        top = top or m
+        (x0, y0), (x1, y1) = p0, p1
+        dx, dy = x1 - x0, y1 - y0
+        ln = math.hypot(dx, dy)
+        nx, ny = -dy / ln * half_w, dx / ln * half_w
+        za = z_at or (lambda x, y: 0.0)
+        c = [(x0 + nx, y0 + ny), (x1 + nx, y1 + ny), (x1 - nx, y1 - ny), (x0 - nx, y0 - ny)]
+        lo = [(x, y, z0 + za(x, y)) for x, y in c]
+        hi = [(x, y, z1 + za(x, y)) for x, y in c]
+        self.quad(*hi, top)
+        for i in range(4):
+            j = (i + 1) % 4
+            self.quad(lo[i], lo[j], hi[j], hi[i], m)
+
     # --- rendering ---------------------------------------------------------------------------------------------
     def render(self, zoom=1, origin=None, size=None, outline=0.55, crease=0.75):
         """Render to (RGBA image, company mask, (xrel, yrel)).

@@ -1086,6 +1086,8 @@ public:
 	{
 		const auto *sc = GetClass(id);
 		if (IsWaypointClass(*sc)) return INVALID_STRING_ID;
+		/* Hyperloop stations are always Hyperloop terminals, and the terminal is only for Hyperloop track. */
+		if (IsHyperloopRailType(_cur_railtype) != IsHyperloopTerminalClass(this->GetClassIndex(id))) return INVALID_STRING_ID;
 		return sc->name;
 	}
 
