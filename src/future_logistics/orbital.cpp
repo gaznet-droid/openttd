@@ -183,6 +183,26 @@ bool TickOrbitalAircraft(Aircraft *v)
 	const OrbitalPhase before = mission.phase;
 	switch (mission.phase) {
 		case OrbitalPhase::Boarding: {
+			/* Saves from before the pad took one shuttle at a time can have several boarding at once. All but the
+			 * oldest (or one being serviced) step back into the hangar and queue, keeping what they have loaded. */
+			bool yield = false;
+			for (const Aircraft *other : Aircraft::Iterate()) {
+				if (other == v || !other->IsNormalAircraft() || !other->acache.orbital_shuttle || other->orbital.origin != st->index) continue;
+				if (other->orbital.phase == OrbitalPhase::Servicing || other->orbital.phase == OrbitalPhase::Launching ||
+						other->orbital.phase == OrbitalPhase::Returning || (other->orbital.phase == OrbitalPhase::Boarding && other->index < v->index)) {
+					yield = true;
+					break;
+				}
+			}
+			if (yield) {
+				if (v->current_order.IsType(OT_LOADING)) v->LeaveStation();
+				v->current_order.MakeDummy();
+				v->tile = st->airport.GetHangarTile(0);
+				v->state = HANGAR;
+				v->targetairport = st->index;
+				mission.phase = OrbitalPhase::None;
+				break;
+			}
 			/* External order edits must not strand the shuttle or leave duplicate loading entries. */
 			if (!v->current_order.IsType(OT_LOADING)) {
 				v->CancelReservation(StationID::Invalid(), st);
