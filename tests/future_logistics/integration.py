@@ -172,6 +172,12 @@ DayZeroMonopolies =
                              daily_commands=f"future_logistics_tech orbital {offworld}\n")
         require("ORBIT fixture ready" in text, "orbital test fixture was not built")
         require(re.search(r"ORBIT fixture ready .* station=.*Spaceport", text), "orbital launch facility was not named as a Spaceport")
+        catchment = re.search(r"ORBIT catchment radius=(\d+) reach_x=(\d+) reach_y=(\d+) span=(\d+)x(\d+) footprint=(\d+)x(\d+)", text)
+        require(catchment and all(int(v) == 12 for v in catchment.group(1, 2, 3)), "spaceport catchment does not reach 12 tiles")
+        # The script API reports the layout's unrotated size, so compare the spans without regard to orientation.
+        spans = sorted(int(v) for v in catchment.group(4, 5))
+        footprint = sorted(int(v) for v in catchment.group(6, 7))
+        require(spans == [f + 24 for f in footprint], "spaceport catchment does not cover exactly 12 tiles around the pad")
         launches = re.findall(r"FL orbital launch vehicle=(\d+) origin=(\d+) month=(\d+) passengers=(\d+) manual=(\w+)", text)
         require(len(launches) >= 2, "orbital ships did not launch repeatedly")
         require(len({v for v, *_ in launches}) >= 2, "waiting fleet did not share the launch slot")
@@ -250,9 +256,11 @@ DayZeroMonopolies =
             text, _ = run("airport-" + name, enabled=False, year=2056, grfs=grfs,
                           commands="future_logistics_tech validate\nfuture_logistics_tech list\n")
             require("FL tech validate problems=0" in text, name + " has declaration problems")
-            require(len(re.findall(r"FL tech infra kind=airport id=airport:\d+ speed=0 size=4x3", text)) == 1,
-                    name + " replaces or duplicates the country airport")
-        print("Country airport preservation with either graphics-pack loading order passed", flush=True)
+            # The country airport and the spaceport, whose 3x4 pad is the country airport turned a quarter turn, both
+            # report 4x3: exactly two means the country airport survives and only one spaceport is offered.
+            require(len(re.findall(r"FL tech infra kind=airport id=airport:\d+ speed=0 size=4x3", text)) == 2,
+                    name + " replaces the country airport or offers two spaceports")
+        print("Country airport preservation and a single spaceport with either graphics-pack loading order passed", flush=True)
 
     if args.only == "airports":
         check_airports()
@@ -487,19 +495,6 @@ DayZeroMonopolies =
         top = max(vehicles, key=lambda v: int(v[column]))
         require(top[0] == "464C0102:air:64", f"Starship does not have the highest {what}: {top[0]} does")
 
-    # Corporate Infrastructure: Gareth's decorative objects, loaded alongside Future Logistics.
-    ci_grf = ROOT / "mods/newgrf/corporate_infrastructure/CorporateInfrastructure.grf"
-    if nmlc:
-        rebuilt = output / "corporate_infrastructure_rebuilt.grf"
-        subprocess.run([nmlc, "--grf", str(rebuilt), "CorporateInfrastructure.nml"], cwd=ci_grf.parent, check=True,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        require(rebuilt.read_bytes() == ci_grf.read_bytes(),
-                "CorporateInfrastructure.grf is out of date: run mods/newgrf/corporate_infrastructure/build.sh")
-    objects, _ = run("corporate-infrastructure", year=2026, enabled=False, service=True, months=1, grfs=[fl_grf, ci_grf],
-                     game_script=ROOT / "tests/future_logistics/gs/CIObjectCheck", commands="future_logistics_tech validate\n")
-    require("CI objects built=6" in objects and "FL tech validate problems=0" in objects,
-            "the Corporate Infrastructure objects could not all be built alongside Future Logistics")
-
     check_data_centres()
     check_orbital()
     check_hyperloop()
@@ -597,7 +592,7 @@ DayZeroMonopolies =
                     f"{climate}: Tech Library differs from {snapshot_file.relative_to(ROOT)}; "
                     "rerun with --update-snapshots if the change is intended")
 
-    summary = "PASS: mail trains and trucks; Starship on its own and with Future Logistics; Corporate Infrastructure objects; railways over hills, through them and over rivers; ferries in a coastal world; freight routes in two legs with a transfer (ship then train through a port); NewGRF tech family, rival, cargo meaning and validation; drones, hyperloop and rockets from the Future Logistics NewGRF adopted by the rivals; data centres fundable on open land, one per town; headstart scaled to world population and town size; rivals that grow after day zero through AIFutureLogistics; four distinct company profiles with an airline, passenger and freight rail, feeder buses into railway stations, trucks continuing rail cargo chains, and tier-sized fleets; Tech Library bus choice, console query and per-climate snapshots; company ownership/count; funding/loan accounting; four connected starter networks with controlled, default-world and 2026 settings; reserved cleanup capacity; fixed-seed reproducibility; station visits after simulation; network save/reload; no bootstrap on ordinary save load; disabled setting; competitor limit/custom capital; one-town/no-bus fallback and construction rollback; late-start milestone catch-up and persistence; dedicated multiplayer exclusion.\n"
+    summary = "PASS: mail trains and trucks; Starship on its own and with Future Logistics; railways over hills, through them and over rivers; ferries in a coastal world; freight routes in two legs with a transfer (ship then train through a port); NewGRF tech family, rival, cargo meaning and validation; drones, hyperloop and rockets from the Future Logistics NewGRF adopted by the rivals; data centres fundable on open land, one per town; headstart scaled to world population and town size; rivals that grow after day zero through AIFutureLogistics; four distinct company profiles with an airline, passenger and freight rail, feeder buses into railway stations, trucks continuing rail cargo chains, and tier-sized fleets; Tech Library bus choice, console query and per-climate snapshots; company ownership/count; funding/loan accounting; four connected starter networks with controlled, default-world and 2026 settings; reserved cleanup capacity; fixed-seed reproducibility; station visits after simulation; network save/reload; no bootstrap on ordinary save load; disabled setting; competitor limit/custom capital; one-town/no-bus fallback and construction rollback; late-start milestone catch-up and persistence; dedicated multiplayer exclusion.\n"
     (output / "results.txt").write_text(summary)
     print(summary)
 

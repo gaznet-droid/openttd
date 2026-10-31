@@ -17,6 +17,8 @@
 #include "../landscape.h"
 #include "../newgrf_airport.h"
 #include "../station_base.h"
+#include "../station_map.h"
+#include "../viewport_func.h"
 #include "../strings_func.h"
 #include "../vehicle_func.h"
 #include "../window_func.h"
@@ -72,6 +74,29 @@ bool PadBusy(const Aircraft *v)
 }
 
 /**
+ * Show the docked or empty launch pad: while a shuttle of this spaceport is boarding or being serviced it stands
+ * on the launch mount, and the pad's tiles draw it there (animation frame 1); otherwise they draw the empty pad.
+ * @param st Spaceport to update.
+ */
+void UpdatePadDocked(Station *st)
+{
+	if (st == nullptr || st->airport.IsEmpty()) return;
+	bool docked = false;
+	for (const Aircraft *a : Aircraft::Iterate()) {
+		if (a->IsNormalAircraft() && a->acache.orbital_shuttle && a->orbital.origin == st->index &&
+				(a->orbital.phase == OrbitalPhase::Boarding || a->orbital.phase == OrbitalPhase::Servicing)) {
+			docked = true;
+			break;
+		}
+	}
+	for (TileIndex t : st->airport) {
+		if (!st->TileBelongsToAirport(t) || GetAnimationFrame(t) == (docked ? 1 : 0)) continue;
+		SetAnimationFrame(t, docked ? 1 : 0);
+		MarkTileDirtyByTile(t);
+	}
+}
+
+/**
  * Book orbital revenue.
  * @param v Operating vehicle.
  * @param profit Revenue after feeder shares.
@@ -100,6 +125,7 @@ void Board(Aircraft *v, Station *st)
 	v->BeginLoading();
 	v->orbital.phase = OrbitalPhase::Boarding;
 	v->orbital.manual_dispatch = false;
+	UpdatePadDocked(st);
 }
 } // namespace
 
@@ -138,14 +164,15 @@ bool TickOrbitalAircraft(Aircraft *v)
 		if (!AircraftMeetsAirportRequirements(v->GetEngine(), AirportSpec::Get(st->airport.type))) return false;
 		mission.origin = st->index;
 		mission.origin_tile = st->airport.tile;
-		mission.ground_z = GetSlopePixelZ(TileX(st->airport.tile) * TILE_SIZE + 44, TileY(st->airport.tile) * TILE_SIZE + 38) + 1;
+		mission.ground_z = GetSlopePixelZ(TileX(st->airport.tile) * TILE_SIZE + ORBITAL_MOUNT_X, TileY(st->airport.tile) * TILE_SIZE + ORBITAL_MOUNT_Y) + 1;
 		Board(v, st);
 	}
 	Station *st = Origin(v);
 	if (st == nullptr) return true; // Never silently reroute an off-world mission.
-	const int x = TileX(st->airport.tile) * TILE_SIZE + 44;
-	const int y = TileY(st->airport.tile) * TILE_SIZE + 38;
+	const int x = TileX(st->airport.tile) * TILE_SIZE + ORBITAL_MOUNT_X;
+	const int y = TileY(st->airport.tile) * TILE_SIZE + ORBITAL_MOUNT_Y;
 	const int32_t today = TimerGameCalendar::date.base();
+	const OrbitalPhase before = mission.phase;
 	switch (mission.phase) {
 		case OrbitalPhase::Boarding: {
 			/* External order edits must not strand the shuttle or leave duplicate loading entries. */
@@ -221,6 +248,7 @@ bool TickOrbitalAircraft(Aircraft *v)
 			break;
 		case OrbitalPhase::None: NOT_REACHED();
 	}
+	if (mission.phase != before) UpdatePadDocked(st);
 	v->cur_speed = 0;
 	SetWindowDirty(WindowClass::VehicleView, v->index);
 	return true;
