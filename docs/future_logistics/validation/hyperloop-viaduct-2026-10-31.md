@@ -74,6 +74,12 @@ Results:
   hilly map that route is a tube (`bridges=0 tunnels=1`), which is the
   intended fallback.
 - **Hub, orbital and airport scenarios** still pass.
+- **Full Future Logistics suite** (the run CI uses for PRs to `main`): all 55
+  runs passed except one check that fails on its own. That check expects
+  "Published roadmap milestone" news, which was removed on the feature branch
+  in afe937c ("remove obsolete roadmap news"), so it fails without this PR's
+  changes too. It was skipped locally to run the rest of the suite. The stale
+  check belongs in a fix to #5, not here.
 - Python compilation, unused strings and whitespace checks passed.
 
 ## Why tubes stay
