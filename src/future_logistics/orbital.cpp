@@ -76,19 +76,19 @@ bool PadBusy(const Aircraft *v)
 /**
  * Show the docked or empty launch pad: while a shuttle of this spaceport is boarding or being serviced it stands
  * on the launch mount, and the pad's tiles draw it there (animation frame 1); otherwise they draw the empty pad.
+ * While another shuttle is lifting off from or landing on the mount, the pad is drawn empty so the two never overlap.
  * @param st Spaceport to update.
  */
 void UpdatePadDocked(Station *st)
 {
 	if (st == nullptr || st->airport.IsEmpty()) return;
-	bool docked = false;
+	bool waiting = false, moving = false;
 	for (const Aircraft *a : Aircraft::Iterate()) {
-		if (a->IsNormalAircraft() && a->acache.orbital_shuttle && a->orbital.origin == st->index &&
-				(a->orbital.phase == OrbitalPhase::Boarding || a->orbital.phase == OrbitalPhase::Servicing)) {
-			docked = true;
-			break;
-		}
+		if (!a->IsNormalAircraft() || !a->acache.orbital_shuttle || a->orbital.origin != st->index) continue;
+		if (a->orbital.phase == OrbitalPhase::Boarding || a->orbital.phase == OrbitalPhase::Servicing) waiting = true;
+		if (a->orbital.phase == OrbitalPhase::Launching || a->orbital.phase == OrbitalPhase::Returning) moving = true;
 	}
+	const bool docked = waiting && !moving;
 	for (TileIndex t : st->airport) {
 		if (!st->TileBelongsToAirport(t) || GetAnimationFrame(t) == (docked ? 1 : 0)) continue;
 		SetAnimationFrame(t, docked ? 1 : 0);
@@ -241,6 +241,7 @@ bool TickOrbitalAircraft(Aircraft *v)
 			mission.phase = OrbitalPhase::Servicing;
 			mission.due_date = today + 2;
 			v->state = HANGAR;
+			Visible(v, false); // The pad now draws it docked on the mount.
 			VehicleServiceInDepot(v);
 			break;
 		case OrbitalPhase::Servicing:
