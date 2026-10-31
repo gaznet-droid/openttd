@@ -8,7 +8,7 @@
 #   corporate_infrastructure/originals/spaceport_starship_on_pad_transparent.png  the same pad with Starship docked
 #   starship/art/starship_powered.png                                          Starship in flight, engines lit
 # Outputs, per zoom level (1 = normal, 2 = 2x zoom), in one pixel density with the base game:
-#   pad_empty_{z}x.png, pad_docked_{z}x.png    the whole pad, before slicing into tiles
+#   pad_empty_{z}x.png, pad_docked_{z}x.png    the whole pad, with the tall hangar (spaceport_hangar.py), before slicing
 #   rocket_idle_{z}x.png                       Starship cut from the docked pad, arms removed
 #   rocket_lit_{z}x_{f}.png                    Starship with flame, three flicker frames
 #   layout.json                                where the footprint and the launch mount are in each image
@@ -22,6 +22,7 @@ from scipy import ndimage
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import pixelart as P  # noqa: E402
+import spaceport_hangar as H  # noqa: E402
 
 NEWGRF = Path(__file__).resolve().parent.parent
 ORIGINALS = NEWGRF / "corporate_infrastructure" / "originals"
@@ -109,11 +110,14 @@ def main():
         north = (round((north_src[0] - CROP[0]) / f), round((north_src[1] - CROP[1]) / f))
         for state, image in (("e", empty), ("d", docked)):
             grid = to_grid(image.crop(CROP), zoom, 96)
-            for (x, y), (piece, xrel, yrel) in P.slice_footprint(grid, *FOOTPRINT, north, zoom, fill=EDGE).items():
+            # The tall assembly hangar replaces the low one in the left-hand corner (tools/spaceport_hangar.py).
+            grid, shift = H.overlay(grid, zoom, north)
+            at_north = (north[0] + shift[0], north[1] + shift[1])
+            for (x, y), (piece, xrel, yrel) in P.slice_footprint(grid, *FOOTPRINT, at_north, zoom, fill=EDGE).items():
                 tiles[(state, x, y, zoom)] = (piece, xrel, yrel)
             if state == "d":
                 pw = 96 * zoom
-                preview[zoom] = P.pixelate(image.crop(CROP), pw, 64)
+                preview[zoom] = P.pixelate(grid, pw, 64)
         # Rocket: placed so that, standing at the launch mount, it covers exactly the docked rocket in the pad art.
         idle = to_grid(rocket, zoom, 48)
         at = (round((rocket_at[0] - CROP[0]) / f), round((rocket_at[1] - CROP[1]) / f))
