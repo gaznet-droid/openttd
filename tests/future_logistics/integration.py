@@ -487,8 +487,9 @@ DayZeroMonopolies =
     require("FL tech validate problems=0" in both, "Starship and Future Logistics together report declaration problems")
     # Each pack must preserve exactly one country airport, including either loading order.
     check_airports()
-    require(len(re.findall(r"FL tech infra kind=airport id=airport:\d+ speed=0 size=4x3", both)) == 1,
-            "loading Starship replaces or duplicates the country airport")
+    # The country airport and the 3x4 spaceport both report 4x3: two means neither is lost or duplicated.
+    require(len(re.findall(r"FL tech infra kind=airport id=airport:\d+ speed=0 size=4x3", both)) == 2,
+            "loading Starship replaces or duplicates the country airport or the spaceport")
     # Balance: Starship is the most expensive vehicle to buy and to run, and carries the most.
     vehicles = re.findall(r"FL tech vehicle id=(\S+) .*capacity=(\d+) .*cost=(\d+) running_cost=(\d+) name=", both)
     for column, what in ((2, "purchase cost"), (3, "running cost"), (1, "capacity")):
