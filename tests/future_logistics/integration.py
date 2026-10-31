@@ -37,7 +37,7 @@ def main():
 
     def run(name, *, seed=12345, load=None, enabled=True, limit=4, capital=25000000,
             towns=48, year=1950, service=False, dedicated=False, vehicle_limit=500, clear_limit=4096, default_world=False,
-            climate="temperate", commands="", industries=4, map_bits=8, grfs=(), coastal=False, months=3, mountains=False, rivers=False, game_script=None, multiple_industries=False, daily_commands="", town_cargo_scale=100):
+            climate="temperate", commands="", industries=4, map_bits=8, grfs=(), coastal=False, months=3, mountains=False, rivers=False, game_script=None, multiple_industries=False, daily_commands="", town_cargo_scale=100, distant_join=True):
         folder = output / name
         folder.mkdir(exist_ok=True)
         if grfs:
@@ -76,6 +76,8 @@ max_aircraft = {vehicle_limit}
 [economy]
 town_layout = 1
 town_cargo_scale = {town_cargo_scale}
+[station]
+distant_join_stations = {str(distant_join).lower()}
 [gui]
 pause_on_newgame = false
 threaded_saves = false
@@ -206,13 +208,13 @@ DayZeroMonopolies =
     def check_hub():
         grf = ROOT / "mods/newgrf/future_logistics/future_logistics.grf"
         script = ROOT / "tests/future_logistics/gs/HubCheck"
-        first, seed = run("hub-seed", enabled=False, year=2050, towns=16, map_bits=9, grfs=[grf], game_script=script)
-        prepared, save = run("hub-prepared", load=seed, enabled=False, year=2050, grfs=[grf], game_script=script, service=True, months=6)
+        first, seed = run("hub-seed", enabled=False, year=2050, towns=16, map_bits=9, grfs=[grf], game_script=script, distant_join=False)
+        prepared, save = run("hub-prepared", load=seed, enabled=False, year=2050, grfs=[grf], game_script=script, service=True, months=6, distant_join=False)
         sites = re.search(r"HUB fixture ready tile=(\d+) second=(\d+) small=(\d+)", first + prepared)
         require(sites, "distribution hub fixture did not find its sites")
         tile, second, small = sites.groups()
         built, ready = run("hub-built", load=save, enabled=False, year=2050, grfs=[grf], game_script=script, service=True, months=2,
-                           commands=f"future_logistics_tech build-hub-auto {tile}\n", daily_commands="future_logistics_tech hub-audit\n")
+                           commands=f"future_logistics_tech build-hub-auto {tile}\n", daily_commands="future_logistics_tech hub-audit\n", distant_join=False)
         require(re.search(rf"FL distribution request tile={tile} accepted=true", built), "hub construction rejected")
         require(re.search(r"FL distribution audit .*bays=4 reserved_secondary=4", built), "hub does not have four joined single-vehicle bays")
         require("HUB automatic join station=" in built, "hub did not append to the adjacent western station")
@@ -223,7 +225,7 @@ DayZeroMonopolies =
                 "hub truck did not complete a round trip and re-enter a loading bay")
         rejected, _ = run("hub-reloaded", load=ready, enabled=False, year=2050, grfs=[grf], game_script=script, service=True, months=1,
                           commands=f"future_logistics_tech build-hub {second}\nfuture_logistics_tech build-hub {small}\n",
-                          daily_commands="future_logistics_tech hub-audit\n")
+                          daily_commands="future_logistics_tech hub-audit\n", distant_join=False)
         require(re.search(rf"FL distribution request tile={second} accepted=false .*already has a Distribution Centre", rejected), "second hub in one town was allowed")
         require(re.search(rf"FL distribution request tile={small} accepted=false .*5,000", rejected), "small town restriction did not apply")
         require(re.search(r"FL distribution audit .*bays=4 reserved_secondary=4", rejected), "hub bays did not survive reload")

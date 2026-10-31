@@ -62,6 +62,9 @@ class HubCheck extends GSController {
         return true;
     }
     function Start() {
+        if (GSGameSettings.GetValue("station.distant_join_stations") != 0) {
+            GSLog.Error("HUB regression requires distant station joining disabled"); return;
+        }
         while (GSCompany.ResolveCompanyID(0) == GSCompany.COMPANY_INVALID) this.Sleep(10);
         if (!this.ready) {
             GSCompany.ChangeBankBalance(0, 100000000, GSCompany.EXPENSES_OTHER, GSMap.TILE_INVALID);

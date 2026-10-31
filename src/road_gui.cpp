@@ -1499,7 +1499,7 @@ public:
 		r.bottom = INT_MAX; // Allow overflow as we want to know the required height.
 		if (spec != nullptr) r.top = DrawBadgeNameList(r, spec->badges, GrfSpecFeature::RoadStops);
 		TileIndex coverage_tile = TileVirtXY(_thd.pos.x, _thd.pos.y);
-		if (hub && coverage_tile < Map::Size()) coverage_tile = TileAddXY(coverage_tile, 3, 0);
+		if (hub && coverage_tile < Map::Size()) coverage_tile = TileAddWrap(coverage_tile, 3, 0);
 		r.top = hub ? DrawStationCoverageAreaText(r, sct, rad, false, coverage_tile, 1, 4) : DrawStationCoverageAreaText(r, sct, rad, false);
 		r.top += WidgetDimensions::scaled.vsep_normal;
 		r.top = hub ? DrawStationCoverageAreaText(r, sct, rad, true, coverage_tile, 1, 4) : DrawStationCoverageAreaText(r, sct, rad, true);
