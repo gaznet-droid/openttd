@@ -24,6 +24,8 @@ DEF_CMD_TRAIT(Commands::BuildTunnel, CmdBuildTunnel, CommandFlags({CommandFlag::
 
 CommandCost CmdBuildHyperloopTube(DoCommandFlags flags, TileIndex start, TileIndex end, RailType railtype);
 DEF_CMD_TRAIT(Commands::BuildHyperloopTube, CmdBuildHyperloopTube, CommandFlag::Auto, CommandType::LandscapeConstruction)
+CommandCost CmdBuildHyperloopViaduct(DoCommandFlags flags, TileIndex start, TileIndex end, RailType railtype);
+DEF_CMD_TRAIT(Commands::BuildHyperloopViaduct, CmdBuildHyperloopViaduct, CommandFlag::Auto, CommandType::LandscapeConstruction)
 
 void CcBuildBridge(Commands, const CommandCost &result, TileIndex end_tile, TileIndex tile_start, TransportType transport_type, BridgeType, RailType, RoadType);
 

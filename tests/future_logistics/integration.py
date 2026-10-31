@@ -193,17 +193,19 @@ DayZeroMonopolies =
 
     def check_hyperloop():
         grf = ROOT / "mods/newgrf/future_logistics/future_logistics.grf"
-        text, save = run("hyperloop-underground", enabled=False, limit=1, year=2050, towns=8, map_bits=9,
+        text, save = run("hyperloop-check", enabled=False, limit=1, year=2050, towns=8, map_bits=9,
                          grfs=[grf], service=True, months=3,
                          game_script=ROOT / "tests/future_logistics/gs/HyperloopCheck")
-        require("HYPL fixture ready" in text, "underground Hyperloop fixture failed")
-        require("HYPL movement reached_far=true" in text, "pod did not traverse its underground tube at the expected speed")
-        resumed, _ = run("hyperloop-underground-reloaded", enabled=False, limit=1, year=2050, load=save,
+        require("HYPL fixture ready" in text, "Hyperloop tube and viaduct fixture failed")
+        require("HYPL movement reached_far=true" in text, "pod did not traverse its tube at the expected speed")
+        require("HYPL viaduct ready" in text and "HYPL viaduct reached_far=true" in text, "pod did not cross its viaduct with a road beneath it")
+        require("HYPL ordinary_bridge_rejected=true" in text and "HYPL conversion_rejected=true" in text, "Hyperloop accepted an ordinary bridge or lost its viaduct to conversion")
+        resumed, _ = run("hyperloop-check-reloaded", enabled=False, limit=1, year=2050, load=save,
                          grfs=[grf], service=True, months=1,
                          game_script=ROOT / "tests/future_logistics/gs/HyperloopCheck")
         require("HYPL fixture ready" not in resumed, "Hyperloop reload recreated its fixture")
-        require("HYPL movement reached_far=true" in resumed, "underground tube did not survive reload")
-        print("Underground Hyperloop traversal, surface use, overlap rejection and reload passed", flush=True)
+        require("HYPL movement reached_far=true" in resumed and "HYPL viaduct reached_far=true" in resumed, "tube or viaduct did not survive reload")
+        print("Hyperloop tube and viaduct traversal, road under viaduct, ordinary-bridge and conversion rejection, surface use, overlap rejection and reload passed", flush=True)
 
     def check_hub():
         grf = ROOT / "mods/newgrf/future_logistics/future_logistics.grf"
@@ -262,7 +264,7 @@ DayZeroMonopolies =
 
     if args.only == "hyperloop":
         adopted, _ = run("hyperloop-adoption", year=2041, grfs=[ROOT / "mods/newgrf/future_logistics/future_logistics.grf"])
-        require(re.search(r"FL rail company=1 .*track=HYPL .*tunnels=1", adopted), "National Rail did not build an underground Hyperloop route")
+        require(re.search(r"FL rail company=1 .*track=HYPL .*(bridges=1 tunnels=0|bridges=0 tunnels=1)", adopted), "National Rail did not build a Hyperloop viaduct or tube route")
         check_hyperloop()
         return
 

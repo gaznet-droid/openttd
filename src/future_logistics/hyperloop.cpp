@@ -1,9 +1,11 @@
 /* GPL-2.0-only. */
-/** @file hyperloop.cpp Independent wormhole layer for straight underground Hyperloop tubes. */
+/** @file hyperloop.cpp Hyperloop viaducts, and the independent wormhole layer of straight underground Hyperloop tubes. */
 #include "../stdafx.h"
 #include "hyperloop.h"
 #include "../rail.h"
 #include "../tunnelbridge_map.h"
+#include "../bridge.h"
+#include "../bridge_map.h"
 #include "../landscape.h"
 #include "../safeguards.h"
 
@@ -67,6 +69,16 @@ bool IsHyperloopTube(TileIndex tile)
 {
 	return IsTunnelTile(tile) && GetTunnelBridgeTransportType(tile) == TransportType::Rail &&
 		IsHyperloopRailType(GetRailType(tile)) && GetTileSlope(tile) == SLOPE_FLAT;
+}
+
+/**
+ * Identify a ramp of an elevated Hyperloop viaduct.
+ * @param tile Tile to inspect.
+ * @return Whether it is a bridge head of the dedicated Hyperloop viaduct type.
+ */
+bool IsHyperloopViaduct(TileIndex tile)
+{
+	return IsBridgeTile(tile) && GetTunnelBridgeTransportType(tile) == TransportType::Rail && GetBridgeType(tile) == BRIDGE_HYPERLOOP;
 }
 
 /** Invalidate derived geometry after a map load or tube mutation. */

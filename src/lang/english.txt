@@ -2986,6 +2986,7 @@ STR_BRIDGE_NAME_WOODEN                                          :Wooden
 STR_BRIDGE_NAME_CONCRETE                                        :Concrete
 STR_BRIDGE_NAME_TUBULAR_STEEL                                   :Tubular, Steel
 STR_BRIDGE_TUBULAR_SILICON                                      :Tubular, Silicon
+STR_BRIDGE_NAME_HYPERLOOP                                       :Hyperloop viaduct
 
 
 # Road construction toolbar
@@ -3311,6 +3312,7 @@ STR_LAI_BRIDGE_DESCRIPTION_RAIL_SUSPENSION_CONCRETE             :Reinforced conc
 STR_LAI_BRIDGE_DESCRIPTION_RAIL_WOODEN                          :Wooden rail bridge
 STR_LAI_BRIDGE_DESCRIPTION_RAIL_CONCRETE                        :Concrete rail bridge
 STR_LAI_BRIDGE_DESCRIPTION_RAIL_TUBULAR_STEEL                   :Tubular rail bridge
+STR_LAI_BRIDGE_DESCRIPTION_RAIL_HYPERLOOP                       :Hyperloop viaduct
 
 STR_LAI_BRIDGE_DESCRIPTION_ROAD_SUSPENSION_STEEL                :Steel suspension road bridge
 STR_LAI_BRIDGE_DESCRIPTION_ROAD_GIRDER_STEEL                    :Steel girder road bridge
@@ -6106,10 +6108,12 @@ STR_ORBITAL_SERVICING                                            :Servicing on t
 STR_ORBITAL_DISPATCH_TOOLTIP                                     :{BLACK}Launch early with at least 500 passengers, subject to the spaceport's monthly launch limit
 STR_ORBITAL_HOME_ONLY                                           :Orbital missions return to their originating spaceport
 STR_HYPERLOOP_FLAT_ENDPOINTS                                    :Hyperloop access shafts must be on flat land at the same height
-STR_HYPERLOOP_NO_CONVERSION                                     :Remove the underground Hyperloop tube before changing its rail type
+STR_HYPERLOOP_NO_CONVERSION                                     :Remove the Hyperloop viaduct or tube before changing its rail type
 STR_ORBITAL_SERVICE_HOME                                        :Orbital shuttles are serviced automatically on their home launch pad
 STR_DISTRIBUTION_REQUIRES_CITY                                  :A Distribution Centre requires a town of at least 5,000 people
 STR_DISTRIBUTION_ONE_PER_TOWN                                   :This town already has a Distribution Centre
 STR_DISTRIBUTION_CLEAR_SITE                                     :A Distribution Centre needs a clear, flat 4x4 site
-STR_HYPERLOOP_USE_TUBE_TOOL                                     :Build Hyperloop routes with the underground tube tool; surface track is limited to terminal approaches
-STR_HYPERLOOP_BUILD_TUBE_TOOLTIP                                :{BLACK}Drag between two aligned, flat access shafts at the same height to build an underground Hyperloop tube
+STR_HYPERLOOP_USE_HYPERLOOP_TOOLS                               :Build Hyperloop routes with the viaduct or underground tube tool; surface track is limited to terminal approaches
+STR_HYPERLOOP_VIADUCT_ONLY                                      :The Hyperloop viaduct carries only Hyperloop track
+STR_HYPERLOOP_BUILD_TUBE_TOOLTIP                                :{BLACK}Drag between two aligned, flat access shafts at the same height to build an underground Hyperloop tube, for routes that hills or buildings would block
+STR_HYPERLOOP_BUILD_VIADUCT_TOOLTIP                             :{BLACK}Drag between two ramps on the same row or column and at the same height to build an elevated Hyperloop viaduct

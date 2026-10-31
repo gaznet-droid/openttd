@@ -527,9 +527,10 @@ struct BuildRailToolbarWindow : Window {
 		this->GetWidget<NWidgetCore>(WID_RAT_CONVERT_RAIL)->SetSprite(rti->gui_sprites.convert_rail);
 		this->GetWidget<NWidgetCore>(WID_RAT_BUILD_TUNNEL)->SetSprite(rti->gui_sprites.build_tunnel);
 		const bool hyperloop = IsHyperloopRailType(_cur_railtype);
-		this->SetWidgetDisabledState(WID_RAT_BUILD_BRIDGE, hyperloop);
-		this->GetWidget<NWidgetCore>(WID_RAT_AUTORAIL)->SetToolTip(hyperloop ? STR_HYPERLOOP_BUILD_TUBE_TOOLTIP : STR_RAIL_TOOLBAR_TOOLTIP_BUILD_AUTORAIL);
+		/* Hyperloop builds viaducts instead of ordinary bridges, and underground tubes instead of tunnels. */
 		this->GetWidget<NWidgetCore>(WID_RAT_BUILD_TUNNEL)->SetToolTip(hyperloop ? STR_HYPERLOOP_BUILD_TUBE_TOOLTIP : STR_RAIL_TOOLBAR_TOOLTIP_BUILD_RAILROAD_TUNNEL);
+		this->GetWidget<NWidgetCore>(WID_RAT_AUTORAIL)->SetToolTip(hyperloop ? STR_HYPERLOOP_BUILD_VIADUCT_TOOLTIP : STR_RAIL_TOOLBAR_TOOLTIP_BUILD_AUTORAIL);
+		this->GetWidget<NWidgetCore>(WID_RAT_BUILD_BRIDGE)->SetToolTip(hyperloop ? STR_HYPERLOOP_BUILD_VIADUCT_TOOLTIP : STR_RAIL_TOOLBAR_TOOLTIP_BUILD_RAILROAD_BRIDGE);
 	}
 
 	/**
@@ -775,8 +776,14 @@ struct BuildRailToolbarWindow : Window {
 			switch (select_proc) {
 				default: NOT_REACHED();
 				case DDSP_BUILD_BRIDGE:
-					if (IsHyperloopRailType(_cur_railtype) && (this->IsWidgetLowered(WID_RAT_BUILD_TUNNEL) || this->IsWidgetLowered(WID_RAT_AUTORAIL))) {
+					if (IsHyperloopRailType(_cur_railtype) && this->IsWidgetLowered(WID_RAT_BUILD_TUNNEL)) {
 						Command<Commands::BuildHyperloopTube>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, start_tile, end_tile, _cur_railtype);
+						if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+						break;
+					}
+					if (IsHyperloopRailType(_cur_railtype)) {
+						/* No bridge picker: the viaduct is the only bridge HYPL has. */
+						Command<Commands::BuildHyperloopViaduct>::Post(STR_ERROR_CAN_T_BUILD_BRIDGE_HERE, start_tile, end_tile, _cur_railtype);
 						if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
 						break;
 					}
