@@ -233,11 +233,12 @@ enum class StationNaming : uint8_t {
 	Spaceport, ///< Dedicated orbital launch facility.
 };
 
-static constexpr StringID STR_SV_STNAME_END{STR_SV_STNAME_SPACEPORT.base() + 1};
+/** End of the saved default station-name string range, including Spaceports. */
+static constexpr StringID STATION_NAME_END{STR_SV_STNAME_SPACEPORT.base() + 1};
 
 /** Information to handle station action 0 property 24 correctly */
 struct StationNameInformation {
-	std::bitset<(STR_SV_STNAME_END - STR_SV_STNAME).base()> used_names; ///< Used default station suffixes.
+	std::bitset<(STATION_NAME_END - STR_SV_STNAME).base()> used_names; ///< Used default station suffixes.
 	std::bitset<NUM_INDUSTRYTYPES> indtypes; ///< Bit set indicating when an industry type has been found.
 
 	/**
@@ -247,7 +248,7 @@ struct StationNameInformation {
 	 */
 	bool IsAvailable(StringID str) const
 	{
-		assert(IsInsideMM(str, STR_SV_STNAME, STR_SV_STNAME_END));
+		assert(IsInsideMM(str, STR_SV_STNAME, STATION_NAME_END));
 		return !this->used_names.test((str - STR_SV_STNAME).base());
 	}
 
@@ -257,7 +258,7 @@ struct StationNameInformation {
 	 */
 	void SetUsed(StringID str)
 	{
-		assert(IsInsideMM(str, STR_SV_STNAME, STR_SV_STNAME_END));
+		assert(IsInsideMM(str, STR_SV_STNAME, STATION_NAME_END));
 		this->used_names.set((str - STR_SV_STNAME).base());
 	}
 };
@@ -290,7 +291,7 @@ static StringID GenerateStationName(Station *st, TileIndex tile, StationNaming n
 				}
 				continue;
 			}
-			if (IsInsideMM(s->string_id, STR_SV_STNAME, STR_SV_STNAME_END)) {
+			if (IsInsideMM(s->string_id, STR_SV_STNAME, STATION_NAME_END)) {
 				auto str = s->string_id;
 				if (str == STR_SV_STNAME_FOREST) str = STR_SV_STNAME_WOODS;
 				sni.SetUsed(str);
@@ -2294,7 +2295,22 @@ static CommandCost BuildDistributionHub(DoCommandFlags flags, TileIndex tile, Ro
 	return total;
 }
 
-/** @copydoc BuildRoadStopInternal */
+/**
+ * Build a bus, truck stop or compound Distribution Centre.
+ * @param flags Operation to perform.
+ * @param tile Northernmost tile of the stop.
+ * @param width Width of the road stop.
+ * @param length Length of the road stop.
+ * @param stop_type Type of road stop (bus/truck).
+ * @param is_drive_through False for normal stops, true for drive-through.
+ * @param ddir Entrance direction for normal stops; axis for drive-through stops.
+ * @param rt The roadtype.
+ * @param spec_class Road stop spec class.
+ * @param spec_index Road stop spec index.
+ * @param station_to_join Station ID to join (NEW_STATION for a new station).
+ * @param adjacent Allow stations directly adjacent to other stations.
+ * @return Construction cost or placement error.
+ */
 CommandCost CmdBuildRoadStop(DoCommandFlags flags, TileIndex tile, uint8_t width, uint8_t length, RoadStopType stop_type, bool is_drive_through,
 		DiagDirection ddir, RoadType rt, RoadStopClassID spec_class, uint16_t spec_index, StationID station_to_join, bool adjacent)
 {

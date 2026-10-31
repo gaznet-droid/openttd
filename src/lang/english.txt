@@ -5668,7 +5668,7 @@ STR_SV_ROAD_VEHICLE_NAME                                        :Road Vehicle #{
 STR_SV_SHIP_NAME                                                :Ship #{COMMA}
 STR_SV_AIRCRAFT_NAME                                            :Aircraft #{COMMA}
 
-###length 27
+###length 28
 STR_SV_STNAME                                                   :{STRING1}
 STR_SV_STNAME_NORTH                                             :{STRING1} North
 STR_SV_STNAME_SOUTH                                             :{STRING1} South
