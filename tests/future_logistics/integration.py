@@ -169,6 +169,7 @@ DayZeroMonopolies =
                              game_script=ROOT / "tests/future_logistics/gs/OrbitalCheck",
                              daily_commands=f"future_logistics_tech orbital {offworld}\n")
         require("ORBIT fixture ready" in text, "orbital test fixture was not built")
+        require(re.search(r"ORBIT fixture ready .* station=.*Spaceport", text), "orbital launch facility was not named as a Spaceport")
         launches = re.findall(r"FL orbital launch vehicle=(\d+) origin=(\d+) month=(\d+) passengers=(\d+) manual=(\w+)", text)
         require(len(launches) >= 2, "orbital ships did not launch repeatedly")
         require(len({v for v, *_ in launches}) >= 2, "waiting fleet did not share the launch slot")
@@ -211,9 +212,10 @@ DayZeroMonopolies =
         require(sites, "distribution hub fixture did not find its sites")
         tile, second, small = sites.groups()
         built, ready = run("hub-built", load=save, enabled=False, year=2050, grfs=[grf], game_script=script, service=True, months=2,
-                           commands=f"future_logistics_tech build-hub {tile}\n", daily_commands="future_logistics_tech hub-audit\n")
+                           commands=f"future_logistics_tech build-hub-auto {tile}\n", daily_commands="future_logistics_tech hub-audit\n")
         require(re.search(rf"FL distribution request tile={tile} accepted=true", built), "hub construction rejected")
         require(re.search(r"FL distribution audit .*bays=4 reserved_secondary=4", built), "hub does not have four joined single-vehicle bays")
+        require("HUB automatic join station=" in built, "hub did not append to the adjacent western station")
         require("HUB access connected bays=4 depot=true return=true" in built, "hub fixture approaches are disconnected or traffic setup did not run")
         require("HUB truck entered loading bay" in built, "truck did not use the warehouse's loading bays")
         visits = lambda text, kind: [int(n) for n in re.findall(rf"HUB traffic visit vehicle=\d+ kind={kind} count=(\d+)", text)]

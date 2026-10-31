@@ -35,6 +35,7 @@ template <>
 	AirportClass::Get(AirportClass::Allocate("LARG"))->name = STR_AIRPORT_CLASS_LARGE;
 	AirportClass::Get(AirportClass::Allocate("HUB_"))->name = STR_AIRPORT_CLASS_HUB;
 	AirportClass::Get(AirportClass::Allocate("HELI"))->name = STR_AIRPORT_CLASS_HELIPORTS;
+	AirportClass::Get(AirportClass::Allocate("SPCE"))->name = STR_AIRPORT_CLASS_SPACEPORTS;
 }
 
 template <>
@@ -136,7 +137,10 @@ void BindAirportSpecs()
 		if (as->enabled) {
 			const auto id = ReadItemTags(as->badges).id;
 			if (id == "drone_port") as->fsm = GetDronePortAirport();
-			if (id == "spaceport" || id == "starship_launch_site") as->fsm = GetOrbitalAirport();
+			if (id == "spaceport" || id == "starship_launch_site") {
+				as->fsm = GetOrbitalAirport();
+				as->class_index = APC_SPACEPORT;
+			}
 			AirportClass::Assign(as);
 		}
 	}

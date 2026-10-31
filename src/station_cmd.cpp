@@ -230,11 +230,14 @@ enum class StationNaming : uint8_t {
 	Oilrig, ///< Heliport of an oilrig.
 	Dock, ///< Ship dock.
 	Heliport, ///< Standalone heliport.
+	Spaceport, ///< Dedicated orbital launch facility.
 };
+
+static constexpr StringID STR_SV_STNAME_END{STR_SV_STNAME_SPACEPORT.base() + 1};
 
 /** Information to handle station action 0 property 24 correctly */
 struct StationNameInformation {
-	std::bitset<(STR_SV_STNAME_FALLBACK - STR_SV_STNAME).base()> used_names; ///< Used default station suffixes.
+	std::bitset<(STR_SV_STNAME_END - STR_SV_STNAME).base()> used_names; ///< Used default station suffixes.
 	std::bitset<NUM_INDUSTRYTYPES> indtypes; ///< Bit set indicating when an industry type has been found.
 
 	/**
@@ -244,7 +247,7 @@ struct StationNameInformation {
 	 */
 	bool IsAvailable(StringID str) const
 	{
-		assert(IsInsideMM(str, STR_SV_STNAME, STR_SV_STNAME_FALLBACK));
+		assert(IsInsideMM(str, STR_SV_STNAME, STR_SV_STNAME_END));
 		return !this->used_names.test((str - STR_SV_STNAME).base());
 	}
 
@@ -254,7 +257,7 @@ struct StationNameInformation {
 	 */
 	void SetUsed(StringID str)
 	{
-		assert(IsInsideMM(str, STR_SV_STNAME, STR_SV_STNAME_FALLBACK));
+		assert(IsInsideMM(str, STR_SV_STNAME, STR_SV_STNAME_END));
 		this->used_names.set((str - STR_SV_STNAME).base());
 	}
 };
@@ -287,13 +290,17 @@ static StringID GenerateStationName(Station *st, TileIndex tile, StationNaming n
 				}
 				continue;
 			}
-			if (IsInsideMM(s->string_id, STR_SV_STNAME, STR_SV_STNAME_FALLBACK)) {
+			if (IsInsideMM(s->string_id, STR_SV_STNAME, STR_SV_STNAME_END)) {
 				auto str = s->string_id;
 				if (str == STR_SV_STNAME_FOREST) str = STR_SV_STNAME_WOODS;
 				sni.SetUsed(str);
 			}
 		}
 	}
+
+	/* Orbital facilities must be recognisable as Spaceports rather than inherit the
+	 * generic heliport suffix selected by their vertical-launch movement controller. */
+	if (name_class == StationNaming::Spaceport && sni.IsAvailable(STR_SV_STNAME_SPACEPORT)) return STR_SV_STNAME_SPACEPORT;
 
 	for (auto indtile : SpiralTileSequence(tile, 7)) {
 		if (!IsTileType(indtile, TileType::Industry)) continue;
@@ -2066,10 +2073,11 @@ CommandCost CalculateRoadStopCost(TileArea tile_area, DoCommandFlags flags, bool
  * @param spec_index Road stop spec index.
  * @param station_to_join Station ID to join (NEW_STATION if build new one).
  * @param adjacent Allow stations directly adjacent to other stations.
+ * @param compound_child Allow an internally resolved compound-station child to join without requiring distant joining.
  * @return The cost of this operation or an error.
  */
 static CommandCost BuildRoadStopInternal(DoCommandFlags flags, TileIndex tile, uint8_t width, uint8_t length, RoadStopType stop_type, bool is_drive_through,
-		DiagDirection ddir, RoadType rt, RoadStopClassID spec_class, uint16_t spec_index, StationID station_to_join, bool adjacent)
+		DiagDirection ddir, RoadType rt, RoadStopClassID spec_class, uint16_t spec_index, StationID station_to_join, bool adjacent, bool compound_child = false)
 {
 	if (!ValParamRoadType(rt) || !IsValidDiagDirection(ddir) || stop_type >= RoadStopType::End) return CMD_ERROR;
 	bool reuse = (station_to_join != NEW_STATION);
@@ -2099,7 +2107,7 @@ static CommandCost BuildRoadStopInternal(DoCommandFlags flags, TileIndex tile, u
 	TileArea roadstop_area(tile, width, length);
 	if (CommandCost ret = CheckStationSpread({}, roadstop_area); ret.Failed()) return ret;
 
-	if (distant_join && (!_settings_game.station.distant_join_stations || !Station::IsValidID(station_to_join))) return CMD_ERROR;
+	if (distant_join && (!Station::IsValidID(station_to_join) || (!compound_child && !_settings_game.station.distant_join_stations))) return CMD_ERROR;
 
 	/* Trams only have drive through stops */
 	if (!is_drive_through && RoadTypeIsTram(rt)) return CMD_ERROR;
@@ -2251,8 +2259,15 @@ static CommandCost BuildDistributionHub(DoCommandFlags flags, TileIndex tile, Ro
 	test_flags.Reset(DoCommandFlag::Execute);
 	CommandCost total = Command<Commands::BuildObject>::Do(test_flags, tile, *warehouse, 0);
 	if (total.Failed()) return total;
+	/* Resolve automatic joining against the whole painted facility, not only its first eastern bay.
+	 * The resolved station is then used for all four bays, which remains a local compound
+	 * build even when the player has disabled distant station joining. */
+	Station *joined = nullptr;
+	CommandCost join_result = FindJoiningRoadStop(StationID::Invalid(), join, adjacent, TileArea(tile, 4, 4), &joined);
+	if (join_result.Failed()) return join_result;
+	if (joined != nullptr) join = joined->index;
 	for (uint i = 0; i < 4; i++) {
-		CommandCost cost = BuildRoadStopInternal(test_flags, TileAddXY(tile, 3, i), 1, 1, RoadStopType::Truck, false, DiagDirection::SW, rt, spec->class_index, spec->index, join, adjacent);
+		CommandCost cost = BuildRoadStopInternal(test_flags, TileAddXY(tile, 3, i), 1, 1, RoadStopType::Truck, false, DiagDirection::SW, rt, spec->class_index, spec->index, join, true, true);
 		if (cost.Failed()) return cost;
 		total.AddCost(std::move(cost));
 	}
@@ -2266,7 +2281,7 @@ static CommandCost BuildDistributionHub(DoCommandFlags flags, TileIndex tile, Ro
 	};
 	for (uint i = 0; i < 4; i++) {
 		const TileIndex bay = TileAddXY(tile, 3, i);
-		CommandCost cost = BuildRoadStopInternal(flags, bay, 1, 1, RoadStopType::Truck, false, DiagDirection::SW, rt, spec->class_index, spec->index, join, true);
+		CommandCost cost = BuildRoadStopInternal(flags, bay, 1, 1, RoadStopType::Truck, false, DiagDirection::SW, rt, spec->class_index, spec->index, join, true, true);
 		if (cost.Failed()) { rollback(); return cost; }
 		built.push_back(bay);
 		join = GetStationIndex(bay);
@@ -2769,7 +2784,9 @@ CommandCost CmdBuildAirport(DoCommandFlags flags, TileIndex tile, uint8_t airpor
 	/* Distant join */
 	if (st == nullptr && distant_join) st = Station::GetIfValid(station_to_join);
 
-	ret = BuildStationPart(&st, flags, reuse, airport_area, GetAirport(airport_type)->flags.Test(AirportFTAClass::Flag::Airplanes) ? StationNaming::Airport : StationNaming::Heliport);
+	StationNaming name_class = GetAirport(airport_type)->flags.Test(AirportFTAClass::Flag::Airplanes) ? StationNaming::Airport : StationNaming::Heliport;
+	if (GetAirport(airport_type) == GetOrbitalAirport()) name_class = StationNaming::Spaceport;
+	ret = BuildStationPart(&st, flags, reuse, airport_area, name_class);
 	if (ret.Failed()) return ret;
 
 	if (st != nullptr && !st->airport.IsEmpty()) {
