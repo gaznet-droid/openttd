@@ -206,12 +206,13 @@ DayZeroMonopolies =
         require("HYPL movement reached_far=true" in text, "pod did not traverse its tube at the expected speed")
         require("HYPL viaduct ready" in text and "HYPL viaduct reached_far=true" in text, "pod did not cross its viaduct with a road beneath it")
         require("HYPL ordinary_bridge_rejected=true" in text and "HYPL conversion_rejected=true" in text, "Hyperloop accepted an ordinary bridge or lost its viaduct to conversion")
+        require(re.search(r"HYPL hillside tunnel tile=\d+ other=\d+ length=\d+ beyond_limit=true", text), "Hyperloop could not bore through a hill like a railway tunnel")
         resumed, _ = run("hyperloop-check-reloaded", enabled=False, limit=1, year=2050, load=save,
                          grfs=[grf], service=True, months=1,
                          game_script=ROOT / "tests/future_logistics/gs/HyperloopCheck")
         require("HYPL fixture ready" not in resumed, "Hyperloop reload recreated its fixture")
         require("HYPL movement reached_far=true" in resumed and "HYPL viaduct reached_far=true" in resumed, "tube or viaduct did not survive reload")
-        print("Hyperloop tube and viaduct traversal, road under viaduct, ordinary-bridge and conversion rejection, surface use, overlap rejection and reload passed", flush=True)
+        print("Hyperloop tube and viaduct traversal, hillside tunnel past the length limit, road under viaduct, ordinary-bridge and conversion rejection, surface use, overlap rejection and reload passed", flush=True)
 
     def check_hub():
         grf = ROOT / "mods/newgrf/future_logistics/future_logistics.grf"

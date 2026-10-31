@@ -12,7 +12,7 @@
 # Sprites written, each at normal and 2x zoom:
 #   track      underlay (16) and overlay (16) in the RailTrackOffset order
 #   viaduct    deck surfaces (6) followed by the viaduct's structure (20): see VIADUCT_ORDER
-#   tube       portal ground (4) and portal hood (4), by tunnel direction NE, SE, SW, NW
+#   tube       portal ground (8) and portal hood (8): flat shafts then hillside portals, each NE, SE, SW, NW
 #   depot      six building sprites in the base game's depot order
 #   gui        eight toolbar icons and eight cursors
 #   terminal   station platforms and canopy, back and front, for the X and Y axes
@@ -265,38 +265,55 @@ def bridge_surfaces(zoom):
 
 # --- tube portals ----------------------------------------------------------------------------------------------
 def portal_sprites(zoom):
-    """Ground (concrete pad and guideway) and hood for tubes going NE, SE, SW, NW from the portal."""
+    """Ground (concrete pad and guideway) and hood for tubes going NE, SE, SW, NW from the portal.
+
+    The first four are flat access shafts; the next four are hillside portals, where the tube bores into a slope
+    like a railway tunnel. There the ground rises a height level towards the tube, the pod still runs level, and
+    the hood is a full-height collar coming out of the hill."""
     ground, hood = [], []
-    for d in ("NE", "SE", "SW", "NW"):
-        axis = "x" if d in ("NE", "SW") else "y"
-        into = -1 if d in ("NE", "NW") else +1  # direction along the axis into the tube
-        g = Scene()
-        g.quad((0, 0, 0), (T, 0, 0), (T, T, 0), (0, T, 0), CONCRETE_D)
-        guideway(g, *(X_PIECE if axis == "x" else Y_PIECE), bed=False)
-        ground.append(finish(g, zoom, (0, 0, 0)))
-        s = Scene()
-        arch = [(-6, 0), (-6, 6), (-4.5, 9), (-1.5, 10.5), (1.5, 10.5), (4.5, 9), (6, 6), (6, 0)]
-        mouth_t = 4 if into > 0 else 12  # the mouth faces away from the tube
-        tail_t = 15.5 if into > 0 else 0.5
-        def W(u, t, z):
-            return (t, 8 + u, z) if axis == "x" else (8 + u, t, z)
-        for i in range(len(arch) - 1):
-            (u0, z0), (u1, z1) = arch[i], arch[i + 1]
-            m = PANEL if (u0 + u1) / 2 < 0 else WHITE
-            s.quad(W(u0, mouth_t, z0), W(u1, mouth_t, z1), W(u1 * 0.9, tail_t, 0.6), W(u0 * 0.9, tail_t, 0.6), m)
-        mouth = [(-4.2, 0.5), (-4.2, 5), (-3, 7), (-1, 7.8), (1, 7.8), (3, 7), (4.2, 5), (4.2, 0.5)]
-        mt = mouth_t - 0.05 * into
-        for i in range(1, len(mouth) - 1):
-            s.tri(W(mouth[0][0], mt, mouth[0][1]), W(mouth[i][0], mt, mouth[i][1]), W(mouth[i + 1][0], mt, mouth[i + 1][1]), DARK)
-        def band(t0, t1, z0, z1, m):
-            if axis == "x":
-                s.box(min(t0, t1), 8 - 6.1, z0, max(t0, t1), 8 + 6.1, z1, m)
+    for hillside in (False, True):
+        for d in ("NE", "SE", "SW", "NW"):
+            axis = "x" if d in ("NE", "SW") else "y"
+            into = -1 if d in ("NE", "NW") else +1  # direction along the axis into the tube
+            g = Scene()
+            mouth_t = 4 if into > 0 else 12  # the mouth faces away from the tube
+            if hillside:
+                # Concrete apron only in front of the mouth: behind it the hill and the collar take over.
+                t0, t1 = (0, mouth_t) if into > 0 else (mouth_t, T)
+                if axis == "x":
+                    g.quad((t0, 0, 0), (t1, 0, 0), (t1, T, 0), (t0, T, 0), CONCRETE_D)
+                else:
+                    g.quad((0, t0, 0), (T, t0, 0), (T, t1, 0), (0, t1, 0), CONCRETE_D)
             else:
-                s.box(8 - 6.1, min(t0, t1), z0, 8 + 6.1, max(t0, t1), z1, m)
-        band(mouth_t - 0.3 * into, mouth_t + 0.6 * into, 6.2, 7.2, CC)
-        band(mouth_t - 0.35 * into, mouth_t + 0.3 * into, 7.6, 8.1, CYAN)
-        # The game anchors portal hoods at the tile point (15, 15, 0).
-        hood.append(finish(s, zoom, (15, 15, 0)))
+                g.quad((0, 0, 0), (T, 0, 0), (T, T, 0), (0, T, 0), CONCRETE_D)
+            guideway(g, *(X_PIECE if axis == "x" else Y_PIECE), bed=False)
+            ground.append(finish(g, zoom, (0, 0, 0)))
+            s = Scene()
+            arch = [(-6, 0), (-6, 6), (-4.5, 9), (-1.5, 10.5), (1.5, 10.5), (4.5, 9), (6, 6), (6, 0)]
+            tail_t = 15.5 if into > 0 else 0.5
+            def W(u, t, z):
+                return (t, 8 + u, z) if axis == "x" else (8 + u, t, z)
+            for i in range(len(arch) - 1):
+                (u0, z0), (u1, z1) = arch[i], arch[i + 1]
+                m = PANEL if (u0 + u1) / 2 < 0 else WHITE
+                if hillside:
+                    # A straight collar: the same arch all the way back into the hill.
+                    s.quad(W(u0, mouth_t, z0), W(u1, mouth_t, z1), W(u1, tail_t, z1), W(u0, tail_t, z0), m)
+                else:
+                    s.quad(W(u0, mouth_t, z0), W(u1, mouth_t, z1), W(u1 * 0.9, tail_t, 0.6), W(u0 * 0.9, tail_t, 0.6), m)
+            mouth = [(-4.2, 0.5), (-4.2, 5), (-3, 7), (-1, 7.8), (1, 7.8), (3, 7), (4.2, 5), (4.2, 0.5)]
+            mt = mouth_t - 0.05 * into
+            for i in range(1, len(mouth) - 1):
+                s.tri(W(mouth[0][0], mt, mouth[0][1]), W(mouth[i][0], mt, mouth[i][1]), W(mouth[i + 1][0], mt, mouth[i + 1][1]), DARK)
+            def band(t0, t1, z0, z1, m):
+                if axis == "x":
+                    s.box(min(t0, t1), 8 - 6.1, z0, max(t0, t1), 8 + 6.1, z1, m)
+                else:
+                    s.box(8 - 6.1, min(t0, t1), z0, 8 + 6.1, max(t0, t1), z1, m)
+            band(mouth_t - 0.3 * into, mouth_t + 0.6 * into, 6.2, 7.2, CC)
+            band(mouth_t - 0.35 * into, mouth_t + 0.3 * into, 7.6, 8.1, CYAN)
+            # The game anchors portal hoods at the tile point (15, 15, 0).
+            hood.append(finish(s, zoom, (15, 15, 0)))
     return ground, hood
 
 

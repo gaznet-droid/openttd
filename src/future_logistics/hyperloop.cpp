@@ -73,6 +73,16 @@ bool IsHyperloopTube(TileIndex tile)
 }
 
 /**
+ * Identify any Hyperloop tunnel portal: a flat access shaft or a hillside portal.
+ * @param tile Tile to inspect.
+ * @return Whether it is an end of a HYPL rail tunnel.
+ */
+bool IsHyperloopTunnel(TileIndex tile)
+{
+	return IsTunnelTile(tile) && GetTunnelBridgeTransportType(tile) == TransportType::Rail && IsHyperloopRailType(GetRailType(tile));
+}
+
+/**
  * Identify a ramp of an elevated Hyperloop viaduct.
  * @param tile Tile to inspect.
  * @return Whether it is a bridge head of the dedicated Hyperloop viaduct type.

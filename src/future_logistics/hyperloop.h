@@ -9,6 +9,7 @@
 
 bool IsHyperloopRailType(RailType type);
 bool IsHyperloopTube(TileIndex tile);
+bool IsHyperloopTunnel(TileIndex tile);
 bool IsHyperloopViaduct(TileIndex tile);
 bool HyperloopTubeUnder(TileIndex tile, int z);
 bool HyperloopTubeUnder(TileIndex tile);
