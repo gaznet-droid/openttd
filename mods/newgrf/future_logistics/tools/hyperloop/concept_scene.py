@@ -97,6 +97,34 @@ def viaduct_y(x_tile, y0, y1, deck):
         # collar ring
         s.prism("y", y-0.6, y+0.6, (c, zc), [(u*1.08, z*1.08) for u, z in oct], PANEL, caps=False)
 
+def ramp_y(x_tile, y_tile, up, deck=8):
+    """A viaduct ramp tile: guideway sloping between the ground and the deck on a concrete embankment."""
+    c = x_tile*T + T/2
+    ya, yb = y_tile*T, (y_tile+1)*T
+    za, zb = (0, deck) if up else (deck, 0)
+    def Q(u0, u1, d0, d1, m):  # sloped strip across u0..u1 at height offset d0..d1 above the ramp line
+        s.quad((c+u0, ya, za+d0), (c+u1, ya, za+d1), (c+u1, yb, zb+d1), (c+u0, yb, zb+d0), m)
+    Q(-6, 6, 1, 1, CONCRETE_D)                     # embankment top
+    for u in (-6, 6):                              # embankment side walls down to the ground
+        s.quad((c+u, ya, 0), (c+u, yb, 0), (c+u, yb, zb+1), (c+u, ya, za+1), CONCRETE_D)
+    Q(-4, 4, 3, 3, CONCRETE)                       # beam top
+    for u in (-4, 4):
+        s.quad((c+u, ya, za+1), (c+u, yb, zb+1), (c+u, yb, zb+3), (c+u, ya, za+3), CONCRETE)
+    Q(-3.2, -2.2, 3.4, 3.4, CYAN)
+    Q(2.2, 3.2, 3.4, 3.4, CYAN)
+    Q(-1, 1, 3.2, 3.2, DARK)
+
+
+def collar_y(x_tile, y, deck=8):
+    """A flared white collar where the tube meets a ramp."""
+    c = x_tile*T + T/2
+    zc = deck + 4.2
+    r = 5.0
+    oct = [(r*math.cos(math.pi/8 + i*math.pi/4), r*math.sin(math.pi/8 + i*math.pi/4)) for i in range(8)]
+    s.prism("y", y-1.0, y+1.0, (c, zc), [(u*1.15, z*1.15) for u, z in oct], WHITE, caps=False)
+    s.box(c+r*0.8, y-1.05, zc-r*0.75, c+r*0.8+0.5, y+1.05, zc-r*0.75+0.6, CYAN)
+
+
 def portal_y(x_tile, y_tile):
     """Tube entrance: a white hood over the guideway, sloping smoothly into the ground towards +y."""
     c = x_tile*T + T/2
@@ -119,13 +147,13 @@ terminal_y(X, 0, 3)
 pod_y(X, 0.55*T, 0, length=13)
 pod_y(X, 1.45*T, 0, length=13)
 pod_y(X, 2.35*T, 0, length=13)
-guideway_y(X, 3*T, 5*T)
-# ramp up to the viaduct (simplified: a sloped guideway)
-viaduct_y(X, 5*T, 9*T, deck=8)
-s.box(X*T+T/2-4, 5*T-0.01, 0, X*T+T/2+4, 5*T+2, 8, CONCRETE)
+guideway_y(X, 3*T, 4*T)          # one tile of guideway after the terminal
+ramp_y(X, 4, up=True)             # up-ramp (bridge head)
+viaduct_y(X, 5*T, 9*T, deck=8)    # four tiles of viaduct
+collar_y(X, 5*T); collar_y(X, 9*T)
 pod_y(X, 7.4*T, 8 - 3.1 + 2.6, length=13)
-guideway_y(X, 9*T, 10*T)
-portal_y(X, 10)
+ramp_y(X, 9, up=False)            # down-ramp (bridge head)
+portal_y(X, 10)                   # tube entrance directly after the ramp
 
 
 def render_with_glass(scene, zoom):
