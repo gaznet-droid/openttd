@@ -117,14 +117,72 @@ SLOPES = {  # RTO_SLOPE_NE, SE, SW, NW: piece and the height across the tile
 }
 
 
+def clip_to_tile(scene):
+    """Cut a scene's triangles at the tile's four edges, keeping only what lies on the tile.
+
+    The game draws track as ground sprites tile by tile, each tile's grass over whatever the tiles before it drew. A
+    half-tile piece that ran past its tile's edge was cut off there by the neighbour's grass, while the neighbour's own
+    overhang was cut off by this tile's grass, so diagonal runs broke into steps. A piece cut exactly at the edge meets
+    its neighbour, cut at the same edge, without a seam."""
+    def clip(poly, axis, value, keep_above):
+        out = []
+        for i, a in enumerate(poly):
+            b = poly[(i + 1) % len(poly)]
+            ina = (a[axis] >= value) if keep_above else (a[axis] <= value)
+            inb = (b[axis] >= value) if keep_above else (b[axis] <= value)
+            if ina:
+                out.append(a)
+            if ina != inb:
+                t = (value - a[axis]) / (b[axis] - a[axis])
+                out.append(a + (b - a) * t)
+        return out
+    tris = []
+    for a, b, c, m in scene.tris:
+        poly = [a, b, c]
+        for axis, value, above in ((0, 0.0, True), (0, float(T), False), (1, 0.0, True), (1, float(T), False)):
+            poly = clip(poly, axis, value, above)
+            if len(poly) < 3:
+                break
+        for i in range(1, len(poly) - 1):
+            tris.append((poly[0], poly[i], poly[i + 1], m))
+    scene.tris = tris
+    return scene
+
+
+def seamless(scene, zoom):
+    """Render a lengthened piece cut to its tile, with no outline along the cut: the colours come from the uncut
+    render, the shape from the cut one, so neighbouring pieces run on without a dark seam at the tile edge."""
+    full, _, (fx, fy) = scene.render(zoom=zoom)
+    cut_scene = Scene()
+    cut_scene.tris = list(scene.tris)
+    cut, _, (cx, cy) = clip_to_tile(cut_scene).render(zoom=zoom)
+    shape = np.asarray(cut)[..., 3] > 0
+    colours = Image.new("RGBA", cut.size)
+    colours.alpha_composite(full, (fx - cx, fy - cy)) if fx >= cx and fy >= cy else colours.paste(full.crop((cx - fx, cy - fy, cx - fx + cut.width, cy - fy + cut.height)))
+    a = np.asarray(colours).copy()
+    a[~shape] = 0
+    img = Image.fromarray(a)
+    box = img.getbbox() or (0, 0, 1, 1)
+    return img.crop(box), Image.new("L", (box[2] - box[0], box[3] - box[1])), cx + box[0], cy + box[1]
+
+
+def extend(piece, by=8.0):
+    """Lengthen a piece past both ends, to be cut back to the tile edges by clip_to_tile."""
+    (x0, y0), (x1, y1) = piece
+    dx, dy = x1 - x0, y1 - y0
+    ln = math.hypot(dx, dy)
+    ux, uy = dx / ln * by, dy / ln * by
+    return ((x0 - ux, y0 - uy), (x1 + ux, y1 + uy))
+
+
 def track_sprites(zoom, overlay):
     """Sixteen sprites in RailTrackOffset order: X, Y, N, S, E, W, slopes NE..NW, crossing, junctions SW, NE, SE, NW, NSEW."""
     out = []
     pieces = [X_PIECE, Y_PIECE, N_PIECE, S_PIECE, E_PIECE, W_PIECE]
     for p in pieces:
         s = Scene()
-        guideway(s, *p, bed=not overlay)
-        out.append(finish(s, zoom, (0, 0, 0)))
+        guideway(s, *extend(p), bed=not overlay)
+        out.append(seamless(s, zoom))
     for key in ("NE", "SE", "SW", "NW"):
         piece, z_at = SLOPES[key]
         s = Scene()
@@ -477,7 +535,9 @@ def gui_sprites():
     def auto_icon(s):
         guideway(s, *X_PIECE)
         guideway(s, *Y_PIECE, bed=False)
-    builders = [piece(N_PIECE), piece(X_PIECE), piece(E_PIECE), piece(Y_PIECE), auto_icon, depot_icon, tube_icon, convert_icon]
+    # Toolbar order: the north-south button builds the vertical half-tile pieces (left and right), the east-west
+    # button the horizontal ones (upper and lower), so each icon shows what its tool lays.
+    builders = [piece(E_PIECE), piece(X_PIECE), piece(N_PIECE), piece(Y_PIECE), auto_icon, depot_icon, tube_icon, convert_icon]
     icons = [icon(b) for b in builders]
     cursors = []
     for img, mask, _, _ in icons:

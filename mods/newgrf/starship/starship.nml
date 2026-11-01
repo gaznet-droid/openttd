@@ -59,7 +59,7 @@ item(FEAT_BADGES, family_rocket, 0) { property { label: "fl_family/rocket"; name
  * On the map the body is never drawn. While Starship stands on the launch mount the pad's own tiles draw it docked
  * there, exactly as in the art; in the air the whole rocket is drawn as the rotor (below), placed over the mount so
  * it lifts off from where the docked rocket stood. The depot, vehicle windows and purchase list (the low byte of
- * extra_callback_info1 is not 0) show the docked rocket. */
+ * extra_callback_info1 is not 0) show a small rocket on its side instead. */
 spriteset(starship_body, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/starship_idle_1x.png") {
     [0, 0, 23, 139, -11, -137]
     [0, 0, 23, 139, -11, -137]
@@ -90,9 +90,31 @@ spriteset(starship_hidden, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/starship_lit
     [0, 0, 1, 1, 0, 0]
     [0, 0, 1, 1, 0, 0]
 }
+/* Lists, the depot and the purchase list show a small rocket lying on its side (tools/make_rocket_icon.py): the
+ * upright rocket is far taller than a list row, so only its bottom showed. */
+spriteset(starship_icon, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/rocket_icon_1x.png") {
+    [0, 0, 40, 13, -20, -6]
+    [0, 0, 40, 13, -20, -6]
+    [0, 0, 40, 13, -20, -6]
+    [0, 0, 40, 13, -20, -6]
+    [0, 0, 40, 13, -20, -6]
+    [0, 0, 40, 13, -20, -6]
+    [0, 0, 40, 13, -20, -6]
+    [0, 0, 40, 13, -20, -6]
+}
+alternative_sprites(starship_icon, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/rocket_icon_2x.png") {
+    [0, 0, 80, 26, -40, -12]
+    [0, 0, 80, 26, -40, -12]
+    [0, 0, 80, 26, -40, -12]
+    [0, 0, 80, 26, -40, -12]
+    [0, 0, 80, 26, -40, -12]
+    [0, 0, 80, 26, -40, -12]
+    [0, 0, 80, 26, -40, -12]
+    [0, 0, 80, 26, -40, -12]
+}
 switch (FEAT_AIRCRAFT, SELF, starship_graphics, extra_callback_info1 & 0xFF) {
     0: starship_hidden;
-    starship_body;
+    starship_icon;
 }
 
 /* The rotor: blank for a stopped rotor, then three flame frames that cycle while the engines run. */

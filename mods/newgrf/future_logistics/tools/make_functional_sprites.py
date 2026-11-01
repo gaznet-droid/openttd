@@ -46,6 +46,8 @@ def tiles(key, filename, feature, start=0):
                               box[0] - (north_x + (y - x) * tw // 2),
                               box[1] - (north_y + (x + y) * th // 2)]
     lines = []
+    # The building's height in pixels at normal zoom (one pixel per height unit), for the tiles' bounding boxes.
+    height = max(8, min(255, max(-v[5] for n, v in metadata.items() if n.endswith('_1x'))))
     for y in range(4):
         for x in range(4):
             name = f'{key}_{x}_{y}'
@@ -55,7 +57,10 @@ def tiles(key, filename, feature, start=0):
                     lines.append(f'spriteset({name}_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/{name}_1x.png") {{ [{args}] }}')
                 else:
                     lines.append(f'alternative_sprites({name}_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/{name}_2x.png") {{ [{args}] }}')
-            lines.append(f'spritelayout {name}_layout {{ ground {{ sprite: {name}_sprite(0); }} }}')
+            # A building sprite boxed to its own tile, over concrete: drawn as ground, the tall building was painted
+            # under everything, so neighbouring houses, stations and canopies drew straight over it.
+            lines.append(f'spritelayout {name}_layout {{ ground {{ sprite: GROUNDSPRITE_CONCRETE; }} building {{ sprite: {name}_sprite(0); '
+                         f'xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: {height}; }} }}')
             props = 'substitute: 0;'
             if feature == 'FEAT_INDUSTRYTILES':
                 props += ' land_shape_flags: 15; accepted_cargos: [[VALU, 8], [GOLD, 8], [DIAM, 8]];'
