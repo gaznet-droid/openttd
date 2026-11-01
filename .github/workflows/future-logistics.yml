@@ -12,7 +12,7 @@ jobs:
   apple-silicon:
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Verify native Apple Silicon runner
         run: test "$(uname -m)" = arm64
       - name: Dependencies
@@ -27,7 +27,7 @@ jobs:
           unzip -q work-opengfx.zip -d build/baseset
       - name: Unit and upstream regression tests
         run: ctest --test-dir build --output-on-failure --parallel 3
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: macos-arm64-test-logs
@@ -35,7 +35,7 @@ jobs:
   linux:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Dependencies
         run: sudo apt-get update && sudo apt-get install -y cmake ninja-build libsdl2-dev liblzma-dev liblzo2-dev libpng-dev zlib1g-dev openttd-opengfx
       - name: Configure Debug build
@@ -48,7 +48,7 @@ jobs:
         run: ctest --test-dir build --output-on-failure --parallel 3
       - name: Single-player runtime integration
         run: python3 tests/future_logistics/integration.py --binary build/openttd --baseset /usr/share/games/openttd/baseset --output work/integration
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: linux-test-logs
