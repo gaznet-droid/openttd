@@ -578,7 +578,7 @@ item(FEAT_AIRCRAFT, cargo_drone, 64) {
         passenger_capacity:           8;
         mail_capacity:                0;
         /* Passengers are excluded, so the game makes mail, the first refittable cargo, the default. */
-        refittable_cargo_classes:     bitmask(CC_MAIL, CC_EXPRESS);
+        refittable_cargo_classes:     bitmask(CC_MAIL, CC_EXPRESS, CC_ARMOURED); /* and valuables, gold or diamonds by climate */
         non_refittable_cargo_classes: bitmask(CC_PASSENGERS);
         range:                        80;
         sound_effect:                 SOUND_TAKEOFF_HELICOPTER;
