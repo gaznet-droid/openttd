@@ -208,10 +208,11 @@ ConstructionResult BuildAirline(uint8_t type, TileIndex a, TileIndex b, const En
 		if (Command<Commands::BuildAirport>::Do(EXEC | CONSTRUCT, corner, type, 0, join, true).Failed()) return fail("airport");
 		built.push_back(corner);
 	}
-	const Station *origin = Station::GetByTile(a);
-	if (origin->airport.GetNumHangars() == 0) return fail("hangar");
+	/* The hangar of the airport or spaceport pad just built at the first corner. */
+	const Airport &origin = Station::GetByTile(a)->GetAirportByTile(a);
+	if (origin.GetNumHangars() == 0) return fail("hangar");
 	for (uint n = 0; n < fleet; n++) {
-		auto result = Command<Commands::BuildVehicle>::Do(EXEC, origin->airport.GetHangarTile(0), aircraft->index, false, cargo, ClientID::Invalid);
+		auto result = Command<Commands::BuildVehicle>::Do(EXEC, origin.GetHangarTile(0), aircraft->index, false, cargo, ClientID::Invalid);
 		if (ExtractCommandCost(result).Failed()) return fail("vehicle");
 		const VehicleID vehicle = std::get<1>(result);
 		vehicles.push_back(vehicle);
@@ -297,6 +298,9 @@ ConstructionResult TryAirPairs(const TechLibrary &library, const ServiceSpec &sp
 			const auto origins = FindAirportSites(pair.a, airport_spec, cargo, false);
 			const auto vehicle_id = ReadItemTags(Engine::Get(record->engine)->badges).id;
 			const bool orbital = vehicle_id == "starship" || vehicle_id == "rocket";
+			/* Rivals fly orbital shuttles with passengers only: a shuttle launches when full, and a town's mail
+			 * would take months to fill one. Players may still refit theirs to mail. */
+			if (orbital && !IsCargoInClass(cargo, CargoClass::Passengers)) continue;
 			const auto destinations = orbital ? std::vector<TileIndex>{pair.b.Centre()} : FindAirportSites(pair.b, airport_spec, cargo, true);
 			for (TileIndex a : origins) {
 				for (TileIndex b : destinations) {

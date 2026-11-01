@@ -224,13 +224,14 @@ const AirportFTAClass *GetDronePortAirport()
 uint8_t GetVehiclePosOnBuild(TileIndex hangar_tile)
 {
 	const Station *st = Station::GetByTile(hangar_tile);
-	const AirportFTAClass *apc = st->airport.GetFTA();
+	const Airport &airport = st->GetAirportByTile(hangar_tile);
+	const AirportFTAClass *apc = airport.GetFTA();
 	/* When we click on hangar we know the tile it is on. By that we know
 	 * its position in the array of depots the airport has.....we can search
 	 * layout for #th position of depot. Since layout must start with a listing
 	 * of all depots, it is simple */
 	for (uint i = 0;; i++) {
-		if (st->airport.GetHangarTile(i) == hangar_tile) {
+		if (airport.GetHangarTile(i) == hangar_tile) {
 			assert(apc->layout[i].heading == HANGAR);
 			return apc->layout[i].position;
 		}

@@ -654,8 +654,8 @@ CommandCost CmdBuildTunnel(DoCommandFlags flags, TileIndex start_tile, Transport
 	if (HyperloopTubeUnder(start_tile, GetTileZ(start_tile))) return CommandCost(STR_ERROR_ANOTHER_TUNNEL_IN_THE_WAY);
 	switch (transport_type) {
 		case TransportType::Rail:
+			/* Hyperloop bores through hills like any railway: click the hillside and the tube runs to the far side. */
 			if (!ValParamRailType(railtype)) return CMD_ERROR;
-			if (IsHyperloopRailType(railtype)) return CommandCost(STR_HYPERLOOP_USE_HYPERLOOP_TOOLS);
 			break;
 
 		case TransportType::Road:
@@ -741,7 +741,9 @@ CommandCost CmdBuildTunnel(DoCommandFlags flags, TileIndex start_tile, Transport
 	/* if the command fails from here on we want the end tile to be highlighted */
 	_build_tunnel_endtile = end_tile;
 
-	if (tiles > _settings_game.construction.max_tunnel_length) return CommandCost(STR_ERROR_TUNNEL_TOO_LONG);
+	/* Hyperloop tubes are bored by machine: through any hill, however long. */
+	const bool hyperloop = transport_type == TransportType::Rail && IsHyperloopRailType(railtype);
+	if (!hyperloop && tiles > _settings_game.construction.max_tunnel_length) return CommandCost(STR_ERROR_TUNNEL_TOO_LONG);
 
 	if (HasTileWaterGround(end_tile)) return CommandCost(STR_ERROR_CAN_T_BUILD_ON_WATER);
 
@@ -1485,7 +1487,9 @@ static void DrawTile_TunnelBridge(TileInfo *ti)
 			const RailTypeInfo *rti = GetRailTypeInfo(GetRailType(ti->tile));
 			if (rti->UsesOverlay()) {
 				SpriteID surface = GetCustomRailSprite(rti, ti->tile, RailSpriteType::Tunnel);
-				if (surface != 0) DrawGroundSprite(surface + to_underlying(tunnelbridge_direction), PAL_NONE);
+				/* Hyperloop has a second set of portal grounds for hillside tunnels, after the four for flat shafts. */
+				const uint hillside = IsHyperloopRailType(GetRailType(ti->tile)) && ti->tileh != SLOPE_FLAT ? to_underlying(DiagDirection::End) : 0;
+				if (surface != 0) DrawGroundSprite(surface + hillside + to_underlying(tunnelbridge_direction), PAL_NONE);
 			}
 
 			/* PBS debugging, draw reserved tracks darker */
@@ -1513,7 +1517,14 @@ static void DrawTile_TunnelBridge(TileInfo *ti)
 
 		AddSortableSpriteToDraw(image + 1, PAL_NONE, *ti, roof_bounds[tunnelbridge_direction], false);
 		/* Draw railtype tunnel portal overlay if defined. */
-		if (railtype_overlay != 0) AddSortableSpriteToDraw(railtype_overlay + to_underlying(tunnelbridge_direction), PAL_NONE, *ti, roof_bounds[tunnelbridge_direction], false);
+		if (railtype_overlay != 0) {
+			/* Hyperloop tube portals carry the owner's company colour. */
+			const bool hyperloop = IsHyperloopRailType(GetRailType(ti->tile));
+			SpriteID portal = railtype_overlay + to_underlying(tunnelbridge_direction);
+			if (hyperloop && ti->tileh != SLOPE_FLAT) portal += to_underlying(DiagDirection::End); // the hillside set
+			if (hyperloop) SetBit(portal, PALETTE_MODIFIER_COLOUR);
+			AddSortableSpriteToDraw(portal, hyperloop ? GetCompanyPalette(GetTileOwner(ti->tile)) : PAL_NONE, *ti, roof_bounds[tunnelbridge_direction], false);
+		}
 
 		if (catenary || railtype_overlay != 0) EndSpriteCombine();
 

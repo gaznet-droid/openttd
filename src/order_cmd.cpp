@@ -566,7 +566,11 @@ TileIndex Order::GetLocation(const Vehicle *v, bool airport) const
 		case OT_GOTO_WAYPOINT:
 		case OT_GOTO_STATION:
 		case OT_IMPLICIT:
-			if (airport && v->type == VehicleType::Aircraft) return Station::Get(this->GetDestination().ToStationID())->airport.tile;
+			if (airport && v->type == VehicleType::Aircraft) {
+				/* A station with only spaceport pads is located at its first pad. */
+				const Station *st = Station::Get(this->GetDestination().ToStationID());
+				return st->airport.IsEmpty() && !st->spaceports.empty() ? st->spaceports.front().tile : st->airport.tile;
+			}
 			return BaseStation::Get(this->GetDestination().ToStationID())->xy;
 
 		case OT_GOTO_DEPOT:
@@ -708,7 +712,7 @@ CommandCost CmdInsertOrder(DoCommandFlags flags, VehicleID veh, VehicleOrderID s
 					if (!CanVehicleUseStation(v, st)) {
 						return CommandCost(STR_ERROR_CAN_T_ADD_ORDER, GetVehicleCannotUseStationReason(v, st));
 					}
-					if (!st->airport.HasHangar()) {
+					if (st->GetFirstHangarTile() == INVALID_TILE) {
 						return CMD_ERROR;
 					}
 				} else {
@@ -1700,6 +1704,9 @@ void CheckOrders(const Vehicle *v)
 
 	/* Ignore crashed vehicles. */
 	if (v->vehstatus.Test(VehState::Crashed)) return;
+
+	/* Orbital shuttles fly a fixed mission from their home spaceport; a single order is all they need. */
+	if (v->type == VehicleType::Aircraft && Aircraft::From(v)->acache.orbital_shuttle) return;
 
 	/* Maybe ignore stopped vehicles. */
 	if (_settings_client.gui.order_review_system == OrderReviewSystem::ExcludeStopped && v->vehstatus.Test(VehState::Stopped)) return;

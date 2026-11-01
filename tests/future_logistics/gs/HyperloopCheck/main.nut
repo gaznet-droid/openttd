@@ -97,6 +97,39 @@ class HyperloopCheck extends GSController {
         GSLog.Info("HYPL viaduct ready vehicle=" + this.via_vehicle + " road_under=true length=" + (span + 2));
         return true;
     }
+    /* Hyperloop bores through hills like a railway tunnel, from a hillside, at any depth and past the tunnel length limit. */
+    function BuildHillside() {
+        local hypl = GSRail.GetCurrentRailType();
+        local plain = -1;
+        foreach (type, unused in GSRailTypeList()) if (type != hypl) { plain = type; break; }
+        GSGameSettings.SetValue("construction.max_tunnel_length", 3);
+        for (local y = 16; y < GSMap.GetMapSizeY() - 16; y++) for (local x = 16; x < GSMap.GetMapSizeX() - 16; x++) {
+            local tile = GSMap.GetTileIndex(x, y);
+            local slope = GSTile.GetSlope(tile);
+            if (slope != GSTile.SLOPE_NE && slope != GSTile.SLOPE_SE && slope != GSTile.SLOPE_SW && slope != GSTile.SLOPE_NW) continue;
+            if (!GSTile.IsBuildable(tile)) continue;
+            local other = GSTunnel.GetOtherTunnelEnd(tile);
+            if (!GSMap.IsValidTile(other) || !GSTile.IsBuildable(other)) continue;
+            local length = GSMap.DistanceManhattan(tile, other) + 1;
+            if (length < 6) continue;
+            /* Ordinary rail is held to the length limit; the Hyperloop is not. */
+            GSRail.SetCurrentRailType(plain);
+            local plain_ok = false;
+            { local test = GSTestMode(); plain_ok = GSTunnel.BuildTunnel(GSVehicle.VT_RAIL, tile); }
+            GSRail.SetCurrentRailType(hypl);
+            if (plain_ok) continue;
+            if (!GSTunnel.BuildTunnel(GSVehicle.VT_RAIL, tile)) continue;
+            if (!GSTunnel.IsTunnelTile(other) || GSRail.GetRailType(tile) != hypl || GSRail.GetRailType(other) != hypl) {
+                GSLog.Error("HYPL hillside tunnel ends wrong"); return false;
+            }
+            if (GSRail.ConvertRailType(tile, tile, plain) || GSRail.GetRailType(tile) != hypl) { GSLog.Error("HYPL hillside tunnel converted"); return false; }
+            GSLog.Info("HYPL hillside tunnel tile=" + tile + " other=" + other + " length=" + length + " beyond_limit=true");
+            GSGameSettings.SetValue("construction.max_tunnel_length", 64);
+            return true;
+        }
+        GSLog.Error("HYPL no hillside site");
+        return false;
+    }
     function Flat(tile, height) { return GSTile.IsBuildable(tile) && GSTile.GetSlope(tile) == GSTile.SLOPE_FLAT && GSTile.GetMinHeight(tile) == height; }
     function Build() {
         foreach (type, unused in GSRailTypeList()) {
@@ -152,6 +185,7 @@ class HyperloopCheck extends GSController {
         this.home = a;
         this.other = b;
         if (!this.BuildViaduct(y0)) return false;
+        if (!this.BuildHillside()) return false;
         GSLog.Info("HYPL fixture ready vehicle=" + this.vehicle + " surface_road=true overlap_rejected=true length=202");
         return true;
     }

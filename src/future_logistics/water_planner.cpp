@@ -31,6 +31,7 @@
 #include "../vehicle_cmd.h"
 #include "../water_cmd.h"
 #include "../water_map.h"
+#include "../timer/timer_game_tick.h"
 #include <functional>
 #include <map>
 #include <queue>
@@ -41,7 +42,6 @@ namespace FutureLogistics {
 namespace {
 constexpr size_t MAX_DOCK_SITES = 3; ///< Dock sites tried per endpoint.
 constexpr size_t MAX_SHIP_PAIRS = 32; ///< Routes tried per service.
-constexpr size_t MAX_WATER_SEARCH = 32768; ///< Water tiles searched per route.
 constexpr int TOWN_DOCK_RADIUS = 16; ///< How far from a town centre a dock may go.
 constexpr std::array<DiagDirection, 4> DIRECTIONS{DiagDirection::NE, DiagDirection::SE, DiagDirection::SW, DiagDirection::NW};
 
@@ -123,31 +123,67 @@ std::vector<DockEnd> FindDocks(TileIndex centre, int radius, const std::function
 }
 
 /**
+ * Number each body of open water, so whether two places share a sea is a lookup rather than a search. Planning a
+ * large map tries thousands of dock pairs, and searching the water afresh for each one made world generation take
+ * many minutes. The numbering is made once per game tick, which covers a whole day-zero construction pass.
+ * @return A water body number per tile, 0 for anything that is not open water.
+ */
+const std::vector<uint32_t> &WaterBodies()
+{
+	static std::vector<uint32_t> bodies;
+	static uint64_t made_at = UINT64_MAX;
+	if (made_at == TimerGameTick::counter && bodies.size() == Map::Size()) return bodies;
+	made_at = TimerGameTick::counter;
+	bodies.assign(Map::Size(), 0);
+	uint32_t next = 0;
+	std::vector<TileIndex> stack;
+	for (TileIndex start{0}; start < Map::Size(); ++start) {
+		if (bodies[start.base()] != 0 || !IsOpenWater(start)) continue;
+		bodies[start.base()] = ++next;
+		stack.push_back(start);
+		while (!stack.empty()) {
+			const TileIndex tile = stack.back();
+			stack.pop_back();
+			for (DiagDirection direction : DIRECTIONS) {
+				const TileIndex step = Step(tile, direction);
+				if (step == INVALID_TILE || bodies[step.base()] != 0 || !IsOpenWater(step)) continue;
+				bodies[step.base()] = next;
+				stack.push_back(step);
+			}
+		}
+	}
+	return bodies;
+}
+
+/**
+ * The water bodies a ship can reach from a tile: its own, or for a docking tile beside the water, its neighbours'.
+ * @param tile Tile ships wait on.
+ * @param[out] out Body numbers, added to.
+ */
+void BodiesAt(TileIndex tile, std::set<uint32_t> &out)
+{
+	const auto &bodies = WaterBodies();
+	if (!IsValidTile(tile)) return;
+	if (bodies[tile.base()] != 0) { out.insert(bodies[tile.base()]); return; }
+	if (!IsDockingTile(tile)) return;
+	for (DiagDirection direction : DIRECTIONS) {
+		const TileIndex step = Step(tile, direction);
+		if (step != INVALID_TILE && bodies[step.base()] != 0) out.insert(bodies[step.base()]);
+	}
+}
+
+/**
  * Check that ships can sail from some tiles to others over open water.
  * @param starts Tiles to start from.
  * @param goal_list Tiles to reach.
- * @return Whether a water path exists within the search limit.
+ * @return Whether some start and some goal lie on the same body of water.
  */
 bool WaterConnected(const std::vector<TileIndex> &starts, const std::vector<TileIndex> &goal_list)
 {
-	const std::set<TileIndex> goals(goal_list.begin(), goal_list.end());
-	std::set<TileIndex> seen;
-	std::queue<TileIndex> queue;
-	for (TileIndex tile : starts) {
-		if (IsOpenWater(tile) || IsDockingTile(tile)) { seen.insert(tile); queue.push(tile); }
-	}
-	while (!queue.empty() && seen.size() < MAX_WATER_SEARCH) {
-		const TileIndex tile = queue.front();
-		queue.pop();
-		if (goals.contains(tile)) return true;
-		for (DiagDirection direction : DIRECTIONS) {
-			const TileIndex next = Step(tile, direction);
-			if (next == INVALID_TILE || seen.contains(next) || !(IsOpenWater(next) || goals.contains(next))) continue;
-			seen.insert(next);
-			queue.push(next);
-		}
-	}
-	return false;
+	std::set<uint32_t> from, to;
+	for (TileIndex tile : starts) BodiesAt(tile, from);
+	for (TileIndex tile : goal_list) BodiesAt(tile, to);
+	return std::ranges::any_of(from, [&](uint32_t body) { return to.contains(body); });
 }
 
 /**

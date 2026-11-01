@@ -28,12 +28,12 @@ match it.
 |---|---|---|---|
 | Starship | introduction date | 1 Jan 2045 | Before the Future Logistics rocket (2050), as the first of the reusable rockets |
 | Starship | range | unlimited | |
-| Starship | refits | passengers only | Secondary outbound mail capacity is retained |
+| Starship | refits | passengers or mail (1,120 bags when refitted to mail) | Secondary outbound mail capacity is retained when carrying passengers |
 | Starship | vehicle life / model life | 30 / 50 years | |
 | Starship | tier | `fl_tier/4` | One above nothing else yet; only ordering within the family |
 | Starship | flame | by flight phase: plume while launching and landing, flame in flight, none on the ground | Checked in game: see the README |
 | Starship Launch Site | available from | 2045 | |
-| Starship Launch Site | layout | the handoff launch complex over a 5×4 layout, moving like a country airport | Starship launches and lands vertically on the launch mount |
-| Starship Launch Site | catchment / noise / maintenance | 6 / 25 / 80 | |
+| Starship Launch Site | layout | **3×4, decided 31 Oct 2026**: the handoff launch complex, moving like a country airport turned a quarter turn | Starship docks on the launch mount, launches and lands vertically there |
+| Starship Launch Site | catchment / noise / maintenance | **12 (decided 31 Oct 2026)** / 25 / 80 | Catchment doubled so a spaceport can sit outside a town and still serve it; needs "modified catchment" on |
 | Rockets family | minimum market tier / markets | city / passengers, mail, freight | The same as the Future Logistics NewGRF declares |
 | AeroLink | Starship adoption delay | 2 years | Its built-in rule for any new air family |

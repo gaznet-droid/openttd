@@ -171,6 +171,17 @@ void AirportOverrideManager::SetEntitySpec(AirportSpec &&as)
 	}
 }
 
+/**
+ * Get the airport or spaceport pad a callback runs for.
+ * @param st Station.
+ * @param tile Tile of the callback, or INVALID_TILE for the station's airport.
+ * @return The spaceport pad covering the tile, otherwise the airport.
+ */
+Airport &AirportOfScope(Station *st, TileIndex tile)
+{
+	return tile != INVALID_TILE ? st->GetAirportByTile(tile) : st->airport;
+}
+
 /* virtual */ uint32_t AirportScopeResolver::GetVariable(uint8_t variable, [[maybe_unused]] uint32_t parameter, bool &available) const
 {
 	switch (variable) {
@@ -186,7 +197,10 @@ void AirportOverrideManager::SetEntitySpec(AirportSpec &&as)
 
 	switch (variable) {
 		/* Get a variable from the persistent storage */
-		case 0x7C: return (this->st->airport.psa != nullptr) ? this->st->airport.psa->GetValue(parameter) : 0;
+		case 0x7C: {
+			const Airport &airport = AirportOfScope(this->st, this->tile);
+			return (airport.psa != nullptr) ? airport.psa->GetValue(parameter) : 0;
+		}
 
 		case 0xF0: return this->st->facilities.base();
 		case 0xFA: return ClampTo<uint16_t>(this->st->build_date - CalendarTime::DAYS_TILL_ORIGINAL_BASE_YEAR);
@@ -219,16 +233,17 @@ uint32_t AirportResolverObject::GetDebugID() const
 {
 	if (this->st == nullptr) return;
 
-	if (this->st->airport.psa == nullptr) {
+	Airport &airport = AirportOfScope(this->st, this->tile);
+	if (airport.psa == nullptr) {
 		/* There is no need to create a storage if the value is zero. */
 		if (value == 0) return;
 
 		/* Create storage on first modification. */
 		GrfID grfid = (this->ro.grffile != nullptr) ? this->ro.grffile->grfid : GrfID{};
 		assert(PersistentStorage::CanAllocateItem());
-		this->st->airport.psa = PersistentStorage::Create(grfid, GrfSpecFeature::Airports, this->st->airport.tile);
+		airport.psa = PersistentStorage::Create(grfid, GrfSpecFeature::Airports, airport.tile);
 	}
-	this->st->airport.psa->StoreValue(pos, value);
+	airport.psa->StoreValue(pos, value);
 }
 
 /**
@@ -279,7 +294,8 @@ SpriteID GetCustomAirportSprite(const AirportSpec *as, uint8_t layout)
 
 uint16_t GetAirportCallback(CallbackID callback, uint32_t param1, uint32_t param2, Station *st, TileIndex tile, std::span<int32_t> regs100)
 {
-	AirportResolverObject object(tile, st, AirportSpec::Get(st->airport.type), st->airport.layout, callback, param1, param2);
+	const Airport &airport = AirportOfScope(st, tile);
+	AirportResolverObject object(tile, st, AirportSpec::Get(airport.type), airport.layout, callback, param1, param2);
 	return object.ResolveCallback(regs100);
 }
 

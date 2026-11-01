@@ -34,7 +34,7 @@ record the decision here.
 | Reusable Rocket | cost factor / running cost factor | 250 / 200 | |
 | Reusable Rocket | graphics | base-game Yate Haugan | Handoff rocket art not converted; vertical launch needs engine work |
 | Spaceport | available from / layout | 2050 / city airport (6×6) | Handoff art is a 4×4 launch pad |
-| Spaceport | catchment / noise / maintenance | 6 / 20 / 60 | |
+| Spaceport | catchment / noise / maintenance | **12 (decided 31 Oct 2026)** / 20 / 60 | Catchment doubled so a spaceport can sit outside a town and still serve it; needs "modified catchment" on |
 | Rockets family | minimum market tier / markets | city / passengers, mail, freight | |
 | AeroLink / Integrated Logistics | rocket adoption delay | 2 years / 3 years (freight) | AeroLink's is its built-in rule for any new air family |
 | Data Centre | layout and graphics | temperate bank (in towns) | Handoff art is a 4×4 tower site |

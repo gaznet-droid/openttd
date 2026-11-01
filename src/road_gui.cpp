@@ -240,7 +240,7 @@ static void PlaceRoadStop(TileIndex start_tile, TileIndex end_tile, RoadStopType
 	uint16_t spec_index = _roadstop_gui.sel_type;
 	const RoadStopSpec *spec = RoadStopClass::Get(spec_class)->GetSpec(spec_index);
 	if (spec != nullptr && ReadItemTags(spec->badges).id == "distribution_centre") {
-		ta = TileArea(start_tile, 4, 4);
+		ta = TileArea(start_tile, 5, 5);
 		ddir = DiagDirection::SW;
 		drive_through = false;
 	}
@@ -1480,7 +1480,7 @@ public:
 		this->DrawWidgets();
 
 		int rad = _settings_game.station.modified_catchment ? ((this->window_class == WindowClass::BuildBusStation) ? CA_BUS : CA_TRUCK) : CA_UNMODIFIED;
-		SetTileSelectSize(hub ? 4 : 1, hub ? 4 : 1);
+		SetTileSelectSize(hub ? 5 : 1, hub ? 5 : 1);
 		if (_settings_client.gui.station_show_coverage) {
 			/* The 3x4 warehouse is an object. Only the eastern 1x4 truck-bay strip
 			 * contributes to the real station catchment. */

@@ -34,6 +34,7 @@
 #include "newgrf_industries.h"
 #include "newgrf_airporttiles.h"
 #include "newgrf_airport.h"
+#include "future_logistics/orbital.h"
 #include "newgrf_object.h"
 #include "network/core/config.h"
 #include "smallmap_gui.h"
@@ -1209,6 +1210,7 @@ static void FinaliseAirportsArray()
 		file.airtspec.clear();
 		file.airtspec.shrink_to_fit();
 	}
+	InitSpaceportHangars();
 }
 
 /** Helper class to invoke a GrfActionHandler. */

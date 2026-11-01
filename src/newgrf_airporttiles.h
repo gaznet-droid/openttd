@@ -37,7 +37,7 @@ struct AirportTileScopeResolver : public ScopeResolver {
 		: ScopeResolver(ro), st(st), tile(tile), ats(ats)
 	{
 		assert(st != nullptr);
-		this->airport_id = st->airport.type;
+		this->airport_id = AirportOfScope(st, tile).type;
 	}
 
 	uint32_t GetRandomBits() const override;

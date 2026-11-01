@@ -377,6 +377,7 @@ struct Airport : public TileArea {
 	uint8_t type = 0; ///< Type of this airport, @see AirportTypes
 	uint8_t layout = 0; ///< Airport layout number.
 	Direction rotation = Direction::Invalid; ///< How this airport is rotated.
+	int32_t last_orbital_launch_month = -1; ///< Launch slot of a spaceport pad, in calendar months: one launch per pad a month.
 
 	PersistentStorage *psa = nullptr; ///< Persistent storage for NewGRF airports.
 
@@ -511,6 +512,19 @@ private:
 	}
 };
 
+/** A station can hold up to this many spaceport launch pads, besides one ordinary airport. */
+static constexpr uint MAX_SPACEPORT_PADS = 3;
+
+/**
+ * Check whether an airport type is a spaceport launch pad, which a station keeps apart from its ordinary airport.
+ * @param type Airport type.
+ * @return Whether the type is a spaceport.
+ */
+inline bool IsSpaceportType(uint8_t type)
+{
+	return type < NUM_AIRPORTS && AirportSpec::Get(type)->fsm == GetOrbitalAirport();
+}
+
 struct IndustryListEntry {
 	uint distance = 0;
 	Industry *industry = nullptr;
@@ -541,6 +555,7 @@ public:
 	TileArea truck_station{}; ///< Tile area the truck 'station' part covers
 
 	Airport airport{}; ///< Tile area the airport covers
+	std::vector<Airport> spaceports{}; ///< Spaceport launch pads, kept apart from the airport; at most #MAX_SPACEPORT_PADS.
 	TileArea ship_station{}; ///< Tile area the ship 'station' part covers
 	TileArea docking_station{}; ///< Tile area the docking tiles cover
 
@@ -606,10 +621,77 @@ public:
 		return IsAirportTile(tile) && GetStationIndex(tile) == this->index;
 	}
 
+	/**
+	 * Check whether a tile belongs to a particular airport or spaceport pad of this station.
+	 * @param tile Tile to check.
+	 * @param airport The station's airport or one of its spaceport pads.
+	 * @return Whether the tile is part of it.
+	 */
+	inline bool TileBelongsToAirport(TileIndex tile, const Airport &airport) const;
+
+	/**
+	 * Find the airport or spaceport pad a tile of this station belongs to.
+	 * @param tile Airport tile of this station.
+	 * @return The spaceport pad covering the tile, otherwise the airport.
+	 */
+	inline Airport &GetAirportByTile(TileIndex tile)
+	{
+		for (Airport &pad : this->spaceports) {
+			if (pad.Contains(tile)) return pad;
+		}
+		return this->airport;
+	}
+
+	/** @copydoc GetAirportByTile */
+	inline const Airport &GetAirportByTile(TileIndex tile) const
+	{
+		return const_cast<Station *>(this)->GetAirportByTile(tile);
+	}
+
+	/**
+	 * Find the spaceport pad with the given north tile.
+	 * @param tile North tile of the pad.
+	 * @return The pad, or nullptr.
+	 */
+	inline Airport *GetSpaceport(TileIndex tile)
+	{
+		for (Airport &pad : this->spaceports) {
+			if (pad.tile == tile) return &pad;
+		}
+		return nullptr;
+	}
+
+	/**
+	 * Check whether the station has an airport or a spaceport pad.
+	 * @return Whether any airport facility is built.
+	 */
+	inline bool HasAnyAirport() const
+	{
+		return !this->airport.IsEmpty() || !this->spaceports.empty();
+	}
+
+	/**
+	 * Get the first hangar of the airport, or else of the first spaceport pad that has one.
+	 * @return Hangar tile, or INVALID_TILE.
+	 */
+	inline TileIndex GetFirstHangarTile() const
+	{
+		if (this->airport.HasHangar()) return this->airport.GetHangarTile(0);
+		for (const Airport &pad : this->spaceports) {
+			if (pad.HasHangar()) return pad.GetHangarTile(0);
+		}
+		return INVALID_TILE;
+	}
+
 	uint32_t GetNewGRFVariable(const ResolverObject &object, uint8_t variable, uint8_t parameter, bool &available) const override;
 
 	TileArea GetTileArea(StationType type) const override;
 };
+
+inline bool Station::TileBelongsToAirport(TileIndex tile, const Airport &airport) const
+{
+	return this->TileBelongsToAirport(tile) && &this->GetAirportByTile(tile) == &airport;
+}
 
 void RebuildStationKdtree();
 

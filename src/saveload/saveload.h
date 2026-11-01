@@ -426,6 +426,7 @@ enum class SaveLoadVersion : uint16_t {
 	DoubleEndedShips, ///< Saveload version: 368, GitHub pull request: 16002\n Double-ended (NewGRF-only) ships can reverse without turning.
 
 	FutureLogisticsOrbital, ///< Saveload version: 369. Persistent orbital missions and shared launch slots.
+	FutureLogisticsSpaceportPads, ///< Saveload version: 370. Spaceport pads kept beside a station's airport, up to three per station.
 
 	MaxVersion, ///< Highest possible saveload version.
 };

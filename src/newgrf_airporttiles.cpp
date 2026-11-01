@@ -171,7 +171,7 @@ static uint32_t GetAirportTileIDAtOffset(TileIndex tile, const Station *st, GrfI
 		case 0x42: return to_underlying(GetTownRadiusGroup(ClosestTownFromTile(this->tile, UINT_MAX), this->tile));
 
 		/* Position relative to most northern airport tile. */
-		case 0x43: return GetRelativePosition(this->tile, this->st->airport.tile);
+		case 0x43: return GetRelativePosition(this->tile, AirportOfScope(this->st, this->tile).tile);
 
 		/* Animation frame of tile */
 		case 0x44: return GetAnimationFrame(this->tile);
@@ -218,7 +218,7 @@ AirportTileResolverObject::AirportTileResolverObject(const AirportTileSpec *ats,
 		CallbackID callback, uint32_t callback_param1, uint32_t callback_param2)
 	: ResolverObject(ats->grf_prop.grffile, callback, callback_param1, callback_param2),
 		tiles_scope(*this, ats, tile, st),
-		airport_scope(*this, tile, st, st != nullptr ? AirportSpec::Get(st->airport.type) : nullptr, st != nullptr ? st->airport.layout : 0)
+		airport_scope(*this, tile, st, st != nullptr ? AirportSpec::Get(AirportOfScope(st, tile).type) : nullptr, st != nullptr ? AirportOfScope(st, tile).layout : 0)
 {
 	this->root_spritegroup = ats->grf_prop.GetSpriteGroup(st != nullptr);
 }
@@ -319,11 +319,12 @@ bool TriggerAirportTileAnimation(Station *st, TileIndex tile, AirportAnimationTr
 
 bool TriggerAirportAnimation(Station *st, AirportAnimationTrigger trigger, CargoType cargo_type)
 {
-	if (st->airport.IsEmpty()) return false;
+	if (!st->HasAnyAirport()) return false;
 
 	bool ret = true;
 	uint32_t random = Random();
-	for (TileIndex tile : st->airport) {
+	/* Every tile of the airport and of the spaceport pads. */
+	for (TileIndex tile : st->GetTileArea(StationType::Airport)) {
 		if (!st->TileBelongsToAirport(tile)) continue;
 
 		const AirportTileSpec *ats = AirportTileSpec::GetByTile(tile);

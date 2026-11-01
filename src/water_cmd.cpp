@@ -1109,7 +1109,7 @@ static void FloodVehicleProc(Vehicle *v, int z)
 			/* We compare v->z_pos against delta_z + 1 because the shadow
 			 * is at delta_z and the actual aircraft at delta_z + 1. */
 			const Station *st = Station::GetByTile(v->tile);
-			const AirportFTAClass *airport = st->airport.GetFTA();
+			const AirportFTAClass *airport = st->GetAirportByTile(v->tile).GetFTA();
 			if (v->z_pos != airport->delta_z + 1) break;
 
 			FloodVehicle(v);
@@ -1141,8 +1141,9 @@ static void FloodVehicles(TileIndex tile)
 {
 	if (IsAirportTile(tile)) {
 		const Station *st = Station::GetByTile(tile);
-		for (TileIndex airport_tile : st->airport) {
-			if (st->TileBelongsToAirport(airport_tile)) FloodVehiclesOnTile(airport_tile, 0);
+		const Airport &airport = st->GetAirportByTile(tile);
+		for (TileIndex airport_tile : airport) {
+			if (st->TileBelongsToAirport(airport_tile, airport)) FloodVehiclesOnTile(airport_tile, 0);
 		}
 
 		/* No vehicle could be flooded on this airport anymore */

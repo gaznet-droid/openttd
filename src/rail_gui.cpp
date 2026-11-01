@@ -742,7 +742,8 @@ struct BuildRailToolbarWindow : Window {
 				break;
 
 			case WID_RAT_BUILD_TUNNEL:
-				if (IsHyperloopRailType(_cur_railtype)) {
+				/* Hyperloop: click a hillside to bore through it like a railway tunnel, or drag between two flat access shafts. */
+				if (IsHyperloopRailType(_cur_railtype) && GetInclinedSlopeDirection(GetTileSlope(tile)) == DiagDirection::Invalid) {
 					VpStartPlaceSizing(tile, VPM_X_OR_Y, DDSP_BUILD_BRIDGE);
 					break;
 				}
@@ -1086,6 +1087,8 @@ public:
 	{
 		const auto *sc = GetClass(id);
 		if (IsWaypointClass(*sc)) return INVALID_STRING_ID;
+		/* Hyperloop stations are always Hyperloop terminals, and the terminal is only for Hyperloop track. */
+		if (IsHyperloopRailType(_cur_railtype) != IsHyperloopTerminalClass(this->GetClassIndex(id))) return INVALID_STRING_ID;
 		return sc->name;
 	}
 

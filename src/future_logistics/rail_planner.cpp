@@ -42,7 +42,10 @@
 #include <functional>
 #include <map>
 #include <queue>
+#include <unordered_map>
+#include <unordered_set>
 
+#include "../timer/timer_game_tick.h"
 #include "../safeguards.h"
 
 namespace FutureLogistics {
@@ -191,6 +194,8 @@ struct RailPath {
 	bool empty() const { return this->tiles.empty(); }
 };
 
+static RailPath SearchRailPath2(const Terminus &a, const Terminus &b, bool crossings, bool *crossable);
+
 /**
  * Find a single-track line between two termini, crossing town roads at right angles where it has to.
  * The line climbs and descends over tiles inclined along it, and curves only on flat tiles.
@@ -202,17 +207,32 @@ struct RailPath {
  * @param[out] crossable If given, set when the search met a road it could have crossed with a level crossing.
  * @return The line, or an empty one if none was found.
  */
-size_t g_dbg_calls = 0, g_dbg_fail = 0, g_dbg_states = 0, g_dbg_full = 0;
-static RailPath SearchRailPath2(const Terminus &a, const Terminus &b, bool crossings, bool *crossable, size_t &states);
 static RailPath SearchRailPath(const Terminus &a, const Terminus &b, bool crossings, bool *crossable = nullptr)
 {
-	size_t states = 0;
-	auto r = SearchRailPath2(a, b, crossings, crossable, states);
-	g_dbg_calls++; g_dbg_states += states; if (r.empty()) g_dbg_fail++; if (states >= MAX_RAIL_STATES - 8) g_dbg_full++;
-	if (g_dbg_calls % 50 == 0) Debug(Facility::Misc, Severity::Error, "FLDBG rail searches={} failed={} full={} states={}", g_dbg_calls, g_dbg_fail, g_dbg_full, g_dbg_states);
-	return r;
+	/* Planning tries the same pair of stations again and again, once per company, service and train length; on a
+	 * large map four searches in five repeated one that had already failed, and the repeats made world generation
+	 * take many minutes. A search that failed is not run again in the same game tick: nothing is built between. */
+	using Key = std::tuple<uint32_t, uint8_t, uint32_t, uint8_t, bool>;
+	struct Failure { bool crossable; };
+	static std::map<Key, Failure> failed;
+	static uint64_t tick = UINT64_MAX;
+	if (tick != TimerGameTick::counter) {
+		failed.clear();
+		tick = TimerGameTick::counter;
+	}
+	const Key key{a.front.base(), to_underlying(a.exit), b.front.base(), to_underlying(b.exit), crossings};
+	if (auto it = failed.find(key); it != failed.end()) {
+		if (crossable != nullptr) *crossable = it->second.crossable;
+		return {};
+	}
+	bool met_road = false;
+	RailPath path = SearchRailPath2(a, b, crossings, &met_road);
+	if (crossable != nullptr) *crossable = met_road;
+	if (path.empty()) failed.emplace(key, Failure{met_road});
+	return path;
 }
-static RailPath SearchRailPath2(const Terminus &a, const Terminus &b, bool crossings, bool *crossable, size_t &states_out)
+
+static RailPath SearchRailPath2(const Terminus &a, const Terminus &b, bool crossings, bool *crossable)
 {
 	std::set<TileIndex> blocked;
 	for (const Terminus *t : {&a, &b}) {
@@ -226,10 +246,11 @@ static RailPath SearchRailPath2(const Terminus &a, const Terminus &b, bool cross
 	}
 
 	const RailNode start{a.Exit(), a.exit, 0};
-	std::map<uint64_t, RailNode> previous;
-	struct Guard { std::map<uint64_t, RailNode> &p; size_t &o; ~Guard() { o = p.size(); } } guard{previous, states_out};
-	std::set<uint64_t> middles; ///< Positions under a bridge or over a tunnel.
-	std::set<uint64_t> tunnel_middles; ///< Positions over a tunnel.
+	/* Hash containers: the search only looks positions up, never walks them in order. */
+	std::unordered_map<uint64_t, RailNode> previous;
+	previous.reserve(MAX_RAIL_STATES + 64);
+	std::unordered_set<uint64_t> middles; ///< Positions under a bridge or over a tunnel.
+	std::unordered_set<uint64_t> tunnel_middles; ///< Positions over a tunnel.
 	previous.emplace(start.Key(), RailNode{INVALID_TILE, a.exit, 0});
 	std::queue<RailNode> queue;
 	queue.push(start);

@@ -46,6 +46,8 @@ def tiles(key, filename, feature, start=0):
                               box[0] - (north_x + (y - x) * tw // 2),
                               box[1] - (north_y + (x + y) * th // 2)]
     lines = []
+    # The building's height in pixels at normal zoom (one pixel per height unit), for the tiles' bounding boxes.
+    height = max(8, min(255, max(-v[5] for n, v in metadata.items() if n.endswith('_1x'))))
     for y in range(4):
         for x in range(4):
             name = f'{key}_{x}_{y}'
@@ -55,7 +57,10 @@ def tiles(key, filename, feature, start=0):
                     lines.append(f'spriteset({name}_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/{name}_1x.png") {{ [{args}] }}')
                 else:
                     lines.append(f'alternative_sprites({name}_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/{name}_2x.png") {{ [{args}] }}')
-            lines.append(f'spritelayout {name}_layout {{ ground {{ sprite: {name}_sprite(0); }} }}')
+            # A building sprite boxed to its own tile, over concrete: drawn as ground, the tall building was painted
+            # under everything, so neighbouring houses, stations and canopies drew straight over it.
+            lines.append(f'spritelayout {name}_layout {{ ground {{ sprite: GROUNDSPRITE_CONCRETE; }} building {{ sprite: {name}_sprite(0); '
+                         f'xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: {height}; }} }}')
             props = 'substitute: 0;'
             if feature == 'FEAT_INDUSTRYTILES':
                 props += ' land_shape_flags: 15; accepted_cargos: [[VALU, 8], [GOLD, 8], [DIAM, 8]];'
@@ -91,43 +96,26 @@ def drone():
 
 
 def orbital_assets():
-    """Use exactly the same supplied launch scenery and vehicle in both GRFs."""
+    """Use exactly the same Starship sprites in both GRFs. The launch pad itself is written into both GRFs by
+    ../tools/make_spaceport_art.py."""
     import re
     import shutil
     source = ROOT.parent / 'starship'
     nml = (source / 'starship.nml').read_text()
-    body = nml[nml.index('spriteset(starship_'):nml.index('item(FEAT_AIRCRAFT, starship,')]
-    body = body.replace('starship_', 'orbital_rocket_')
-    pad = nml[nml.index('spriteset(pad_sprite_0_0,'):nml.index('/* The first NewGRF airport')]
-    pad = pad.replace('pad_', 'orbital_pad_').replace('starship_orbital_pad_layout', 'orbital_spaceport_layout')
-    pad = re.sub(r'(item\(FEAT_AIRPORTTILES, [^,]+, )(\d+)', lambda m: m[1] + str(int(m[2]) + 16), pad)
-    for name in re.findall(r'"gfx/([^"]+)"', body):
+    body = nml[nml.index('spriteset(starship_body'):nml.index('item(FEAT_AIRCRAFT, starship,')]
+    body = body.replace('starship_', 'orbital_rocket_').replace('gfx/orbital_rocket_idle', 'gfx/starship_idle')
+    body = body.replace('gfx/orbital_rocket_lit', 'gfx/starship_lit')
+    for name in set(re.findall(r'"gfx/([^"]+)"', body)):
         shutil.copy(source / 'gfx' / name, GFX / name)
-    for original in (source / 'gfx').glob('pad_[0-3]_[0-3]_[12]x.png'):
-        shutil.copy(original, GFX / original.name.replace('pad_', 'orbital_pad_'))
-    (GFX / 'orbital_rocket.nml').write_text(body + pad)
+    (GFX / 'orbital_rocket.nml').write_text(body)
 
 
 def distribution_hub():
-    """Use the supplied warehouse over a 3x4 rear and four live front bays."""
-    image = Image.open(ART / 'openttd_distribution_centre_4x4_transparent.png').convert('RGBA')
-    image = image.crop(image.getchannel('A').point(lambda a: 255 if a > 80 else 0).getbbox())
-    lines = []
-    for zoom in (1, 2):
-        width = 256 * zoom
-        sprite = image.resize((width, round(image.height * width / image.width)), Image.Resampling.LANCZOS)
-        sprite.save(GFX / f'distribution_hub_{zoom}x.png')
-        prefix = 'spriteset' if zoom == 1 else 'alternative_sprites'
-        level = 'ZOOM_LEVEL_NORMAL' if zoom == 1 else 'ZOOM_LEVEL_IN_2X'
-        args = f'0, 0, {sprite.width}, {sprite.height}, {-width // 2}, {128 * zoom - sprite.height}'
-        lines.append(f'{prefix}(distribution_hub_sprite, {level}, BIT_DEPTH_32BPP, "gfx/distribution_hub_{zoom}x.png") {{ [{args}] }}')
-    lines.extend([
-        'spritelayout distribution_hub_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_sprite(0); xextent: 48; yextent: 64; zextent: 56; } }',
-        'spritelayout distribution_hub_ground { ground { sprite: GROUNDSPRITE_CONCRETE; } }',
-        'switch(FEAT_OBJECTS, SELF, distribution_hub_object_graphics, relative_pos) { 0: distribution_hub_layout; distribution_hub_ground; }',
-        'item(FEAT_OBJECTS, distribution_warehouse, 0) { property { class: "FLHB"; name: string(STR_DISTRIBUTION_WAREHOUSE); climates_available: ALL_CLIMATES; size: [3, 4]; build_cost_multiplier: 4; remove_cost_multiplier: 3; introduction_date: date(2022, 1, 1); end_of_life_date: 0xFFFFFFFF; object_flags: bitmask(OBJ_FLAG_NO_FOUNDATIONS); height: 56; num_views: 1; badges: ["fl_format/2", "fl_id/distribution_warehouse"]; } graphics { default: distribution_hub_object_graphics; purchase: distribution_hub_layout; tile_check: ((extra_callback_info1 & bitmask(0,1,2,3,4)) == 0) ? CB_RESULT_LOCATION_ALLOW : CB_RESULT_LOCATION_DISALLOW; } }',
-        'item(FEAT_ROADSTOPS, distribution_centre, 0) { property { class: "FLHB"; classname: string(STR_DISTRIBUTION_CENTRE); name: string(STR_DISTRIBUTION_CENTRE); availability_type: 1; draw_mode: 0; general_flags: bitmask(2,4,5); badges: ["fl_format/2", "fl_id/distribution_centre"]; } graphics { default: distribution_hub_ground; purchase: distribution_hub_layout; } }',
-    ])
+    """The Distribution Centre items; their graphics are drawn by make_distribution_hub.py."""
+    lines = [
+        'item(FEAT_OBJECTS, distribution_warehouse, 0) { property { class: "FLHB"; name: string(STR_DISTRIBUTION_WAREHOUSE); climates_available: ALL_CLIMATES; size: [4, 4]; build_cost_multiplier: 4; remove_cost_multiplier: 3; introduction_date: date(2022, 1, 1); end_of_life_date: 0xFFFFFFFF; object_flags: bitmask(OBJ_FLAG_NO_FOUNDATIONS); height: 88; num_views: 1; badges: ["fl_format/2", "fl_id/distribution_warehouse"]; } graphics { default: distribution_hub_object_graphics; purchase: distribution_hub_layout; tile_check: ((extra_callback_info1 & bitmask(0,1,2,3,4)) == 0) ? CB_RESULT_LOCATION_ALLOW : CB_RESULT_LOCATION_DISALLOW; } }',
+        'item(FEAT_ROADSTOPS, distribution_centre, 0) { property { class: "FLHB"; classname: string(STR_DISTRIBUTION_CENTRE); name: string(STR_DISTRIBUTION_CENTRE); availability_type: 1; draw_mode: 0; general_flags: bitmask(2,4,5); badges: ["fl_format/2", "fl_id/distribution_centre"]; } graphics { default: distribution_hub_bay_graphics; purchase: distribution_hub_layout; } }',
+    ]
     (GFX / 'distribution_hub.nml').write_text('\n'.join(lines) + '\n')
 
 

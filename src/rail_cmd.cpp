@@ -140,6 +140,7 @@ void InitRailTypes()
 		_sorted_railtypes.push_back(rt);
 	}
 	std::sort(_sorted_railtypes.begin(), _sorted_railtypes.end(), CompareRailTypes);
+	InitHyperloopViaductSprites();
 }
 
 /**
@@ -424,7 +425,7 @@ static bool IsHyperloopApproach(TileIndex tile)
 	TileArea area(tile, 1, 1);
 	area.Expand(3);
 	for (TileIndex part : area) {
-		if ((IsRailStationTile(part) || IsRailDepotTile(part) || IsHyperloopTube(part) || IsHyperloopViaduct(part)) &&
+		if ((IsRailStationTile(part) || IsRailDepotTile(part) || IsHyperloopTunnel(part) || IsHyperloopViaduct(part)) &&
 			GetTileOwner(part) == _current_company && IsHyperloopRailType(GetRailType(part))) return true;
 	}
 	return false;
@@ -1613,14 +1614,14 @@ CommandCost CmdConvertRail(DoCommandFlags flags, TileIndex tile, TileIndex area_
 			default: continue;
 		}
 
-		if ((IsHyperloopTube(cur_tile) || IsHyperloopViaduct(cur_tile)) && !IsHyperloopRailType(totype)) {
+		if ((IsHyperloopTunnel(cur_tile) || IsHyperloopViaduct(cur_tile)) && !IsHyperloopRailType(totype)) {
 			error.MakeError(STR_HYPERLOOP_NO_CONVERSION);
 			continue;
 		}
 
 		/* HYPL crosses ground only on its own viaduct or in its own tubes: ordinary bridges and tunnels cannot be converted to it. */
 		if (IsHyperloopRailType(totype) && ((IsPlainRailTile(cur_tile) && !IsHyperloopApproach(cur_tile)) ||
-				(IsTileType(cur_tile, TileType::TunnelBridge) && !IsHyperloopTube(cur_tile) && !IsHyperloopViaduct(cur_tile)))) {
+				(IsTileType(cur_tile, TileType::TunnelBridge) && !IsHyperloopTunnel(cur_tile) && !IsHyperloopViaduct(cur_tile)))) {
 			error.MakeError(STR_HYPERLOOP_USE_HYPERLOOP_TOOLS);
 			continue;
 		}

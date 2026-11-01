@@ -853,7 +853,8 @@ void Vehicle::PreDestructor()
 
 	if (this->type == VehicleType::Aircraft && this->IsPrimaryVehicle()) {
 		Aircraft *a = Aircraft::From(this);
-		Station *st = GetTargetAirportIfValid(a);
+		/* Orbital shuttles never hold blocks of the station's airport. */
+		Station *st = a->acache.orbital_shuttle ? nullptr : GetTargetAirportIfValid(a);
 		if (st != nullptr) {
 			const auto &layout = st->airport.GetFTA()->layout;
 			st->airport.blocks.Reset(layout[a->previous_pos].blocks | layout[a->pos].blocks);
@@ -3132,10 +3133,16 @@ bool CanVehicleUseStation(EngineID engine_type, const Station *st)
 		case VehicleType::Ship:
 			return st->facilities.Test(StationFacility::Dock);
 
-		case VehicleType::Aircraft:
-			return st->facilities.Test(StationFacility::Airport) &&
-					AircraftMeetsAirportRequirements(e, st->airport.GetSpec()) &&
-					st->airport.GetFTA()->flags.Test(e->VehInfo<AircraftVehicleInfo>().subtype & AIR_CTOL ? AirportFTAClass::Flag::Airplanes : AirportFTAClass::Flag::Helicopters);
+		case VehicleType::Aircraft: {
+			if (!st->facilities.Test(StationFacility::Airport)) return false;
+			/* The airport, or for orbital shuttles one of the spaceport pads beside it. */
+			auto usable = [e](const Airport &airport) {
+				return AircraftMeetsAirportRequirements(e, airport.GetSpec()) &&
+					airport.GetFTA()->flags.Test(e->VehInfo<AircraftVehicleInfo>().subtype & AIR_CTOL ? AirportFTAClass::Flag::Airplanes : AirportFTAClass::Flag::Helicopters);
+			};
+			if (!st->airport.IsEmpty() && usable(st->airport)) return true;
+			return std::ranges::any_of(st->spaceports, usable);
+		}
 
 		default:
 			return false;
@@ -3196,7 +3203,7 @@ StringID GetVehicleCannotUseStationReason(const Vehicle *v, const Station *st)
 
 		case VehicleType::Aircraft:
 			if (!st->facilities.Test(StationFacility::Airport)) return STR_ERROR_NO_AIRPORT;
-			if (!AircraftMeetsAirportRequirements(v->GetEngine(), st->airport.GetSpec())) return STR_ERROR_AIRPORT_MISSING_REQUIRED_FACILITIES;
+			if (!AircraftMeetsAirportRequirements(v->GetEngine(), (st->airport.IsEmpty() && !st->spaceports.empty() ? st->spaceports.front() : st->airport).GetSpec())) return STR_ERROR_AIRPORT_MISSING_REQUIRED_FACILITIES;
 			if (v->GetEngine()->VehInfo<AircraftVehicleInfo>().subtype & AIR_CTOL) {
 				return STR_ERROR_AIRPORT_NO_PLANES;
 			} else {

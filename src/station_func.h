@@ -24,7 +24,7 @@ void ShowStationViewWindow(StationID station);
 void UpdateAllStationVirtCoords();
 void ClearAllStationCachedNames();
 
-CommandCost CheckStationSpread(TileArea area, const TileArea &new_area);
+CommandCost CheckStationSpread(TileArea area, const TileArea &new_area, uint extra = 0);
 
 CargoArray GetProductionAroundTiles(TileIndex tile, int w, int h, int rad);
 std::pair<CargoArray, CargoTypes> GetAcceptanceAroundTiles(TileIndex tile, int w, int h, int rad);

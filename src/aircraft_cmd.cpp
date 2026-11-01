@@ -273,14 +273,15 @@ CommandCost CmdBuildAircraft(DoCommandFlags flags, TileIndex tile, const Engine 
 	const AircraftVehicleInfo *avi = &e->VehInfo<AircraftVehicleInfo>();
 	const Station *st = Station::GetByTile(tile);
 
+	/* The hangar belongs to the airport or to one of the spaceport pads. */
+	const Airport &airport = st->GetAirportByTile(tile);
+
 	/* Prevent building aircraft types at places which can't handle them */
-	if (!CanVehicleUseStation(e->index, st)) {
-		if (!AircraftMeetsAirportRequirements(e, st->airport.GetSpec())) return CommandCost(STR_ERROR_AIRPORT_MISSING_REQUIRED_FACILITIES);
-		return CMD_ERROR;
-	}
+	if (!AircraftMeetsAirportRequirements(e, airport.GetSpec())) return CommandCost(STR_ERROR_AIRPORT_MISSING_REQUIRED_FACILITIES);
+	if (!CanVehicleUseStation(e->index, st)) return CMD_ERROR;
 
 	/* Make sure all aircraft end up in the first tile of the hangar. */
-	tile = st->airport.GetHangarTile(st->airport.GetHangarNum(tile));
+	tile = airport.GetHangarTile(airport.GetHangarNum(tile));
 
 	if (flags.Test(DoCommandFlag::Execute)) {
 		Aircraft *v = Aircraft::Create(); // aircraft
@@ -300,7 +301,7 @@ CommandCost CmdBuildAircraft(DoCommandFlags flags, TileIndex tile, const Engine 
 		v->y_pos = u->y_pos = y;
 
 		u->z_pos = GetSlopePixelZ(x, y);
-		v->z_pos = u->z_pos + 1 + st->airport.GetFTA()->delta_z;
+		v->z_pos = u->z_pos + 1 + airport.GetFTA()->delta_z;
 
 		v->vehstatus = {VehState::Hidden, VehState::Stopped, VehState::DefaultPalette};
 		u->vehstatus = {VehState::Hidden, VehState::Unclickable, VehState::Shadow};
@@ -2222,7 +2223,8 @@ void UpdateAirplanesOnNewStation(const Station *st)
 	Direction rotation = st->airport.IsEmpty() ? Direction::N : st->airport.rotation;
 
 	for (Aircraft *v : Aircraft::Iterate()) {
-		if (!v->IsNormalAircraft() || v->targetairport != st->index) continue;
+		/* Orbital shuttles keep to their own spaceport pad. */
+		if (!v->IsNormalAircraft() || v->targetairport != st->index || v->acache.orbital_shuttle) continue;
 		assert(v->state == FLYING);
 
 		Order *o = &v->current_order;

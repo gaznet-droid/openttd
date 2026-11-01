@@ -8,6 +8,7 @@
 /** @file station_cmd.cpp Handling of station tiles. */
 
 #include "stdafx.h"
+#include "future_logistics/hyperloop.h"
 #include "future_logistics/tag_index.h"
 #include "future_logistics/tech_library.h"
 #include "object_base.h"
@@ -75,6 +76,7 @@
 #include "timer/timer_game_tick.h"
 #include "cheat_type.h"
 #include "road_func.h"
+#include "road_cmd.h"
 #include "station_layout_type.h"
 #include "tilearea_airport.h"
 #include "tilearea_airportlayout.h"
@@ -109,10 +111,11 @@ bool IsHangar(Tile t)
 	if (!IsAirport(t)) return false;
 
 	const Station *st = Station::GetByTile(t);
-	const AirportSpec *as = st->airport.GetSpec();
+	const Airport &airport = st->GetAirportByTile(t);
+	const AirportSpec *as = airport.GetSpec();
 
 	for (const auto &depot : as->depots) {
-		if (st->airport.GetRotatedTileFromOffset(depot.ti) == TileIndex(t)) return true;
+		if (airport.GetRotatedTileFromOffset(depot.ti) == TileIndex(t)) return true;
 	}
 
 	return false;
@@ -450,7 +453,12 @@ TileArea Station::GetTileArea(StationType type) const
 {
 	switch (type) {
 		case StationType::Rail: return this->train_station;
-		case StationType::Airport: return this->airport;
+		case StationType::Airport: {
+			/* The airport together with any spaceport pads. */
+			TileArea area = this->airport;
+			for (const Airport &pad : this->spaceports) area.Add(pad);
+			return area;
+		}
 		case StationType::Truck: return this->truck_station;
 		case StationType::Bus: return this->bus_station;
 		case StationType::Dock:
@@ -731,7 +739,9 @@ static CommandCost BuildStationPart(Station **st, DoCommandFlags flags, bool reu
 			return CommandCost(CMD_ERROR);
 		}
 
-		CommandCost ret = CheckStationSpread((*st)->spread, area);
+		/* A row of spaceport pads may stretch a station by up to three pads' width beyond the usual spread. */
+		const uint extra = name_class == StationNaming::Spaceport || !(*st)->spaceports.empty() ? MAX_SPACEPORT_PADS * 4 : 0;
+		CommandCost ret = CheckStationSpread((*st)->spread, area, extra);
 		if (ret.Failed()) return ret;
 	} else {
 		/* allocate and initialize new station */
@@ -1452,6 +1462,17 @@ CommandCost CmdBuildRailStation(DoCommandFlags flags, TileIndex tile_org, RailTy
 
 	/* Check if the given station class is valid */
 	if (spec_class.base() >= StationClass::GetClassCount()) return CMD_ERROR;
+	/* Every Hyperloop station is a Hyperloop terminal, and the terminal is only for Hyperloop track. */
+	if (IsHyperloopRailType(rt)) {
+		StationClassID terminal_class;
+		uint16_t terminal_index;
+		if (FindHyperloopTerminal(terminal_class, terminal_index)) {
+			spec_class = terminal_class;
+			spec_index = terminal_index;
+		}
+	} else if (IsHyperloopTerminalClass(spec_class)) {
+		return CommandCost(STR_HYPERLOOP_TERMINAL_ONLY);
+	}
 	const StationClass *cls = StationClass::Get(spec_class);
 	if (IsWaypointClass(*cls)) return CMD_ERROR;
 	if (spec_index >= cls->GetSpecCount()) return CMD_ERROR;
@@ -2230,8 +2251,27 @@ static CommandCost BuildRoadStopInternal(DoCommandFlags flags, TileIndex tile, u
 	return cost;
 }
 
+/** A Distribution Centre bay: its offset from the facility's north corner, the way its lorries come in, and the
+ * road bit on the tile in front of it that leads in. */
+struct HubBay {
+	int dx; ///< Offset along x from the facility's north corner.
+	int dy; ///< Offset along y from the facility's north corner.
+	DiagDirection entrance; ///< The side lorries enter from.
+	RoadBit approach; ///< The road bit the tile in front needs to lead into the bay.
+};
+
 /**
- * Construct a complete 4x4 Distribution Centre with four working truck bays.
+ * The Distribution Centre's eight bays: four along the warehouse's south-west face and four along its south-east
+ * face. The index is the bay's animation frame, which picks its piece of the picture.
+ */
+static constexpr std::array<HubBay, 8> HUB_BAYS{{
+	{4, 0, DiagDirection::SW, RoadBit::NE}, {4, 1, DiagDirection::SW, RoadBit::NE}, {4, 2, DiagDirection::SW, RoadBit::NE}, {4, 3, DiagDirection::SW, RoadBit::NE},
+	{0, 4, DiagDirection::SE, RoadBit::NW}, {1, 4, DiagDirection::SE, RoadBit::NW}, {2, 4, DiagDirection::SE, RoadBit::NW}, {3, 4, DiagDirection::SE, RoadBit::NW},
+}};
+
+/**
+ * Construct a complete Distribution Centre: a 4x4 warehouse with eight truck bays along its two front faces, each
+ * bay taking two lorries, sixteen in all. The facility covers 5x5 tiles; its front corner tile is left free.
  * @param flags Command flags.
  * @param tile North corner of the facility.
  * @param rt Road type of its bays.
@@ -2242,7 +2282,7 @@ static CommandCost BuildRoadStopInternal(DoCommandFlags flags, TileIndex tile, u
  */
 static CommandCost BuildDistributionHub(DoCommandFlags flags, TileIndex tile, RoadType rt, const RoadStopSpec *spec, StationID join, bool adjacent)
 {
-	if (!Company::IsValidID(_current_company) || !ValParamRoadType(rt) || RoadTypeIsTram(rt) || !IsValidTile(tile) || TileAddWrap(tile, 3, 3) == INVALID_TILE) return CMD_ERROR;
+	if (!Company::IsValidID(_current_company) || !ValParamRoadType(rt) || RoadTypeIsTram(rt) || !IsValidTile(tile) || TileAddWrap(tile, 4, 4) == INVALID_TILE) return CMD_ERROR;
 	Town *town = ClosestTownFromTile(tile, UINT_MAX);
 	if (town == nullptr || town->cache.population < 5000) return CommandCost(STR_DISTRIBUTION_REQUIRES_CITY);
 	const auto warehouse = FutureLogistics::FindObjectById("distribution_warehouse");
@@ -2250,29 +2290,49 @@ static CommandCost BuildDistributionHub(DoCommandFlags flags, TileIndex tile, Ro
 	for (const Object *object : Object::Iterate()) {
 		if (object->town == town && object->type == *warehouse) return CommandCost(STR_DISTRIBUTION_ONE_PER_TOWN);
 	}
+	/* The warehouse and the bays need flat, clear land at one height; the free front corner does not. */
 	const int z = GetTileZ(tile);
-	for (TileIndex part : TileArea(tile, 4, 4)) {
+	std::vector<TileIndex> site;
+	for (TileIndex part : TileArea(tile, 4, 4)) site.push_back(part);
+	for (const HubBay &bay : HUB_BAYS) site.push_back(TileAddXY(tile, bay.dx, bay.dy));
+	for (TileIndex part : site) {
 		if ((!IsTileType(part, TileType::Clear) && !IsTileType(part, TileType::Trees)) || GetTileSlope(part) != SLOPE_FLAT || GetTileZ(part) != z) return CommandCost(STR_DISTRIBUTION_CLEAR_SITE);
 	}
-	if ((Company::Get(_current_company)->clear_limit >> 16) < 32) return CommandCost(STR_ERROR_CLEARING_LIMIT_REACHED);
-	if (!RoadStop::CanAllocateItem(4)) return CommandCost(STR_ERROR_TOO_MANY_STATIONS_LOADING);
+	if ((Company::Get(_current_company)->clear_limit >> 16) < site.size() * 2) return CommandCost(STR_ERROR_CLEARING_LIMIT_REACHED);
+	if (!RoadStop::CanAllocateItem(HUB_BAYS.size())) return CommandCost(STR_ERROR_TOO_MANY_STATIONS_LOADING);
 	DoCommandFlags test_flags = flags;
 	test_flags.Reset(DoCommandFlag::Execute);
 	CommandCost total = Command<Commands::BuildObject>::Do(test_flags, tile, *warehouse, 0);
 	if (total.Failed()) return total;
-	/* Resolve automatic joining against the whole painted facility, not only its first eastern bay.
-	 * The resolved station is then used for all four bays, which remains a local compound
-	 * build even when the player has disabled distant station joining. */
+	/* Resolve automatic joining against the whole facility, not only its first bay. The resolved station is then
+	 * used for all eight bays, which remains a local compound build even when the player has disabled distant
+	 * station joining. */
 	Station *joined = nullptr;
-	CommandCost join_result = FindJoiningRoadStop(StationID::Invalid(), join, adjacent, TileArea(tile, 4, 4), &joined);
+	CommandCost join_result = FindJoiningRoadStop(StationID::Invalid(), join, adjacent, TileArea(tile, 5, 5), &joined);
 	if (join_result.Failed()) return join_result;
 	if (joined != nullptr) join = joined->index;
-	for (uint i = 0; i < 4; i++) {
-		CommandCost cost = BuildRoadStopInternal(test_flags, TileAddXY(tile, 3, i), 1, 1, RoadStopType::Truck, false, DiagDirection::SW, rt, spec->class_index, spec->index, join, true, true);
+	for (const HubBay &bay : HUB_BAYS) {
+		CommandCost cost = BuildRoadStopInternal(test_flags, TileAddXY(tile, bay.dx, bay.dy), 1, 1, RoadStopType::Truck, false, bay.entrance, rt, spec->class_index, spec->index, join, true, true);
 		if (cost.Failed()) return cost;
 		total.AddCost(std::move(cost));
 	}
-	if (!flags.Test(DoCommandFlag::Execute)) return total;
+	/* Where a road already runs along a front side, join it to the bays, so lorries can drive in without the player
+	 * drawing a stub into every bay. Priced the same in the test run. */
+	auto link_bays = [&](DoCommandFlags link_flags) {
+		for (const HubBay &bay : HUB_BAYS) {
+			const TileIndexDiffC out = TileIndexDiffCByDiagDir(bay.entrance);
+			const TileIndex front = TileAddWrap(tile, bay.dx + out.x, bay.dy + out.y);
+			if (front == INVALID_TILE || !IsNormalRoadTile(front)) continue;
+			const RoadType front_rt = GetRoadTypeRoad(front);
+			if (front_rt == INVALID_ROADTYPE || GetRoadBits(front, RoadTramType::Road).Test(bay.approach)) continue;
+			CommandCost link = Command<Commands::BuildRoad>::Do(link_flags, front, RoadBits{bay.approach}, front_rt, {}, TownID::Invalid());
+			if (link.Succeeded()) total.AddCost(std::move(link));
+		}
+	};
+	if (!flags.Test(DoCommandFlag::Execute)) {
+		link_bays(test_flags);
+		return total;
+	}
 	std::vector<TileIndex> built;
 	auto rollback = [&]() {
 		for (TileIndex part : built) {
@@ -2280,18 +2340,21 @@ static CommandCost BuildDistributionHub(DoCommandFlags flags, TileIndex tile, Ro
 			assert(clear.Succeeded()); // Only new, empty, owned components.
 		}
 	};
-	for (uint i = 0; i < 4; i++) {
-		const TileIndex bay = TileAddXY(tile, 3, i);
-		CommandCost cost = BuildRoadStopInternal(flags, bay, 1, 1, RoadStopType::Truck, false, DiagDirection::SW, rt, spec->class_index, spec->index, join, true, true);
+	for (uint i = 0; i < HUB_BAYS.size(); i++) {
+		const HubBay &spec_bay = HUB_BAYS[i];
+		const TileIndex bay = TileAddXY(tile, spec_bay.dx, spec_bay.dy);
+		CommandCost cost = BuildRoadStopInternal(flags, bay, 1, 1, RoadStopType::Truck, false, spec_bay.entrance, rt, spec->class_index, spec->index, join, true, true);
 		if (cost.Failed()) { rollback(); return cost; }
 		built.push_back(bay);
 		join = GetStationIndex(bay);
-		/* Match the four painted bays with four active positions. */
-		RoadStop::GetByTile(bay, RoadStopType::Truck)->status.Reset(RoadStop::RoadStopStatusFlag::Bay1Free);
+		/* Number the bays so each draws its own piece of the Distribution Centre picture. Both of a bay's
+		 * positions are open: two lorries load side by side. */
+		Station::GetByTile(bay)->SetRoadStopAnimationFrame(bay, i);
 	}
 	CommandCost object = Command<Commands::BuildObject>::Do(flags, tile, *warehouse, 0);
 	if (object.Failed()) { rollback(); return object; }
-	Debug(Facility::Misc, Severity::Notice, "FL distribution hub company={} town={} station={} tile={} bays=4", _current_company, town->index, join, tile);
+	link_bays(flags);
+	Debug(Facility::Misc, Severity::Notice, "FL distribution hub company={} town={} station={} tile={} bays={}", _current_company, town->index, join, tile, HUB_BAYS.size());
 	return total;
 }
 
@@ -2699,12 +2762,13 @@ Town *AirportGetNearestTown(const AirportSpec *as, Direction rotation, TileIndex
  * Finds the town nearest to given existing airport. Based on minimal manhattan distance to any airport's tile.
  * If two towns have the same distance, town with lower index is returned.
  * @param st Existing station with airport.
+ * @param airport The station's airport or one of its spaceport pads.
  * @param[out] mindist Minimum distance to town
  * @return nearest town to airport
  */
-static Town *AirportGetNearestTown(const Station *st, uint &mindist)
+static Town *AirportGetNearestTown(const Station *st, const Airport &airport, uint &mindist)
 {
-	return AirportGetNearestTown(st->airport.GetSpec(), st->airport.rotation, st->airport.tile, AirportTileIterator(st), mindist);
+	return AirportGetNearestTown(airport.GetSpec(), airport.rotation, airport.tile, AirportTileIterator(st, airport), mindist);
 }
 
 
@@ -2716,8 +2780,13 @@ void UpdateAirportsNoise()
 	for (const Station *st : Station::Iterate()) {
 		if (!st->airport.IsEmpty() && st->airport.type != AT_OILRIG) {
 			uint dist;
-			Town *nearest = AirportGetNearestTown(st, dist);
+			Town *nearest = AirportGetNearestTown(st, st->airport, dist);
 			nearest->noise_reached += GetAirportNoiseLevelForDistance(st->airport.GetSpec(), dist);
+		}
+		for (const Airport &pad : st->spaceports) {
+			uint dist;
+			Town *nearest = AirportGetNearestTown(st, pad, dist);
+			nearest->noise_reached += GetAirportNoiseLevelForDistance(pad.GetSpec(), dist);
 		}
 	}
 }
@@ -2805,7 +2874,12 @@ CommandCost CmdBuildAirport(DoCommandFlags flags, TileIndex tile, uint8_t airpor
 	ret = BuildStationPart(&st, flags, reuse, airport_area, name_class);
 	if (ret.Failed()) return ret;
 
-	if (st != nullptr && !st->airport.IsEmpty()) {
+	/* A station holds one ordinary airport and, beside it, up to three spaceport pads. */
+	const bool spaceport = IsSpaceportType(airport_type);
+	if (st != nullptr && spaceport && st->spaceports.size() >= MAX_SPACEPORT_PADS) {
+		return CommandCost(STR_ERROR_SPACEPORT_PAD_LIMIT);
+	}
+	if (st != nullptr && !spaceport && !st->airport.IsEmpty()) {
 		return CommandCost(STR_ERROR_TOO_CLOSE_TO_ANOTHER_AIRPORT);
 	}
 
@@ -2817,11 +2891,15 @@ CommandCost CmdBuildAirport(DoCommandFlags flags, TileIndex tile, uint8_t airpor
 		/* Always add the noise, so there will be no need to recalculate when option toggles */
 		nearest->noise_reached += newnoise_level;
 
+		/* A new airport or pad opens and closes along with the rest of the station. */
+		const bool closed = st->airport.blocks.Test(AirportBlock::AirportClosed);
 		st->AddFacility(StationFacility::Airport, tile);
-		st->airport.type = airport_type;
-		st->airport.layout = layout;
-		st->airport.blocks = {};
-		st->airport.rotation = rotation;
+		Airport &airport = spaceport ? st->spaceports.emplace_back() : st->airport;
+		airport.type = airport_type;
+		airport.layout = layout;
+		airport.blocks = {};
+		if (closed) airport.blocks.Set(AirportBlock::AirportClosed);
+		airport.rotation = rotation;
 
 		st->spread.Add(airport_area);
 
@@ -2830,7 +2908,7 @@ CommandCost CmdBuildAirport(DoCommandFlags flags, TileIndex tile, uint8_t airpor
 
 			MakeAirport(*iter, st->owner, st->index, gfx, WaterClass::Invalid);
 			SetStationTileRandomBits(*iter, GB(Random(), 0, 4));
-			st->airport.Add(*iter);
+			airport.Add(*iter);
 
 			if (AirportTileSpec::Get(GetTranslatedAirportTileID(gfx))->animation.status != AnimationStatus::NoAnimation) AddAnimatedTile(*iter);
 		}
@@ -2840,7 +2918,7 @@ CommandCost CmdBuildAirport(DoCommandFlags flags, TileIndex tile, uint8_t airpor
 			TriggerAirportTileAnimation(st, *iter, AirportAnimationTrigger::Built);
 		}
 
-		UpdateAirplanesOnNewStation(st);
+		if (!spaceport) UpdateAirplanesOnNewStation(st);
 
 		Company::Get(st->owner)->infrastructure.airport++;
 
@@ -2870,20 +2948,31 @@ static CommandCost RemoveAirport(TileIndex tile, DoCommandFlags flags)
 		if (ret.Failed()) return ret;
 	}
 
-	tile = st->airport.tile;
+	/* Clearing any tile removes the whole airport, or the whole spaceport pad the tile belongs to. */
+	Airport &airport = st->GetAirportByTile(tile);
+	const bool spaceport = &airport != &st->airport;
+	tile = airport.tile;
 
 	CommandCost cost(ExpensesType::Construction);
 
 	for (const Aircraft *a : Aircraft::Iterate()) {
 		if (!a->IsNormalAircraft()) continue;
-		if (a->targetairport == st->index && a->state != FLYING) {
+		if (a->acache.orbital_shuttle && a->orbital.origin == st->index && a->orbital.phase != OrbitalPhase::None) {
+			/* A shuttle on a mission from this pad, even off-world, must come home first. */
+			if (spaceport && a->orbital.origin_tile == tile) return CommandCost(STR_ERROR_AIRCRAFT_IN_THE_WAY);
+			continue;
+		}
+		if (a->targetairport == st->index && a->state != FLYING && st->TileBelongsToAirport(a->tile, airport)) {
+			return CommandCost(STR_ERROR_AIRCRAFT_IN_THE_WAY);
+		}
+		if (!spaceport && !a->acache.orbital_shuttle && a->targetairport == st->index && a->state != FLYING) {
 			return CommandCost(STR_ERROR_AIRCRAFT_IN_THE_WAY);
 		}
 	}
 
 	if (flags.Test(DoCommandFlag::Execute)) {
-		for (uint i = 0; i < st->airport.GetNumHangars(); ++i) {
-			TileIndex tile_cur = st->airport.GetHangarTile(i);
+		for (uint i = 0; i < airport.GetNumHangars(); ++i) {
+			TileIndex tile_cur = airport.GetHangarTile(i);
 			OrderBackup::Reset(tile_cur, false);
 			CloseWindowById(WindowClass::VehicleDepot, tile_cur);
 		}
@@ -2892,17 +2981,19 @@ static CommandCost RemoveAirport(TileIndex tile, DoCommandFlags flags)
 		 * And as for construction, always remove it, even if the setting is not set, in order to avoid the
 		 * need of recalculation */
 		uint dist;
-		Town *nearest = AirportGetNearestTown(st, dist);
-		nearest->noise_reached -= GetAirportNoiseLevelForDistance(st->airport.GetSpec(), dist);
+		Town *nearest = AirportGetNearestTown(st, airport, dist);
+		nearest->noise_reached -= GetAirportNoiseLevelForDistance(airport.GetSpec(), dist);
 
 		if (_settings_game.economy.station_noise_level) {
 			SetWindowDirty(WindowClass::TownView, nearest->index);
 		}
 	}
 
-	for (TileIndex tile_cur : st->airport) {
-		if (!st->TileBelongsToAirport(tile_cur)) continue;
-
+	std::vector<TileIndex> tiles;
+	for (TileIndex tile_cur : airport) {
+		if (st->TileBelongsToAirport(tile_cur, airport)) tiles.push_back(tile_cur);
+	}
+	for (TileIndex tile_cur : tiles) {
 		CommandCost ret = EnsureNoVehicleOnGround(tile_cur);
 		if (ret.Failed()) return ret;
 
@@ -2916,12 +3007,16 @@ static CommandCost RemoveAirport(TileIndex tile, DoCommandFlags flags)
 
 	if (flags.Test(DoCommandFlag::Execute)) {
 		/* Clear the persistent storage. */
-		delete st->airport.psa;
+		delete airport.psa;
+		airport.psa = nullptr;
 
+		if (spaceport) {
+			st->spaceports.erase(st->spaceports.begin() + (&airport - st->spaceports.data()));
+		} else {
+			st->airport.Clear();
+		}
 		MakeStationSpreadAreaSmaller(st);
-
-		st->airport.Clear();
-		st->facilities.Reset(StationFacility::Airport);
+		if (!st->HasAnyAirport()) st->facilities.Reset(StationFacility::Airport);
 		SetWindowClassesDirty(WindowClass::VehicleOrders);
 
 		InvalidateWindowData(WindowClass::StationView, st->index, -1);
@@ -2954,6 +3049,8 @@ CommandCost CmdOpenCloseAirport(DoCommandFlags flags, StationID station_id)
 
 	if (flags.Test(DoCommandFlag::Execute)) {
 		st->airport.blocks.Flip(AirportBlock::AirportClosed);
+		/* Spaceport pads open and close with the station. */
+		for (Airport &pad : st->spaceports) pad.blocks.Set(AirportBlock::AirportClosed, st->airport.blocks.Test(AirportBlock::AirportClosed));
 		SetWindowWidgetDirty(WindowClass::StationView, st->index, WID_SV_CLOSE_AIRPORT);
 	}
 	return CommandCost();
@@ -3733,7 +3830,7 @@ void FillTileDescRailStation(TileIndex tile, TileDesc &td)
 
 void FillTileDescAirport(TileIndex tile, TileDesc &td)
 {
-	const AirportSpec *as = Station::GetByTile(tile)->airport.GetSpec();
+	const AirportSpec *as = Station::GetByTile(tile)->GetAirportByTile(tile).GetSpec();
 	td.airport_class = AirportClass::Get(as->class_index)->name;
 	td.airport_name = as->name;
 
@@ -3933,7 +4030,8 @@ static bool ClickTile_Station(TileIndex tile)
 		ShowWaypointWindow(Waypoint::From(bst));
 	} else if (IsHangar(tile)) {
 		const Station *st = Station::From(bst);
-		ShowDepotWindow(st->airport.GetHangarTile(st->airport.GetHangarNum(tile)), VehicleType::Aircraft);
+		const Airport &airport = st->GetAirportByTile(tile);
+		ShowDepotWindow(airport.GetHangarTile(airport.GetHangarNum(tile)), VehicleType::Aircraft);
 	} else {
 		ShowStationViewWindow(bst->index);
 	}

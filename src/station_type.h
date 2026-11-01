@@ -128,7 +128,7 @@ static constexpr uint CA_DOCK = 5; ///< Catchment for docks with "modified catch
 
 static constexpr uint CA_UNMODIFIED = 4; ///< Catchment for all stations with "modified catchment" disabled
 
-static constexpr uint MAX_CATCHMENT = 10; ///< Maximum catchment for airports with "modified catchment" enabled
+static constexpr uint MAX_CATCHMENT = 12; ///< Maximum catchment for airports with "modified catchment" enabled; 12 lets a spaceport serve towns from outside them
 
 static const uint MAX_LENGTH_STATION_NAME_CHARS = 32; ///< The maximum length of a station name in characters including '\0'
 

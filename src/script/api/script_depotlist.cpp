@@ -34,6 +34,9 @@ ScriptDepotList::ScriptDepotList(ScriptTile::TransportType transport_type)
 					for (uint i = 0; i < st->airport.GetNumHangars(); i++) {
 						this->AddItem(st->airport.GetHangarTile(i).base());
 					}
+					for (const Airport &pad : st->spaceports) {
+						for (uint i = 0; i < pad.GetNumHangars(); i++) this->AddItem(pad.GetHangarTile(i).base());
+					}
 				}
 			}
 			return;

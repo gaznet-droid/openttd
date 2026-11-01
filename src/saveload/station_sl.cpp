@@ -578,6 +578,43 @@ public:
 	std::vector<RoadStopTileData> &GetVector(BaseStation *bst) const override { return bst->custom_roadstop_tile_data; }
 };
 
+/** SaveLoad handler for the spaceport pads a station keeps beside its airport. */
+class SlStationSpaceports : public DefaultSaveLoadHandler<SlStationSpaceports, BaseStation> {
+public:
+	static inline const SaveLoad description[] = {
+		SaveLoad::Variable<VarFileType::U32>("tile", SLE_OBJECT_ADDRESS(Airport, tile)),
+		SaveLoad::Variable<VarFileType::U8>("w", SLE_OBJECT_ADDRESS(Airport, w)),
+		SaveLoad::Variable<VarFileType::U8>("h", SLE_OBJECT_ADDRESS(Airport, h)),
+		SaveLoad::Variable<VarFileType::U8>("type", SLE_OBJECT_ADDRESS(Airport, type)),
+		SaveLoad::Variable<VarFileType::U8>("layout", SLE_OBJECT_ADDRESS(Airport, layout)),
+		SaveLoad::Variable<VarFileType::U64>("flags", SLE_OBJECT_ADDRESS(Airport, blocks)),
+		SaveLoad::Variable<VarFileType::U8>("rotation", SLE_OBJECT_ADDRESS(Airport, rotation)),
+		SaveLoad::Reference<SLRefType::Storage>("psa", SLE_OBJECT_ADDRESS(Airport, psa)),
+		SaveLoad::Variable<VarFileType::I32>("last_orbital_launch_month", SLE_OBJECT_ADDRESS(Airport, last_orbital_launch_month)),
+	};
+	static inline const SaveLoadCompatTable compat_description = {};
+
+	void Save(BaseStation *bst) const override
+	{
+		auto &pads = Station::From(bst)->spaceports;
+		SlSetStructListLength(pads.size());
+		for (Airport &pad : pads) SlObject(&pad, this->GetDescription());
+	}
+
+	void Load(BaseStation *bst) const override
+	{
+		auto &pads = Station::From(bst)->spaceports;
+		size_t count = SlGetStructListLength(MAX_SPACEPORT_PADS);
+		pads.reserve(count);
+		while (count-- > 0) SlObject(&pads.emplace_back(), this->GetLoadDescription());
+	}
+
+	void FixPointers(BaseStation *bst) const override
+	{
+		for (Airport &pad : Station::From(bst)->spaceports) SlObject(&pad, this->GetDescription());
+	}
+};
+
 /**
  * SaveLoad handler for the BaseStation, which all other stations / waypoints
  * make use of.
@@ -658,6 +695,7 @@ public:
 		SaveLoad::Variable<VarFileType::U64>("always_accepted", SLE_OBJECT_ADDRESS(Station, always_accepted), SaveLoadVersion::ExtendCargotypes),
 		SaveLoad::StructList<SlRoadStopTileData>("speclist", SaveLoadVersion::NewGRFRoadStops, SaveLoadVersion::RoadStopTileData),
 		SaveLoad::StructList<SlStationGoods>("goods"),
+		SaveLoad::StructList<SlStationSpaceports>("spaceports", SaveLoadVersion::FutureLogisticsSpaceportPads),
 	};
 	static inline const SaveLoadCompatTable compat_description = _station_normal_sl_compat;
 

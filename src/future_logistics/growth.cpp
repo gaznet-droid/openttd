@@ -251,7 +251,7 @@ TileIndex RouteDepot(VehicleID vehicle_id)
 			for (const Order &order : vehicle->Orders()) {
 				if (!order.IsType(OT_GOTO_STATION)) continue;
 				const Station *station = Station::GetIfValid(order.GetDestination().ToStationID());
-				if (station != nullptr && station->owner == vehicle->owner && station->airport.GetNumHangars() > 0) return station->airport.GetHangarTile(0);
+				if (station != nullptr && station->owner == vehicle->owner && station->GetFirstHangarTile() != INVALID_TILE) return station->GetFirstHangarTile();
 			}
 			break;
 		case VehicleType::Ship: {
