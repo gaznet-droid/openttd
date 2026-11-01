@@ -111,25 +111,11 @@ def orbital_assets():
 
 
 def distribution_hub():
-    """Use the supplied warehouse over a 3x4 rear and four live front bays."""
-    image = Image.open(ART / 'openttd_distribution_centre_4x4_transparent.png').convert('RGBA')
-    image = image.crop(image.getchannel('A').point(lambda a: 255 if a > 80 else 0).getbbox())
-    lines = []
-    for zoom in (1, 2):
-        width = 256 * zoom
-        sprite = image.resize((width, round(image.height * width / image.width)), Image.Resampling.LANCZOS)
-        sprite.save(GFX / f'distribution_hub_{zoom}x.png')
-        prefix = 'spriteset' if zoom == 1 else 'alternative_sprites'
-        level = 'ZOOM_LEVEL_NORMAL' if zoom == 1 else 'ZOOM_LEVEL_IN_2X'
-        args = f'0, 0, {sprite.width}, {sprite.height}, {-width // 2}, {128 * zoom - sprite.height}'
-        lines.append(f'{prefix}(distribution_hub_sprite, {level}, BIT_DEPTH_32BPP, "gfx/distribution_hub_{zoom}x.png") {{ [{args}] }}')
-    lines.extend([
-        'spritelayout distribution_hub_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: distribution_hub_sprite(0); xextent: 48; yextent: 64; zextent: 56; } }',
-        'spritelayout distribution_hub_ground { ground { sprite: GROUNDSPRITE_CONCRETE; } }',
-        'switch(FEAT_OBJECTS, SELF, distribution_hub_object_graphics, relative_pos) { 0: distribution_hub_layout; distribution_hub_ground; }',
-        'item(FEAT_OBJECTS, distribution_warehouse, 0) { property { class: "FLHB"; name: string(STR_DISTRIBUTION_WAREHOUSE); climates_available: ALL_CLIMATES; size: [3, 4]; build_cost_multiplier: 4; remove_cost_multiplier: 3; introduction_date: date(2022, 1, 1); end_of_life_date: 0xFFFFFFFF; object_flags: bitmask(OBJ_FLAG_NO_FOUNDATIONS); height: 56; num_views: 1; badges: ["fl_format/2", "fl_id/distribution_warehouse"]; } graphics { default: distribution_hub_object_graphics; purchase: distribution_hub_layout; tile_check: ((extra_callback_info1 & bitmask(0,1,2,3,4)) == 0) ? CB_RESULT_LOCATION_ALLOW : CB_RESULT_LOCATION_DISALLOW; } }',
-        'item(FEAT_ROADSTOPS, distribution_centre, 0) { property { class: "FLHB"; classname: string(STR_DISTRIBUTION_CENTRE); name: string(STR_DISTRIBUTION_CENTRE); availability_type: 1; draw_mode: 0; general_flags: bitmask(2,4,5); badges: ["fl_format/2", "fl_id/distribution_centre"]; } graphics { default: distribution_hub_ground; purchase: distribution_hub_layout; } }',
-    ])
+    """The Distribution Centre items; their graphics are drawn by make_distribution_hub.py."""
+    lines = [
+        'item(FEAT_OBJECTS, distribution_warehouse, 0) { property { class: "FLHB"; name: string(STR_DISTRIBUTION_WAREHOUSE); climates_available: ALL_CLIMATES; size: [4, 4]; build_cost_multiplier: 4; remove_cost_multiplier: 3; introduction_date: date(2022, 1, 1); end_of_life_date: 0xFFFFFFFF; object_flags: bitmask(OBJ_FLAG_NO_FOUNDATIONS); height: 88; num_views: 1; badges: ["fl_format/2", "fl_id/distribution_warehouse"]; } graphics { default: distribution_hub_object_graphics; purchase: distribution_hub_layout; tile_check: ((extra_callback_info1 & bitmask(0,1,2,3,4)) == 0) ? CB_RESULT_LOCATION_ALLOW : CB_RESULT_LOCATION_DISALLOW; } }',
+        'item(FEAT_ROADSTOPS, distribution_centre, 0) { property { class: "FLHB"; classname: string(STR_DISTRIBUTION_CENTRE); name: string(STR_DISTRIBUTION_CENTRE); availability_type: 1; draw_mode: 0; general_flags: bitmask(2,4,5); badges: ["fl_format/2", "fl_id/distribution_centre"]; } graphics { default: distribution_hub_bay_graphics; purchase: distribution_hub_layout; } }',
+    ]
     (GFX / 'distribution_hub.nml').write_text('\n'.join(lines) + '\n')
 
 

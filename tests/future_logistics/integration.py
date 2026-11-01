@@ -252,10 +252,10 @@ DayZeroMonopolies =
         built, ready = run("hub-built", load=save, enabled=False, year=2050, grfs=[grf], game_script=script, service=True, months=2,
                            commands=f"future_logistics_tech build-hub-auto {tile}\n", daily_commands="future_logistics_tech hub-audit\n", distant_join=False)
         require(re.search(rf"FL distribution request tile={tile} accepted=true", built), "hub construction rejected")
-        require(re.search(r"FL distribution audit .*bays=4 reserved_secondary=4", built), "hub does not have four joined single-vehicle bays")
+        require(re.search(r"FL distribution audit .*bays=8 reserved_secondary=0", built), "hub does not have eight joined two-lorry bays")
         require("HUB bay approaches connected automatically" in built, "the hub did not join its bays to the road along their side")
         require("HUB automatic join station=" in built, "hub did not append to the adjacent western station")
-        require("HUB access connected bays=4 depot=true return=true" in built, "hub fixture approaches are disconnected or traffic setup did not run")
+        require("HUB access connected bays=8 depot=true return=true" in built, "hub fixture approaches are disconnected or traffic setup did not run")
         require("HUB truck entered loading bay" in built, "truck did not use the warehouse's loading bays")
         visits = lambda text, kind: [int(n) for n in re.findall(rf"HUB traffic visit vehicle=\d+ kind={kind} count=(\d+)", text)]
         require(visits(built, "hub") and max(visits(built, "hub")) >= 2 and visits(built, "return"),
@@ -265,7 +265,7 @@ DayZeroMonopolies =
                           daily_commands="future_logistics_tech hub-audit\n", distant_join=False)
         require(re.search(rf"FL distribution request tile={second} accepted=false .*already has a Distribution Centre", rejected), "second hub in one town was allowed")
         require(re.search(rf"FL distribution request tile={small} accepted=false .*5,000", rejected), "small town restriction did not apply")
-        require(re.search(r"FL distribution audit .*bays=4 reserved_secondary=4", rejected), "hub bays did not survive reload")
+        require(re.search(r"FL distribution audit .*bays=8 reserved_secondary=0", rejected), "hub bays did not survive reload")
         require("HUB fixture ready" not in rejected and "HUB access connected" not in rejected, "reload recreated the hub traffic fixture")
         vehicle = re.search(r"HUB truck entered loading bay vehicle=(\d+)", built).group(1)
         restored = re.search(rf"HUB traffic restored vehicle={vehicle} hub_visits=(\d+) return_visits=(\d+)", rejected)
@@ -275,7 +275,7 @@ DayZeroMonopolies =
         for kind, count in zip(("hub", "return"), map(int, restored.groups())):
             require(count > 0 and visits(rejected, kind) and max(visits(rejected, kind)) > count,
                     f"hub truck did not resume its {kind} visits after reload")
-        print("Distribution hub build, four connected bays, live round trips, town restrictions and traffic reload passed", flush=True)
+        print("Distribution hub build, eight two-lorry bays on two roads, live round trips, town restrictions and traffic reload passed", flush=True)
 
     def check_airports():
         fl = ROOT / "mods/newgrf/future_logistics/future_logistics.grf"

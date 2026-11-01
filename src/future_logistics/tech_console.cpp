@@ -108,10 +108,10 @@ bool FutureLogisticsTechCommand(std::span<std::string_view> argv)
 		const TileIndex tile{*coordinate};
 		const bool automatic_join = argv[0] == "build-hub-auto";
 		AutoRestoreBackup company(_current_company, _local_company);
-		CommandCost test = Command<Commands::BuildRoadStop>::Do({DoCommandFlag::Auto, DoCommandFlag::NoWater}, tile, 4, 4, RoadStopType::Truck, false,
+		CommandCost test = Command<Commands::BuildRoadStop>::Do({DoCommandFlag::Auto, DoCommandFlag::NoWater}, tile, 5, 5, RoadStopType::Truck, false,
 			DiagDirection::SW, ROADTYPE_ROAD, spec->class_index, spec->index, NEW_STATION, !automatic_join);
 		Report(fmt::format("FL distribution request tile={} accepted={} error={}", tile, test.Succeeded(), test.Failed() ? GetString(test.GetErrorMessage()) : "-"));
-		if (test.Succeeded()) Command<Commands::BuildRoadStop>::Post(STR_ERROR_CAN_T_BUILD_TRUCK_STATION, tile, 4, 4, RoadStopType::Truck, false,
+		if (test.Succeeded()) Command<Commands::BuildRoadStop>::Post(STR_ERROR_CAN_T_BUILD_TRUCK_STATION, tile, 5, 5, RoadStopType::Truck, false,
 			DiagDirection::SW, ROADTYPE_ROAD, spec->class_index, spec->index, NEW_STATION, !automatic_join);
 		return true;
 	}
@@ -120,8 +120,9 @@ bool FutureLogisticsTechCommand(std::span<std::string_view> argv)
 			if (ReadItemTags(ObjectSpec::Get(object->type)->badges).id != "distribution_warehouse") continue;
 			StationID station = StationID::Invalid();
 			uint bays = 0, reserved = 0;
-			for (uint i = 0; i < 4; i++) {
-				const TileIndex tile = TileAddXY(object->location.tile, 3, i);
+			/* Eight bays: four along the south-west face, four along the south-east face; two lorries each. */
+			for (uint i = 0; i < 8; i++) {
+				const TileIndex tile = i < 4 ? TileAddXY(object->location.tile, 4, i) : TileAddXY(object->location.tile, i - 4, 4);
 				if (!IsBayRoadStopTile(tile) || GetRoadStopType(tile) != RoadStopType::Truck) continue;
 				if (i == 0) station = GetStationIndex(tile);
 				if (GetStationIndex(tile) == station) bays++;

@@ -2251,8 +2251,27 @@ static CommandCost BuildRoadStopInternal(DoCommandFlags flags, TileIndex tile, u
 	return cost;
 }
 
+/** A Distribution Centre bay: its offset from the facility's north corner, the way its lorries come in, and the
+ * road bit on the tile in front of it that leads in. */
+struct HubBay {
+	int dx; ///< Offset along x from the facility's north corner.
+	int dy; ///< Offset along y from the facility's north corner.
+	DiagDirection entrance; ///< The side lorries enter from.
+	RoadBit approach; ///< The road bit the tile in front needs to lead into the bay.
+};
+
 /**
- * Construct a complete 4x4 Distribution Centre with four working truck bays.
+ * The Distribution Centre's eight bays: four along the warehouse's south-west face and four along its south-east
+ * face. The index is the bay's animation frame, which picks its piece of the picture.
+ */
+static constexpr std::array<HubBay, 8> HUB_BAYS{{
+	{4, 0, DiagDirection::SW, RoadBit::NE}, {4, 1, DiagDirection::SW, RoadBit::NE}, {4, 2, DiagDirection::SW, RoadBit::NE}, {4, 3, DiagDirection::SW, RoadBit::NE},
+	{0, 4, DiagDirection::SE, RoadBit::NW}, {1, 4, DiagDirection::SE, RoadBit::NW}, {2, 4, DiagDirection::SE, RoadBit::NW}, {3, 4, DiagDirection::SE, RoadBit::NW},
+}};
+
+/**
+ * Construct a complete Distribution Centre: a 4x4 warehouse with eight truck bays along its two front faces, each
+ * bay taking two lorries, sixteen in all. The facility covers 5x5 tiles; its front corner tile is left free.
  * @param flags Command flags.
  * @param tile North corner of the facility.
  * @param rt Road type of its bays.
@@ -2263,7 +2282,7 @@ static CommandCost BuildRoadStopInternal(DoCommandFlags flags, TileIndex tile, u
  */
 static CommandCost BuildDistributionHub(DoCommandFlags flags, TileIndex tile, RoadType rt, const RoadStopSpec *spec, StationID join, bool adjacent)
 {
-	if (!Company::IsValidID(_current_company) || !ValParamRoadType(rt) || RoadTypeIsTram(rt) || !IsValidTile(tile) || TileAddWrap(tile, 3, 3) == INVALID_TILE) return CMD_ERROR;
+	if (!Company::IsValidID(_current_company) || !ValParamRoadType(rt) || RoadTypeIsTram(rt) || !IsValidTile(tile) || TileAddWrap(tile, 4, 4) == INVALID_TILE) return CMD_ERROR;
 	Town *town = ClosestTownFromTile(tile, UINT_MAX);
 	if (town == nullptr || town->cache.population < 5000) return CommandCost(STR_DISTRIBUTION_REQUIRES_CITY);
 	const auto warehouse = FutureLogistics::FindObjectById("distribution_warehouse");
@@ -2271,37 +2290,42 @@ static CommandCost BuildDistributionHub(DoCommandFlags flags, TileIndex tile, Ro
 	for (const Object *object : Object::Iterate()) {
 		if (object->town == town && object->type == *warehouse) return CommandCost(STR_DISTRIBUTION_ONE_PER_TOWN);
 	}
+	/* The warehouse and the bays need flat, clear land at one height; the free front corner does not. */
 	const int z = GetTileZ(tile);
-	for (TileIndex part : TileArea(tile, 4, 4)) {
+	std::vector<TileIndex> site;
+	for (TileIndex part : TileArea(tile, 4, 4)) site.push_back(part);
+	for (const HubBay &bay : HUB_BAYS) site.push_back(TileAddXY(tile, bay.dx, bay.dy));
+	for (TileIndex part : site) {
 		if ((!IsTileType(part, TileType::Clear) && !IsTileType(part, TileType::Trees)) || GetTileSlope(part) != SLOPE_FLAT || GetTileZ(part) != z) return CommandCost(STR_DISTRIBUTION_CLEAR_SITE);
 	}
-	if ((Company::Get(_current_company)->clear_limit >> 16) < 32) return CommandCost(STR_ERROR_CLEARING_LIMIT_REACHED);
-	if (!RoadStop::CanAllocateItem(4)) return CommandCost(STR_ERROR_TOO_MANY_STATIONS_LOADING);
+	if ((Company::Get(_current_company)->clear_limit >> 16) < site.size() * 2) return CommandCost(STR_ERROR_CLEARING_LIMIT_REACHED);
+	if (!RoadStop::CanAllocateItem(HUB_BAYS.size())) return CommandCost(STR_ERROR_TOO_MANY_STATIONS_LOADING);
 	DoCommandFlags test_flags = flags;
 	test_flags.Reset(DoCommandFlag::Execute);
 	CommandCost total = Command<Commands::BuildObject>::Do(test_flags, tile, *warehouse, 0);
 	if (total.Failed()) return total;
-	/* Resolve automatic joining against the whole painted facility, not only its first eastern bay.
-	 * The resolved station is then used for all four bays, which remains a local compound
-	 * build even when the player has disabled distant station joining. */
+	/* Resolve automatic joining against the whole facility, not only its first bay. The resolved station is then
+	 * used for all eight bays, which remains a local compound build even when the player has disabled distant
+	 * station joining. */
 	Station *joined = nullptr;
-	CommandCost join_result = FindJoiningRoadStop(StationID::Invalid(), join, adjacent, TileArea(tile, 4, 4), &joined);
+	CommandCost join_result = FindJoiningRoadStop(StationID::Invalid(), join, adjacent, TileArea(tile, 5, 5), &joined);
 	if (join_result.Failed()) return join_result;
 	if (joined != nullptr) join = joined->index;
-	for (uint i = 0; i < 4; i++) {
-		CommandCost cost = BuildRoadStopInternal(test_flags, TileAddXY(tile, 3, i), 1, 1, RoadStopType::Truck, false, DiagDirection::SW, rt, spec->class_index, spec->index, join, true, true);
+	for (const HubBay &bay : HUB_BAYS) {
+		CommandCost cost = BuildRoadStopInternal(test_flags, TileAddXY(tile, bay.dx, bay.dy), 1, 1, RoadStopType::Truck, false, bay.entrance, rt, spec->class_index, spec->index, join, true, true);
 		if (cost.Failed()) return cost;
 		total.AddCost(std::move(cost));
 	}
-	/* Each bay opens to the south-west. Where a road already runs along that side, join it to the bays, so
-	 * trucks can drive in without the player drawing a stub into every bay. Priced the same in the test run. */
+	/* Where a road already runs along a front side, join it to the bays, so lorries can drive in without the player
+	 * drawing a stub into every bay. Priced the same in the test run. */
 	auto link_bays = [&](DoCommandFlags link_flags) {
-		for (uint i = 0; i < 4; i++) {
-			const TileIndex front = TileAddWrap(tile, 4, i);
+		for (const HubBay &bay : HUB_BAYS) {
+			const TileIndexDiffC out = TileIndexDiffCByDiagDir(bay.entrance);
+			const TileIndex front = TileAddWrap(tile, bay.dx + out.x, bay.dy + out.y);
 			if (front == INVALID_TILE || !IsNormalRoadTile(front)) continue;
 			const RoadType front_rt = GetRoadTypeRoad(front);
-			if (front_rt == INVALID_ROADTYPE || GetRoadBits(front, RoadTramType::Road).Test(RoadBit::NE)) continue;
-			CommandCost link = Command<Commands::BuildRoad>::Do(link_flags, front, RoadBits{RoadBit::NE}, front_rt, {}, TownID::Invalid());
+			if (front_rt == INVALID_ROADTYPE || GetRoadBits(front, RoadTramType::Road).Test(bay.approach)) continue;
+			CommandCost link = Command<Commands::BuildRoad>::Do(link_flags, front, RoadBits{bay.approach}, front_rt, {}, TownID::Invalid());
 			if (link.Succeeded()) total.AddCost(std::move(link));
 		}
 	};
@@ -2316,43 +2340,22 @@ static CommandCost BuildDistributionHub(DoCommandFlags flags, TileIndex tile, Ro
 			assert(clear.Succeeded()); // Only new, empty, owned components.
 		}
 	};
-	for (uint i = 0; i < 4; i++) {
-		const TileIndex bay = TileAddXY(tile, 3, i);
-		CommandCost cost = BuildRoadStopInternal(flags, bay, 1, 1, RoadStopType::Truck, false, DiagDirection::SW, rt, spec->class_index, spec->index, join, true, true);
+	for (uint i = 0; i < HUB_BAYS.size(); i++) {
+		const HubBay &spec_bay = HUB_BAYS[i];
+		const TileIndex bay = TileAddXY(tile, spec_bay.dx, spec_bay.dy);
+		CommandCost cost = BuildRoadStopInternal(flags, bay, 1, 1, RoadStopType::Truck, false, spec_bay.entrance, rt, spec->class_index, spec->index, join, true, true);
 		if (cost.Failed()) { rollback(); return cost; }
 		built.push_back(bay);
 		join = GetStationIndex(bay);
-		/* Number the bays 0-3 so each draws its own piece of the Distribution Centre picture. */
+		/* Number the bays so each draws its own piece of the Distribution Centre picture. Both of a bay's
+		 * positions are open: two lorries load side by side. */
 		Station::GetByTile(bay)->SetRoadStopAnimationFrame(bay, i);
-		/* Match the four painted bays with four active positions. */
-		RoadStop::GetByTile(bay, RoadStopType::Truck)->status.Reset(RoadStop::RoadStopStatusFlag::Bay1Free);
 	}
 	CommandCost object = Command<Commands::BuildObject>::Do(flags, tile, *warehouse, 0);
 	if (object.Failed()) { rollback(); return object; }
 	link_bays(flags);
-	Debug(Facility::Misc, Severity::Notice, "FL distribution hub company={} town={} station={} tile={} bays=4", _current_company, town->index, join, tile);
+	Debug(Facility::Misc, Severity::Notice, "FL distribution hub company={} town={} station={} tile={} bays={}", _current_company, town->index, join, tile, HUB_BAYS.size());
 	return total;
-}
-
-/**
- * Number the bays of Distribution Centres built before the bays were numbered: each bay counts the hub bays of
- * its station directly north-west of it. The number picks the bay's piece of the Distribution Centre picture.
- */
-void NumberDistributionHubBays()
-{
-	for (Station *st : Station::Iterate()) {
-		for (RoadStop *rs = st->truck_stops; rs != nullptr; rs = rs->next) {
-			const RoadStopSpec *spec = GetRoadStopSpec(rs->xy);
-			if (spec == nullptr || ReadItemTags(spec->badges).id != "distribution_centre") continue;
-			uint8_t index = 0;
-			for (TileIndex t = rs->xy; index < 3; index++) {
-				const TileIndex prev = TileAddWrap(t, 0, -1);
-				if (prev == INVALID_TILE || !IsStationRoadStopTile(prev) || GetStationIndex(prev) != st->index || GetRoadStopSpec(prev) != spec) break;
-				t = prev;
-			}
-			st->SetRoadStopAnimationFrame(rs->xy, index);
-		}
-	}
 }
 
 /**

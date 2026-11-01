@@ -1,9 +1,9 @@
 /* GPL-2.0-only. Changes only the isolated regression world. */
 class HubCheck extends GSController {
     ready = false; site = -1; second = -1; small = -1; vehicle = -1; entered = false;
-    hub_visits = 0; return_visits = 0; last_stop = -1; probe_station = -1; joined = false;
+    hub_visits = 0; return_visits = 0; last_stop = -1; probe_station = -1; joined = false; order_pos = -1;
     function Save() { return { ready = this.ready, site = this.site, second = this.second, small = this.small, vehicle = this.vehicle, entered = this.entered,
-        hub_visits = this.hub_visits, return_visits = this.return_visits, last_stop = this.last_stop, probe_station = this.probe_station, joined = this.joined }; }
+        hub_visits = this.hub_visits, return_visits = this.return_visits, last_stop = this.last_stop, probe_station = this.probe_station, joined = this.joined, order_pos = this.order_pos }; }
     function Load(version, data) { foreach (key, value in data) this[key] = value; }
     function Tile(dx, dy) { return GSMap.GetTileIndex(GSMap.GetTileX(this.site) + dx, GSMap.GetTileY(this.site) + dy); }
     function Site(tile) {
@@ -18,37 +18,39 @@ class HubCheck extends GSController {
     }
     function Traffic() {
         GSRoad.SetCurrentRoadType(GSRoad.ROADTYPE_ROAD);
-        if (!GSRoad.BuildRoad(this.Tile(4, 4), this.Tile(5, 4)) ||
-            !GSRoad.BuildRoadDepot(this.Tile(6, 4), this.Tile(5, 4)) ||
-            !GSRoad.BuildRoadStation(this.Tile(5, 5), this.Tile(5, 4), GSRoad.ROADVEHTYPE_TRUCK, GSStation.STATION_NEW)) {
+        if (!GSRoad.BuildRoadDepot(this.Tile(6, 5), this.Tile(5, 5)) ||
+            !GSRoad.BuildRoadStation(this.Tile(5, 6), this.Tile(5, 5), GSRoad.ROADVEHTYPE_TRUCK, GSStation.STATION_NEW)) {
             GSLog.Error("HUB traffic infrastructure: " + GSError.GetLastErrorString()); return false;
         }
-        if (!GSRoad.BuildRoad(this.Tile(5, 4), this.Tile(6, 4)) ||
-            !GSRoad.BuildRoad(this.Tile(5, 4), this.Tile(5, 5))) {
+        if (!GSRoad.BuildRoad(this.Tile(5, 5), this.Tile(6, 5)) ||
+            !GSRoad.BuildRoad(this.Tile(5, 5), this.Tile(5, 6))) {
             GSLog.Error("HUB traffic approaches: " + GSError.GetLastErrorString()); return false;
         }
+        /* Four bays open on the road along the south-west face, four on the road along the south-east face. */
         for (local i = 0; i < 4; i++) {
-            if (!GSRoad.AreRoadTilesConnected(this.Tile(4, i), this.Tile(3, i)) ||
-                !GSRoad.AreRoadTilesConnected(this.Tile(3, i), this.Tile(4, i))) {
+            if (!GSRoad.AreRoadTilesConnected(this.Tile(5, i), this.Tile(4, i)) ||
+                !GSRoad.AreRoadTilesConnected(this.Tile(4, i), this.Tile(5, i)) ||
+                !GSRoad.AreRoadTilesConnected(this.Tile(i, 5), this.Tile(i, 4)) ||
+                !GSRoad.AreRoadTilesConnected(this.Tile(i, 4), this.Tile(i, 5))) {
                 GSLog.Error("HUB disconnected bay approach " + i); return false;
             }
         }
         GSLog.Info("HUB bay approaches connected automatically");
-        if (!GSRoad.AreRoadTilesConnected(this.Tile(6, 4), this.Tile(5, 4)) ||
-            !GSRoad.AreRoadTilesConnected(this.Tile(5, 4), this.Tile(6, 4)) ||
-            !GSRoad.AreRoadTilesConnected(this.Tile(5, 4), this.Tile(5, 5)) ||
-            !GSRoad.AreRoadTilesConnected(this.Tile(5, 5), this.Tile(5, 4))) {
+        if (!GSRoad.AreRoadTilesConnected(this.Tile(6, 5), this.Tile(5, 5)) ||
+            !GSRoad.AreRoadTilesConnected(this.Tile(5, 5), this.Tile(6, 5)) ||
+            !GSRoad.AreRoadTilesConnected(this.Tile(5, 5), this.Tile(5, 6)) ||
+            !GSRoad.AreRoadTilesConnected(this.Tile(5, 6), this.Tile(5, 5))) {
             GSLog.Error("HUB disconnected depot or return approach"); return false;
         }
-        GSLog.Info("HUB access connected bays=4 depot=true return=true");
+        GSLog.Info("HUB access connected bays=8 depot=true return=true");
         local mail = -1, engine = -1;
         foreach (cargo, unused in GSCargoList()) if (GSCargo.GetCargoLabel(cargo) == "MAIL") mail = cargo;
         foreach (candidate, unused in GSEngineList(GSVehicle.VT_ROAD)) {
             if (GSEngine.GetCargoType(candidate) == mail && GSEngine.IsBuildable(candidate)) { engine = candidate; break; }
         }
-        this.vehicle = GSVehicle.BuildVehicle(this.Tile(6, 4), engine);
-        if (!GSVehicle.IsValidVehicle(this.vehicle) || !GSOrder.AppendOrder(this.vehicle, this.Tile(3, 0), GSOrder.OF_NONE) ||
-            !GSOrder.AppendOrder(this.vehicle, this.Tile(5, 5), GSOrder.OF_NONE) || !GSVehicle.StartStopVehicle(this.vehicle)) {
+        this.vehicle = GSVehicle.BuildVehicle(this.Tile(6, 5), engine);
+        if (!GSVehicle.IsValidVehicle(this.vehicle) || !GSOrder.AppendOrder(this.vehicle, this.Tile(4, 0), GSOrder.OF_NONE) ||
+            !GSOrder.AppendOrder(this.vehicle, this.Tile(5, 6), GSOrder.OF_NONE) || !GSVehicle.StartStopVehicle(this.vehicle)) {
             GSLog.Error("HUB traffic vehicle: " + GSError.GetLastErrorString()); return false;
         }
         return true;
@@ -83,17 +85,17 @@ class HubCheck extends GSController {
          * restored by Load(). Select it before polling, not only in Traffic(). */
         GSRoad.SetCurrentRoadType(GSRoad.ROADTYPE_ROAD);
         if (this.probe_station == -1) {
-            /* This ordinary stop touches the western warehouse side, not the eastern bay side.
-             * A player-style hub placement must nevertheless append its four bays to this station. */
+            /* This ordinary stop touches the warehouse's back, not a bay side.
+             * A player-style hub placement must nevertheless append its eight bays to this station. */
             if (!GSRoad.BuildRoad(this.Tile(-2, 0), this.Tile(-1, 0)) ||
                 !GSRoad.BuildRoadStation(this.Tile(-1, 0), this.Tile(-2, 0), GSRoad.ROADVEHTYPE_TRUCK, GSStation.STATION_NEW)) {
                 GSLog.Error("HUB join probe: " + GSError.GetLastErrorString()); return;
             }
             this.probe_station = GSStation.GetStationID(this.Tile(-1, 0));
             GSLog.Info("HUB join probe station=" + this.probe_station + " side=west");
-            /* A road already runs along the bay side, as a town road often does, with no stubs into the bays:
-             * building the hub must join the bays to it by itself. */
-            if (!GSRoad.BuildRoad(this.Tile(4, 0), this.Tile(4, 4))) {
+            /* Roads already run along both bay sides, as town roads often do, with no stubs into the bays:
+             * building the hub must join the bays to them by itself. */
+            if (!GSRoad.BuildRoad(this.Tile(5, 0), this.Tile(5, 5)) || !GSRoad.BuildRoad(this.Tile(0, 5), this.Tile(5, 5))) {
                 GSLog.Error("HUB bay-side road: " + GSError.GetLastErrorString()); return;
             }
         }
@@ -102,8 +104,8 @@ class HubCheck extends GSController {
         }
         while (true) {
             local complete = true, station = -1;
-            for (local i = 0; i < 4; i++) {
-                local tile = this.Tile(3, i);
+            for (local i = 0; i < 8; i++) {
+                local tile = i < 4 ? this.Tile(4, i) : this.Tile(i - 4, 4);
                 if (!GSRoad.IsRoadStationTile(tile)) { complete = false; break; }
                 local next = GSStation.GetStationID(tile);
                 if (station == -1) station = next;
@@ -112,25 +114,29 @@ class HubCheck extends GSController {
             if (complete && !this.joined) {
                 if (station != this.probe_station) { GSLog.Error("HUB automatic join failed expected=" + this.probe_station + " actual=" + station); return; }
                 this.joined = true;
-                GSLog.Info("HUB automatic join station=" + station + " bays=4 warehouse_side=west");
+                GSLog.Info("HUB automatic join station=" + station + " bays=8 warehouse_side=west");
             }
             if (complete && this.vehicle == -1 && !this.Traffic()) return;
-            if (this.vehicle != -1 && GSVehicle.GetCurrentSpeed(this.vehicle) == 0 &&
-                GSRoad.IsRoadStationTile(GSVehicle.GetLocation(this.vehicle))) {
-                local stopped = GSStation.GetStationID(GSVehicle.GetLocation(this.vehicle));
-                if (stopped == station && this.last_stop != station) {
-                    if (!this.entered) {
-                        this.entered = true;
-                        GSLog.Info("HUB truck entered loading bay vehicle=" + this.vehicle + " station=" + station);
+            /* A visit is counted when the truck, having been in one of the stations, moves on to its next order: a
+             * truck with nothing to load stops for only a moment, too short to catch by its speed. */
+            if (this.vehicle != -1) {
+                local here = GSVehicle.GetLocation(this.vehicle);
+                if (GSRoad.IsRoadStationTile(here)) this.last_stop = GSStation.GetStationID(here);
+                local pos = GSOrder.ResolveOrderPosition(this.vehicle, GSOrder.ORDER_CURRENT);
+                if (pos != this.order_pos && this.order_pos != -1) {
+                    if (this.order_pos == 0 && this.last_stop == station) {
+                        if (!this.entered) {
+                            this.entered = true;
+                            GSLog.Info("HUB truck entered loading bay vehicle=" + this.vehicle + " station=" + station);
+                        }
+                        this.hub_visits++;
+                        GSLog.Info("HUB traffic visit vehicle=" + this.vehicle + " kind=hub count=" + this.hub_visits + " tile=" + here);
+                    } else if (this.order_pos == 1 && this.last_stop == GSStation.GetStationID(this.Tile(5, 6))) {
+                        this.return_visits++;
+                        GSLog.Info("HUB traffic visit vehicle=" + this.vehicle + " kind=return count=" + this.return_visits);
                     }
-                    this.hub_visits++;
-                    this.last_stop = stopped;
-                    GSLog.Info("HUB traffic visit vehicle=" + this.vehicle + " kind=hub count=" + this.hub_visits + " tile=" + GSVehicle.GetLocation(this.vehicle));
-                } else if (GSVehicle.GetLocation(this.vehicle) == this.Tile(5, 5) && this.last_stop != stopped) {
-                    this.return_visits++;
-                    this.last_stop = stopped;
-                    GSLog.Info("HUB traffic visit vehicle=" + this.vehicle + " kind=return count=" + this.return_visits);
                 }
+                this.order_pos = pos;
             }
             this.Sleep(5);
         }
