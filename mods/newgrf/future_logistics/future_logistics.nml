@@ -114,69 +114,69 @@ alternative_sprites(cargo_drone_body, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/ca
 }
 spriteset(cargo_drone_rotor, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/empty.png") { [0, 0, 1, 1, 0, 0] [0, 0, 1, 1, 0, 0] [0, 0, 1, 1, 0, 0] [0, 0, 1, 1, 0, 0] }
 
-spriteset(drone_port_0_0_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_0_0_1x.png") { [0, 0, 177, 124, -88, -92] }
-alternative_sprites(drone_port_0_0_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_0_0_2x.png") { [0, 0, 354, 248, -176, -184] }
-spritelayout drone_port_0_0_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_0_0_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; } }
+spriteset(drone_port_0_0_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_0_0_1x.png", "gfx/drone_port_0_0_1x_mask.png") { [0, 0, 177, 124, -88, -92] }
+alternative_sprites(drone_port_0_0_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_0_0_2x.png", "gfx/drone_port_0_0_2x_mask.png") { [0, 0, 354, 248, -176, -184] }
+spritelayout drone_port_0_0_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_0_0_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; } }
 item(FEAT_AIRPORTTILES, drone_port_0_0_tile, 0) { property { substitute: 0; } graphics { default: drone_port_0_0_layout; } }
-spriteset(drone_port_1_0_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_1_0_1x.png") { [0, 0, 93, 59, -62, -27] }
-alternative_sprites(drone_port_1_0_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_1_0_2x.png") { [0, 0, 188, 117, -125, -53] }
-spritelayout drone_port_1_0_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_1_0_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; } }
+spriteset(drone_port_1_0_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_1_0_1x.png", "gfx/drone_port_1_0_1x_mask.png") { [0, 0, 93, 59, -62, -27] }
+alternative_sprites(drone_port_1_0_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_1_0_2x.png", "gfx/drone_port_1_0_2x_mask.png") { [0, 0, 188, 117, -125, -53] }
+spritelayout drone_port_1_0_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_1_0_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; } }
 item(FEAT_AIRPORTTILES, drone_port_1_0_tile, 1) { property { substitute: 0; } graphics { default: drone_port_1_0_layout; } }
-spriteset(drone_port_2_0_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_2_0_1x.png") { [0, 0, 83, 47, -52, -15] }
-alternative_sprites(drone_port_2_0_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_2_0_2x.png") { [0, 0, 167, 94, -104, -30] }
-spritelayout drone_port_2_0_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_2_0_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; } }
+spriteset(drone_port_2_0_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_2_0_1x.png", "gfx/drone_port_2_0_1x_mask.png") { [0, 0, 83, 47, -52, -15] }
+alternative_sprites(drone_port_2_0_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_2_0_2x.png", "gfx/drone_port_2_0_2x_mask.png") { [0, 0, 167, 94, -104, -30] }
+spritelayout drone_port_2_0_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_2_0_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; } }
 item(FEAT_AIRPORTTILES, drone_port_2_0_tile, 2) { property { substitute: 0; } graphics { default: drone_port_2_0_layout; } }
-spriteset(drone_port_3_0_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_3_0_1x.png") { [0, 0, 63, 42, -32, -10] }
-alternative_sprites(drone_port_3_0_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_3_0_2x.png") { [0, 0, 127, 84, -64, -20] }
-spritelayout drone_port_3_0_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_3_0_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; } }
+spriteset(drone_port_3_0_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_3_0_1x.png", "gfx/drone_port_3_0_1x_mask.png") { [0, 0, 63, 42, -32, -10] }
+alternative_sprites(drone_port_3_0_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_3_0_2x.png", "gfx/drone_port_3_0_2x_mask.png") { [0, 0, 127, 84, -64, -20] }
+spritelayout drone_port_3_0_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_3_0_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; } }
 item(FEAT_AIRPORTTILES, drone_port_3_0_tile, 3) { property { substitute: 0; } graphics { default: drone_port_3_0_layout; } }
-spriteset(drone_port_0_1_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_0_1_1x.png") { [0, 0, 93, 59, -31, -27] }
-alternative_sprites(drone_port_0_1_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_0_1_2x.png") { [0, 0, 188, 118, -63, -54] }
-spritelayout drone_port_0_1_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_0_1_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; } }
+spriteset(drone_port_0_1_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_0_1_1x.png", "gfx/drone_port_0_1_1x_mask.png") { [0, 0, 93, 59, -31, -27] }
+alternative_sprites(drone_port_0_1_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_0_1_2x.png", "gfx/drone_port_0_1_2x_mask.png") { [0, 0, 188, 118, -63, -54] }
+spritelayout drone_port_0_1_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_0_1_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; } }
 item(FEAT_AIRPORTTILES, drone_port_0_1_tile, 4) { property { substitute: 0; } graphics { default: drone_port_0_1_layout; } }
-spriteset(drone_port_1_1_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_1_1_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(drone_port_1_1_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_1_1_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout drone_port_1_1_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_1_1_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; } }
+spriteset(drone_port_1_1_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_1_1_1x.png", "gfx/drone_port_1_1_1x_mask.png") { [0, 0, 62, 32, -31, 0] }
+alternative_sprites(drone_port_1_1_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_1_1_2x.png", "gfx/drone_port_1_1_2x_mask.png") { [0, 0, 126, 64, -63, 0] }
+spritelayout drone_port_1_1_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_1_1_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; } }
 item(FEAT_AIRPORTTILES, drone_port_1_1_tile, 5) { property { substitute: 0; } graphics { default: drone_port_1_1_layout; } }
-spriteset(drone_port_2_1_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_2_1_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(drone_port_2_1_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_2_1_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout drone_port_2_1_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_2_1_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; } }
+spriteset(drone_port_2_1_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_2_1_1x.png", "gfx/drone_port_2_1_1x_mask.png") { [0, 0, 62, 32, -31, 0] }
+alternative_sprites(drone_port_2_1_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_2_1_2x.png", "gfx/drone_port_2_1_2x_mask.png") { [0, 0, 126, 64, -63, 0] }
+spritelayout drone_port_2_1_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_2_1_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; } }
 item(FEAT_AIRPORTTILES, drone_port_2_1_tile, 6) { property { substitute: 0; } graphics { default: drone_port_2_1_layout; } }
-spriteset(drone_port_3_1_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_3_1_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(drone_port_3_1_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_3_1_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout drone_port_3_1_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_3_1_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; } }
+spriteset(drone_port_3_1_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_3_1_1x.png", "gfx/drone_port_3_1_1x_mask.png") { [0, 0, 62, 32, -31, 0] }
+alternative_sprites(drone_port_3_1_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_3_1_2x.png", "gfx/drone_port_3_1_2x_mask.png") { [0, 0, 126, 64, -63, 0] }
+spritelayout drone_port_3_1_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_3_1_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; } }
 item(FEAT_AIRPORTTILES, drone_port_3_1_tile, 7) { property { substitute: 0; } graphics { default: drone_port_3_1_layout; } }
-spriteset(drone_port_0_2_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_0_2_1x.png") { [0, 0, 80, 47, -31, -15] }
-alternative_sprites(drone_port_0_2_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_0_2_2x.png") { [0, 0, 161, 94, -63, -30] }
-spritelayout drone_port_0_2_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_0_2_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; } }
+spriteset(drone_port_0_2_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_0_2_1x.png", "gfx/drone_port_0_2_1x_mask.png") { [0, 0, 80, 47, -31, -15] }
+alternative_sprites(drone_port_0_2_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_0_2_2x.png", "gfx/drone_port_0_2_2x_mask.png") { [0, 0, 161, 94, -63, -30] }
+spritelayout drone_port_0_2_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_0_2_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; } }
 item(FEAT_AIRPORTTILES, drone_port_0_2_tile, 8) { property { substitute: 0; } graphics { default: drone_port_0_2_layout; } }
-spriteset(drone_port_1_2_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_1_2_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(drone_port_1_2_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_1_2_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout drone_port_1_2_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_1_2_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; } }
+spriteset(drone_port_1_2_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_1_2_1x.png", "gfx/drone_port_1_2_1x_mask.png") { [0, 0, 62, 32, -31, 0] }
+alternative_sprites(drone_port_1_2_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_1_2_2x.png", "gfx/drone_port_1_2_2x_mask.png") { [0, 0, 126, 64, -63, 0] }
+spritelayout drone_port_1_2_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_1_2_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; } }
 item(FEAT_AIRPORTTILES, drone_port_1_2_tile, 9) { property { substitute: 0; } graphics { default: drone_port_1_2_layout; } }
-spriteset(drone_port_2_2_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_2_2_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(drone_port_2_2_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_2_2_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout drone_port_2_2_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_2_2_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; } }
+spriteset(drone_port_2_2_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_2_2_1x.png", "gfx/drone_port_2_2_1x_mask.png") { [0, 0, 62, 32, -31, 0] }
+alternative_sprites(drone_port_2_2_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_2_2_2x.png", "gfx/drone_port_2_2_2x_mask.png") { [0, 0, 126, 64, -63, 0] }
+spritelayout drone_port_2_2_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_2_2_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; } }
 item(FEAT_AIRPORTTILES, drone_port_2_2_tile, 10) { property { substitute: 0; } graphics { default: drone_port_2_2_layout; } }
-spriteset(drone_port_3_2_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_3_2_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(drone_port_3_2_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_3_2_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout drone_port_3_2_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_3_2_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; } }
+spriteset(drone_port_3_2_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_3_2_1x.png", "gfx/drone_port_3_2_1x_mask.png") { [0, 0, 62, 32, -31, 0] }
+alternative_sprites(drone_port_3_2_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_3_2_2x.png", "gfx/drone_port_3_2_2x_mask.png") { [0, 0, 126, 64, -63, 0] }
+spritelayout drone_port_3_2_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_3_2_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; } }
 item(FEAT_AIRPORTTILES, drone_port_3_2_tile, 11) { property { substitute: 0; } graphics { default: drone_port_3_2_layout; } }
-spriteset(drone_port_0_3_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_0_3_1x.png") { [0, 0, 63, 40, -31, -8] }
-alternative_sprites(drone_port_0_3_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_0_3_2x.png") { [0, 0, 127, 81, -63, -17] }
-spritelayout drone_port_0_3_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_0_3_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; } }
+spriteset(drone_port_0_3_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_0_3_1x.png", "gfx/drone_port_0_3_1x_mask.png") { [0, 0, 63, 40, -31, -8] }
+alternative_sprites(drone_port_0_3_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_0_3_2x.png", "gfx/drone_port_0_3_2x_mask.png") { [0, 0, 127, 81, -63, -17] }
+spritelayout drone_port_0_3_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_0_3_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; } }
 item(FEAT_AIRPORTTILES, drone_port_0_3_tile, 12) { property { substitute: 0; } graphics { default: drone_port_0_3_layout; } }
-spriteset(drone_port_1_3_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_1_3_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(drone_port_1_3_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_1_3_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout drone_port_1_3_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_1_3_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; } }
+spriteset(drone_port_1_3_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_1_3_1x.png", "gfx/drone_port_1_3_1x_mask.png") { [0, 0, 62, 32, -31, 0] }
+alternative_sprites(drone_port_1_3_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_1_3_2x.png", "gfx/drone_port_1_3_2x_mask.png") { [0, 0, 126, 64, -63, 0] }
+spritelayout drone_port_1_3_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_1_3_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; } }
 item(FEAT_AIRPORTTILES, drone_port_1_3_tile, 13) { property { substitute: 0; } graphics { default: drone_port_1_3_layout; } }
-spriteset(drone_port_2_3_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_2_3_1x.png") { [0, 0, 62, 32, -31, 0] }
-alternative_sprites(drone_port_2_3_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_2_3_2x.png") { [0, 0, 126, 64, -63, 0] }
-spritelayout drone_port_2_3_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_2_3_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; } }
+spriteset(drone_port_2_3_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_2_3_1x.png", "gfx/drone_port_2_3_1x_mask.png") { [0, 0, 62, 32, -31, 0] }
+alternative_sprites(drone_port_2_3_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_2_3_2x.png", "gfx/drone_port_2_3_2x_mask.png") { [0, 0, 126, 64, -63, 0] }
+spritelayout drone_port_2_3_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_2_3_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; } }
 item(FEAT_AIRPORTTILES, drone_port_2_3_tile, 14) { property { substitute: 0; } graphics { default: drone_port_2_3_layout; } }
-spriteset(drone_port_3_3_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_3_3_1x.png") { [0, 0, 63, 32, -31, 0] }
-alternative_sprites(drone_port_3_3_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_3_3_2x.png") { [0, 0, 128, 64, -63, 0] }
-spritelayout drone_port_3_3_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_3_3_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; } }
+spriteset(drone_port_3_3_sprite, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_3_3_1x.png", "gfx/drone_port_3_3_1x_mask.png") { [0, 0, 63, 32, -31, 0] }
+alternative_sprites(drone_port_3_3_sprite, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_3_3_2x.png", "gfx/drone_port_3_3_2x_mask.png") { [0, 0, 128, 64, -63, 0] }
+spritelayout drone_port_3_3_layout { ground { sprite: GROUNDSPRITE_CONCRETE; } building { sprite: drone_port_3_3_sprite(0); xoffset: 0; yoffset: 0; zoffset: 0; xextent: 16; yextent: 16; zextent: 92; recolour_mode: RECOLOUR_REMAP; palette: PALETTE_USE_DEFAULT; } }
 item(FEAT_AIRPORTTILES, drone_port_3_3_tile, 15) { property { substitute: 0; } graphics { default: drone_port_3_3_layout; } }
 spriteset(drone_port_preview, ZOOM_LEVEL_NORMAL, BIT_DEPTH_32BPP, "gfx/drone_port_preview_1x.png") { [0, 0, 96, 82, -48, -41] }
 alternative_sprites(drone_port_preview, ZOOM_LEVEL_IN_2X, BIT_DEPTH_32BPP, "gfx/drone_port_preview_2x.png") { [0, 0, 192, 165, -96, -83] }
@@ -560,6 +560,11 @@ item(FEAT_ROADSTOPS, distribution_centre, 0) { property { class: "FLHB"; classna
 /* END GENERATED FUNCTIONAL SPRITES */
 
 /* Cargo drone uses the supplied multirotor art, with fixed yaw during translation. */
+/* Heavy-lift drones: 150 bags of mail, and 120 bags of valuables, gold or diamonds, or 120 crates of goods or food. */
+switch (FEAT_AIRCRAFT, SELF, drone_capacity, cargo_type_in_veh) {
+    MAIL: return 150;
+    return 120;
+}
 item(FEAT_AIRCRAFT, cargo_drone, 64) {
     property {
         name:                         string(STR_CARGO_DRONE);
@@ -568,14 +573,14 @@ item(FEAT_AIRCRAFT, cargo_drone, 64) {
         model_life:                   40;
         vehicle_life:                 12;
         reliability_decay:            20;
-        loading_speed:                10;
+        loading_speed:                40;
         sprite_id:                    SPRITE_ID_NEW_AIRCRAFT;
         aircraft_type:                AIRCRAFT_TYPE_HELICOPTER;
         cost_factor:                  20;
         running_cost_factor:          12;
         speed:                        1609 km/h;
         acceleration:                 20;
-        passenger_capacity:           8;
+        passenger_capacity:           150;
         mail_capacity:                0;
         /* Passengers are excluded, so the game makes mail, the first refittable cargo, the default. */
         refittable_cargo_classes:     bitmask(CC_MAIL, CC_EXPRESS, CC_ARMOURED); /* and valuables, gold or diamonds by climate */
@@ -585,7 +590,10 @@ item(FEAT_AIRCRAFT, cargo_drone, 64) {
         badges: ["fl_format/2", "fl_id/cargo_drone", "fl_tech/drone", "fl_needs/drone_pad",
                  "fl_role/express", "fl_role/parcel", "role/mail", "power/electric"];
     }
-    graphics { default: cargo_drone_body; }
+    graphics {
+        default: cargo_drone_body;
+        passenger_capacity: drone_capacity;
+    }
     livery_override(cargo_drone) { cargo_drone_rotor; }
 }
 
